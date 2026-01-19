@@ -132,7 +132,7 @@ export function calculateTotalCredits(
   count: number
 ): number {
   const model = IMAGE_MODELS[modelKey];
-  const resolutionConfig = model.resolutions[resolution];
+  const resolutionConfig = (model.resolutions as any)[resolution];
   return resolutionConfig.credits * count;
 }
 

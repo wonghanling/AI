@@ -482,8 +482,9 @@ export default function ChatPage() {
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               components={{
-                                code({ node, inline, className, children, ...props }) {
-                                  return inline ? (
+                                code({ node, className, children, ...props }: any) {
+                                  const isInline = !className;
+                                  return isInline ? (
                                     <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
                                       {children}
                                     </code>

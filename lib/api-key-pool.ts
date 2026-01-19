@@ -59,7 +59,7 @@ export async function getAvailableApiKey(provider: string): Promise<string | nul
     }
 
     // 检查今日请求数是否超限
-    const limit = RATE_LIMITS[provider]?.requestsPerDay || 10000;
+    const limit = (RATE_LIMITS as any)[provider]?.requestsPerDay || 10000;
     if (key.requests_today >= limit) {
       return false;
     }
