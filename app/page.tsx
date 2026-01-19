@@ -1,13 +1,45 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check } from 'lucide-react';
+import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check, LogOut, User } from 'lucide-react';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 export default function LandingPage() {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('supabase_token');
+      if (token) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            setIsLoggedIn(true);
+            setUserEmail(user.email || '');
+          }
+        }
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    localStorage.removeItem('supabase_token');
+    setIsLoggedIn(false);
+    setUserEmail('');
+    router.push('/');
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-black">
       {/* Navigation */}
@@ -31,10 +63,28 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
-            <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
-              开始使用
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <User size={16} />
+                  <span className="max-w-[150px] truncate">{userEmail}</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                >
+                  <LogOut size={16} />
+                  退出
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
+                <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
+                  开始使用
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

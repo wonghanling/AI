@@ -120,7 +120,7 @@ export default function RegisterPage() {
         localStorage.setItem('supabase_token', data.session.access_token);
       }
 
-      router.push('/chat');
+      router.push('/');
     } catch (err: any) {
       setError(err.message || '注册失败，请重试');
     } finally {

@@ -114,7 +114,7 @@ export default function LoginPage() {
         }
       }
 
-      router.push('/chat');
+      router.push('/');
     } catch (err: any) {
       setError(err.message || '登录失败，请重试');
     } finally {
