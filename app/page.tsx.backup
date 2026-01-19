@@ -1,17 +1,13 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check } from 'lucide-react';
 
 export default function LandingPage() {
-  const router = useRouter();
   return (
     <div className="min-h-screen bg-white font-sans text-black">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-300">
+      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image
@@ -40,7 +36,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-40 pb-32 px-6 bg-white">
+      <section className="pt-40 pb-32 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-3">
             所有顶级 AI, <span className="text-black">一站式使用.</span>
@@ -65,41 +61,38 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Divider */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-gray-200"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-white px-8 text-sm text-gray-400 uppercase tracking-widest">Models</span>
-        </div>
-      </div>
-
       {/* Model Cards */}
-      <section id="models" className="py-20 px-6 bg-gradient-to-b from-gray-100 to-gray-200">
+      <section id="models" className="py-20 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold">智能触手可及</h2>
-            <p className="text-sm text-gray-400 mt-1">Intelligence at Your Fingertips</p>
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl font-bold">智能触手可及</h2>
+              <p className="text-sm text-gray-400 mt-1">Intelligence at Your Fingertips</p>
+            </div>
+            <Link href="/chat" className="text-gray-600 hover:text-black font-semibold flex items-center gap-1">
+              探索所有模型 <ChevronRight size={20} />
+            </Link>
           </div>
 
         {/* 高级模型 */}
         <div className="mb-8">
-          <div className="mb-4">
-            <h3 className="text-lg font-bold text-gray-700">高级模型 · 免费用户每天 3 次</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Premium Models · 3 free uses per day</p>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-700">高级模型 · 免费用户每天 3 次</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Premium Models · 3 free uses per day</p>
+            </div>
+            <Link href="/chat" className="text-gray-600 hover:text-black font-semibold flex items-center gap-1 text-sm">
+              探索所有模型 <ChevronRight size={16} />
+            </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {[
-              { name: 'GPT-5.2', desc: '最强大的推理和指令遵循能力.', icon: '/openai.svg', badge: 'PRO', modelKey: 'gpt-5.2' },
-              { name: 'Claude Sonnet 4', desc: '卓越的创意写作和细腻理解.', icon: '/claude-color.svg', badge: null, modelKey: 'claude-sonnet-4' },
-              { name: 'Gemini Pro', desc: 'Google 最强模型, 多模态输入.', icon: '/gemini-color.svg', badge: null, modelKey: 'gemini-pro' },
-              { name: 'Grok', desc: '实时知识整合, 风趣大胆.', icon: '/grok.svg', badge: null, modelKey: 'grok' },
+              { name: 'GPT-5.2', desc: '最强大的推理和指令遵循能力.', icon: '/openai.svg', badge: 'PRO' },
+              { name: 'Claude Sonnet 4', desc: '卓越的创意写作和细腻理解.', icon: '/claude-color.svg', badge: null },
+              { name: 'Gemini Pro', desc: 'Google 最强模型, 多模态输入.', icon: '/gemini-color.svg', badge: null },
+              { name: 'Grok', desc: '实时知识整合, 风趣大胆.', icon: '/grok.svg', badge: null },
             ].map((model, i) => (
-              <div
-                key={i}
-                onClick={() => router.push(`/chat?model=${model.modelKey}`)}
-                className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
+              <div key={i} className="bg-white p-6 rounded-2xl border border-gray-200 hover:border-black hover:shadow-lg transition-all duration-300 group">
                 <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
                   <Image
                     src={model.icon}
@@ -129,16 +122,13 @@ export default function LandingPage() {
             <h3 className="text-lg font-bold text-gray-700">普通模型 · 免费用户每天 10 次</h3>
             <p className="text-xs text-gray-400 mt-0.5">Standard Models · 10 free uses per day</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { name: 'GPT-4.1 mini', desc: '轻量高效, 快速响应.', icon: '/openai.svg', modelKey: 'gpt-4.1-mini' },
-              { name: 'Claude 4.5 Haiku', desc: '快速响应, 适合日常对话.', icon: '/claude-color.svg', modelKey: 'claude-haiku' },
-              { name: 'Gemini 3 Flash', desc: '高速处理, 性价比之选.', icon: '/gemini-color.svg', modelKey: 'gemini-flash' },
+              { name: 'GPT-4.1 mini', desc: '轻量高效, 快速响应.', icon: '/openai.svg' },
+              { name: 'Claude 4.5 Haiku', desc: '快速响应, 适合日常对话.', icon: '/claude-color.svg' },
+              { name: 'Gemini 3 Flash', desc: '高速处理, 性价比之选.', icon: '/gemini-color.svg' },
             ].map((model, i) => (
-              <div
-                key={i}
-                onClick={() => router.push(`/chat?model=${model.modelKey}`)}
-                className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
+              <div key={i} className="bg-white p-6 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-300 group">
                 <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
                   <Image
                     src={model.icon}
@@ -161,10 +151,8 @@ export default function LandingPage() {
             <h3 className="text-lg font-bold text-gray-700">图片模型 · 按次付费</h3>
             <p className="text-xs text-gray-400 mt-0.5">Image Models · Pay per use</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6">
-            <div
-              onClick={() => router.push('/image')}
-              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-300 group">
               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
                 <Image
                   src="/banana-svgrepo-com.svg"
@@ -182,18 +170,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Divider with Gradient */}
-      <div className="relative bg-gradient-to-b from-gray-200 to-white py-8">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-gray-400"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-gradient-to-b from-gray-200 to-white px-8 text-sm text-gray-500 uppercase tracking-widest font-semibold">Features</span>
-        </div>
-      </div>
-
       {/* Features & Preview */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <h2 className="text-4xl font-bold mb-2 leading-tight">为个人和专业用户打造</h2>
@@ -287,18 +265,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Divider - Features to Pricing */}
-      <div className="relative bg-gradient-to-b from-white to-gray-100 py-8">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-gray-400"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-gradient-to-b from-white to-gray-100 px-8 text-sm text-gray-500 uppercase tracking-widest font-semibold">Pricing</span>
-        </div>
-      </div>
-
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-6 bg-gradient-to-b from-gray-100 to-gray-200">
+      <section id="pricing" className="py-24 px-6 bg-white">
         <div className="max-w-4xl mx-auto text-center mb-16">
           <h2 className="text-5xl font-bold mb-2">一个价格, 全部功能</h2>
           <p className="text-sm text-gray-400">One Price, All Features</p>
@@ -306,7 +274,7 @@ export default function LandingPage() {
 
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Free Plan */}
-          <div className="bg-white rounded-2xl p-10 border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.12)] relative">
+          <div className="bg-white rounded-2xl p-10 border-2 border-gray-200 relative">
             <div className="text-center mb-8">
               <h3 className="font-bold text-lg mb-1">免费版</h3>
               <p className="text-xs text-gray-400 mb-3">Free Plan</p>
@@ -378,7 +346,7 @@ export default function LandingPage() {
           </div>
 
           {/* Pro Plan */}
-          <div className="bg-white rounded-2xl p-10 border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.12)] relative overflow-hidden">
+          <div className="bg-white rounded-2xl p-10 border-2 border-black relative overflow-hidden">
             {/* Popular Badge */}
             <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden">
               <div className="absolute top-4 right-[-32px] bg-[#F5C518] text-black text-xs font-bold py-1 px-8 rotate-45 shadow-md">
