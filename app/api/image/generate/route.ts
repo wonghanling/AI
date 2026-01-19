@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: '该模型不支持此宽高比' }, { status: 400 });
     }
 
-    if (!modelConfig.resolutions[resolution as ResolutionKey]) {
+    // 检查分辨率是否支持
+    const resolutionConfig = (modelConfig.resolutions as any)[resolution];
+    if (!resolutionConfig) {
       return Response.json({ error: '该模型不支持此分辨率' }, { status: 400 });
     }
 
