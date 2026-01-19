@@ -11,13 +11,6 @@ import { MODEL_MAP, FALLBACK_MAP, QUOTA_LIMITS, COST_CIRCUIT_BREAKER, ModelKey }
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
-
-// OpenRouter 客户端
-const openrouter = new OpenAI({
-  apiKey: OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-});
 
 // ============================================
 // 主处理函数
@@ -92,7 +85,13 @@ export async function POST(req: NextRequest) {
     // 6. 获取模型配置
     const modelConfig = MODEL_MAP[finalModel];
 
-    // 7. 调用 OpenRouter API（流式输出）
+    // 7. 初始化 OpenRouter 客户端
+    const openrouter = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY!,
+      baseURL: 'https://openrouter.ai/api/v1',
+    });
+
+    // 8. 调用 OpenRouter API（流式输出）
     const stream = await openrouter.chat.completions.create({
       model: modelConfig.openrouterModel,
       messages: messages,

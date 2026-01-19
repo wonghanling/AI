@@ -20,13 +20,6 @@ import {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
-
-// OpenRouter 客户端
-const openrouter = new OpenAI({
-  apiKey: OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-});
 
 export async function POST(req: NextRequest) {
   try {
@@ -186,7 +179,13 @@ export async function POST(req: NextRequest) {
     const resolutionSize = (modelConfig.resolutions as any)[resolution].size;
     const actualSize = calculateSize(aspectRatio as AspectRatio, resolutionSize);
 
-    // 10. 调用 OpenRouter 生成图片（循环生成多张）
+    // 10. 初始化 OpenRouter 客户端
+    const openrouter = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY!,
+      baseURL: 'https://openrouter.ai/api/v1',
+    });
+
+    // 11. 调用 OpenRouter 生成图片（循环生成多张）
     const generatedImages: string[] = [];
     const failedCount = 0;
 
