@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
             size: actualSize as any,
           });
 
-          const imageUrl = response.data[0]?.url;
+          const imageUrl = response.data?.[0]?.url;
 
           if (!imageUrl) {
             throw new Error('未返回图片 URL');
