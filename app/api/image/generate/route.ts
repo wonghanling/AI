@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 9. 计算实际像素尺寸
-    const resolutionSize = modelConfig.resolutions[resolution as ResolutionKey].size;
+    const resolutionSize = (modelConfig.resolutions as any)[resolution].size;
     const actualSize = calculateSize(aspectRatio as AspectRatio, resolutionSize);
 
     // 10. 调用 OpenRouter 生成图片（循环生成多张）
