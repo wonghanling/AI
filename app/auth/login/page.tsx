@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,12 +19,31 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    // 暂时模拟登录成功
-    setTimeout(() => {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        throw new Error('无法连接到认证服务');
+      }
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      if (data.session) {
+        // 登录成功，跳转到 chat 页面
+        router.push('/chat');
+      }
+    } catch (err: any) {
+      console.error('登录失败:', err);
+      setError(err.message || '登录失败，请检查邮箱和密码');
+    } finally {
       setLoading(false);
-      alert('登录功能正在开发中...');
-      // router.push('/');
-    }, 1000);
+    }
   };
 
   return (
