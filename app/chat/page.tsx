@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MODEL_MAP, ModelKey } from '@/lib/model-config';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -39,12 +40,15 @@ function ChatPageContent() {
   // 获取配额信息
   const fetchQuota = async () => {
     try {
-      const token = localStorage.getItem('supabase_token');
-      if (!token) return;
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
       const response = await fetch('/api/user/quota', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
       });
 
@@ -117,14 +121,22 @@ function ChatPageContent() {
     setLoading(true);
 
     try {
-      // 模拟 API 调用（后续替换为真实 API）
-      const token = localStorage.getItem('supabase_token');
+      // 获取 Supabase session token
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        throw new Error('无法连接到认证服务');
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('请先登录');
+      }
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || 'demo-token'}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: newMessages.map(m => ({
