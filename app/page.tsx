@@ -40,6 +40,16 @@ export default function LandingPage() {
     router.push('/');
   };
 
+  const handleSubscribe = (plan: 'free' | 'pro') => {
+    if (isLoggedIn) {
+      // 已登录用户跳转到支付页面
+      router.push(`/payment?plan=${plan}`);
+    } else {
+      // 未登录用户跳转到注册页面
+      router.push('/auth/register');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-black">
       {/* Navigation */}
@@ -419,9 +429,12 @@ export default function LandingPage() {
               </li>
             </ul>
 
-            <Link href="/auth/register" className="block w-full bg-gray-100 hover:bg-gray-200 text-black py-4 rounded-full font-bold transition-all mb-2 text-center">
+            <button
+              onClick={() => handleSubscribe('free')}
+              className="block w-full bg-gray-100 hover:bg-gray-200 text-black py-4 rounded-full font-bold transition-all mb-2 text-center"
+            >
               免费开始
-            </Link>
+            </button>
             <p className="text-xs text-gray-400 text-center mb-4">Start for Free</p>
             <p className="text-xs text-gray-500 text-center">无需信用卡</p>
             <p className="text-xs text-gray-400 text-center">No credit card required</p>
@@ -535,9 +548,12 @@ export default function LandingPage() {
               </li>
             </ul>
 
-            <Link href="/auth/register" className="block w-full bg-[#F5C518] hover:bg-[#E6B800] text-black py-4 rounded-full font-bold transition-all mb-2 text-center shadow-lg">
+            <button
+              onClick={() => handleSubscribe('pro')}
+              className="block w-full bg-[#F5C518] hover:bg-[#E6B800] text-black py-4 rounded-full font-bold transition-all mb-2 text-center shadow-lg"
+            >
               立即订阅
-            </Link>
+            </button>
             <p className="text-xs text-gray-400 text-center mb-4">Subscribe Now</p>
             <p className="text-xs text-gray-500 text-center">按月付费, 随时取消.</p>
             <p className="text-xs text-gray-400 text-center">Monthly billing, cancel anytime.</p>
