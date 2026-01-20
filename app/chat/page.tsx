@@ -6,7 +6,6 @@ import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MODEL_MAP, ModelKey } from '@/lib/model-config';
-import ProtectedRoute from '@/components/ProtectedRoute';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
 interface Message {
@@ -625,9 +624,5 @@ function ChatPageContent() {
 }
 
 export default function ChatPage() {
-  return (
-    <ProtectedRoute>
-      <ChatPageContent />
-    </ProtectedRoute>
-  );
+  return <ChatPageContent />;
 }

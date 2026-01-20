@@ -53,5 +53,4 @@ export const signOut = async () => {
   if (!supabase) return;
 
   await supabase.auth.signOut();
-  localStorage.removeItem('supabase_token');
 };

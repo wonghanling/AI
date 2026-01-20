@@ -4,28 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check, LogOut, User, ChevronDown } from 'lucide-react';
-import { useUser } from '@/contexts/UserContext';
+import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { user, loading, signOut } = useUser();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-
-  const handleLogout = async () => {
-    await signOut();
-    setUserMenuOpen(false);
-    router.push('/');
-  };
 
   const handleSubscribe = (plan: 'free' | 'pro') => {
-    if (user) {
-      // 已登录用户跳转到支付页面
-      router.push(`/payment?plan=${plan}`);
-    } else {
-      // 未登录用户跳转到注册页面
-      router.push('/auth/register');
-    }
+    // 暂时跳转到注册页面
+    router.push('/auth/register');
   };
 
   return (
@@ -51,66 +37,10 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {!loading && (
-              <>
-                {user ? (
-                  <div className="relative">
-                    <button
-                      onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-[#F5C518] text-black rounded-full flex items-center justify-center font-bold text-sm">
-                        {user.email?.[0].toUpperCase()}
-                      </div>
-                      <span className="max-w-[120px] truncate text-sm font-medium">{user.email}</span>
-                      <ChevronDown size={16} className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {/* 下拉菜单 */}
-                    {userMenuOpen && (
-                      <>
-                        {/* 遮罩层 */}
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setUserMenuOpen(false)}
-                        />
-                        {/* 菜单 */}
-                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-20 overflow-hidden">
-                          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                            <p className="text-xs text-gray-500 mb-1">登录账号</p>
-                            <p className="text-sm font-bold truncate text-gray-900">{user.email}</p>
-                          </div>
-                          <div className="py-2">
-                            <Link
-                              href="/orders"
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors text-gray-700"
-                              onClick={() => setUserMenuOpen(false)}
-                            >
-                              <CreditCard size={18} />
-                              <span className="font-medium">我的订单</span>
-                            </Link>
-                            <button
-                              onClick={handleLogout}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-red-50 transition-colors text-red-600"
-                            >
-                              <LogOut size={18} />
-                              <span className="font-medium">退出登录</span>
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
-                    <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
-                      开始使用
-                    </Link>
-                  </>
-                )}
-              </>
-            )}
+            <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
+            <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
+              开始使用
+            </Link>
           </div>
         </div>
       </nav>

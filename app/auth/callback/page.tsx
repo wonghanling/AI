@@ -22,8 +22,6 @@ export default function AuthCallbackPage() {
         if (error) throw error;
 
         if (session) {
-          // 保存 token
-          localStorage.setItem('supabase_token', session.access_token);
           // 跳转到聊天页面
           router.push('/chat');
         } else {

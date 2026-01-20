@@ -18,20 +18,17 @@ function PaymentContent() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('supabase_token');
-      if (!token) {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
         router.push('/auth/login');
         return;
       }
 
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUserEmail(user.email || '');
-        } else {
-          router.push('/auth/login');
-        }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || '');
+      } else {
+        router.push('/auth/login');
       }
     };
     checkAuth();

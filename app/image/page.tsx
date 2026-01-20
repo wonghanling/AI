@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
 // 安全地获取环境变量
 const getSupabaseClient = () => {
@@ -564,9 +563,5 @@ function ImageGenerationContent() {
 }
 
 export default function ImageGenerationPage() {
-  return (
-    <ProtectedRoute>
-      <ImageGenerationContent />
-    </ProtectedRoute>
-  );
+  return <ImageGenerationContent />;
 }

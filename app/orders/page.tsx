@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUser } from '@/contexts/UserContext';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Loader2, CreditCard, ArrowLeft } from 'lucide-react';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
 interface Order {
   id: string;
@@ -24,18 +22,33 @@ interface Order {
 }
 
 function OrdersContent() {
-  const { user } = useUser();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchOrders();
-    }
-  }, [user]);
+    checkUser();
+  }, []);
 
-  const fetchOrders = async () => {
+  const checkUser = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      router.push('/auth/login');
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    setUser(user);
+    fetchOrders(user.id);
+  };
+
+  const fetchOrders = async (userId: string) => {
     try {
       const supabase = getSupabaseClient();
       if (!supabase) {
@@ -46,7 +59,7 @@ function OrdersContent() {
       const { data, error } = await supabase
         .from('payment_orders')
         .select('*')
-        .eq('user_id', user!.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -222,9 +235,5 @@ function OrdersContent() {
 }
 
 export default function OrdersPage() {
-  return (
-    <ProtectedRoute>
-      <OrdersContent />
-    </ProtectedRoute>
-  );
+  return <OrdersContent />;
 }
