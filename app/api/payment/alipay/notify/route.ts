@@ -16,7 +16,7 @@ function verifySign(params: Record<string, any>, sign: string, alipayPublicKey: 
       .reduce((obj, key) => {
         obj[key] = params[key];
         return obj;
-      },  as Record<string, any>);
+      }, {} as Record<string, any>);
 
     // 2. 拼接参数
     const signString = Object.keys(filteredParams)
