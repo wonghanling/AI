@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 // 安全地获取环境变量
 const getSupabaseClient = () => {
@@ -50,7 +51,7 @@ const IMAGE_COUNTS = [
   { value: 4, label: '4x', cooldown: 30 },
 ];
 
-export default function ImageGenerationPage() {
+function ImageGenerationContent() {
   const [selectedModel, setSelectedModel] = useState<'nano-banana' | 'nano-banana-pro'>('nano-banana-pro');
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -559,5 +560,13 @@ export default function ImageGenerationPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ImageGenerationPage() {
+  return (
+    <ProtectedRoute>
+      <ImageGenerationContent />
+    </ProtectedRoute>
   );
 }

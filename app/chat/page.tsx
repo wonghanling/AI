@@ -6,6 +6,7 @@ import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MODEL_MAP, ModelKey } from '@/lib/model-config';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,7 +21,7 @@ interface Conversation {
   createdAt: Date;
 }
 
-export default function ChatPage() {
+function ChatPageContent() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -608,5 +609,13 @@ export default function ChatPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <ProtectedRoute>
+      <ChatPageContent />
+    </ProtectedRoute>
   );
 }

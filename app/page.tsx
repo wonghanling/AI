@@ -1,47 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check, LogOut, User } from 'lucide-react';
-import { getSupabaseClient } from '@/lib/supabase-client';
+import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check, LogOut, User, ChevronDown } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 export default function LandingPage() {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('supabase_token');
-      if (token) {
-        const supabase = getSupabaseClient();
-        if (supabase) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            setIsLoggedIn(true);
-            setUserEmail(user.email || '');
-          }
-        }
-      }
-    };
-    checkAuth();
-  }, []);
+  const { user, loading, signOut } = useUser();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
-    localStorage.removeItem('supabase_token');
-    setIsLoggedIn(false);
-    setUserEmail('');
+    await signOut();
+    setUserMenuOpen(false);
     router.push('/');
   };
 
   const handleSubscribe = (plan: 'free' | 'pro') => {
-    if (isLoggedIn) {
+    if (user) {
       // 已登录用户跳转到支付页面
       router.push(`/payment?plan=${plan}`);
     } else {
@@ -73,26 +51,64 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {isLoggedIn ? (
+            {!loading && (
               <>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <User size={16} />
-                  <span className="max-w-[150px] truncate">{userEmail}</span>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
-                >
-                  <LogOut size={16} />
-                  退出
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
-                <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
-                  开始使用
-                </Link>
+                {user ? (
+                  <div className="relative">
+                    <button
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-[#F5C518] text-black rounded-full flex items-center justify-center font-bold text-sm">
+                        {user.email?.[0].toUpperCase()}
+                      </div>
+                      <span className="max-w-[120px] truncate text-sm font-medium">{user.email}</span>
+                      <ChevronDown size={16} className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* 下拉菜单 */}
+                    {userMenuOpen && (
+                      <>
+                        {/* 遮罩层 */}
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setUserMenuOpen(false)}
+                        />
+                        {/* 菜单 */}
+                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-20 overflow-hidden">
+                          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                            <p className="text-xs text-gray-500 mb-1">登录账号</p>
+                            <p className="text-sm font-bold truncate text-gray-900">{user.email}</p>
+                          </div>
+                          <div className="py-2">
+                            <Link
+                              href="/orders"
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors text-gray-700"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <CreditCard size={18} />
+                              <span className="font-medium">我的订单</span>
+                            </Link>
+                            <button
+                              onClick={handleLogout}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-red-50 transition-colors text-red-600"
+                            >
+                              <LogOut size={18} />
+                              <span className="font-medium">退出登录</span>
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
+                    <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
+                      开始使用
+                    </Link>
+                  </>
+                )}
               </>
             )}
           </div>
