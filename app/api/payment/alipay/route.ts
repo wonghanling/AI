@@ -14,24 +14,29 @@ const ALIPAY_CONFIG = {
 
 // 生成签名
 function generateSign(params: Record<string, any>, privateKey: string): string {
-  // 1. 过滤空值和 sign 字段
-  const filteredParams = Object.keys(params)
-    .filter(key => params[key] !== '' && params[key] !== null && params[key] !== undefined && key !== 'sign')
-    .sort()
-    .reduce((obj, key) => {
-      obj[key] = params[key];
-      return obj;
-    }, {} as Record<string, any>);
+  try {
+    // 1. 过滤空值和 sign 字段
+    const filteredParams = Object.keys(params)
+      .filter(key => params[key] !== '' && params[key] !== null && params[key] !== undefined && key !== 'sign')
+      .sort()
+      .reduce((obj, key) => {
+        obj[key] = params[key];
+        return obj;
+      }, {} as Record<string, any>);
 
-  // 2. 拼接参数
-  const signString = Object.keys(filteredParams)
-    .map(key => `${key}=${filteredParams[key]}`)
-    .join('&');
+    // 2. 拼接参数
+    const signString = Object.keys(filteredParams)
+      .map(key => `${key}=${filteredParams[key]}`)
+      .join('&');
 
-  // 3. 使用私钥签名
-  const sign = crypto.createSign('RSA-SHA256');
-  sign.update(signString, 'utf8');
-  return sign.sign(privateKey, 'base64');
+    // 3. 使用私钥签名
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(signString, 'utf8');
+    return sign.sign(privateKey, 'base64');
+  } catch (error) {
+    console.error('签名生成失败:', error);
+    throw new Error('签名生成失败，请检查私钥格式');
+  }
 }
 
 // 生成订单号
