@@ -1,17 +1,51 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check } from 'lucide-react';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 export default function LandingPage() {
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 检查登录状态
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+
+    checkUser();
+  }, []);
 
   const handleSubscribe = (plan: 'free' | 'pro') => {
-    // 暂时跳转到注册页面
-    router.push('/auth/register');
+    if (user) {
+      // 已登录，跳转到支付页面
+      router.push(`/payment?plan=${plan}`);
+    } else {
+      // 未登录，跳转到注册页面
+      router.push('/auth/register');
+    }
+  };
+
+  const handleLogout = async () => {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      await supabase.auth.signOut();
+      setUser(null);
+      router.refresh();
+    }
   };
 
   return (
@@ -37,10 +71,31 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
-            <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
-              开始使用
-            </Link>
+            {loading ? (
+              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+            ) : user ? (
+              <>
+                <Link href="/chat" className="text-sm font-medium text-gray-700 hover:text-black">
+                  进入聊天
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm font-medium text-gray-700 hover:text-black"
+                >
+                  登出
+                </button>
+                <Link href="/orders" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
+                  我的订单
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
+                <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
+                  开始使用
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -61,9 +116,15 @@ export default function LandingPage() {
             Say goodbye to multiple subscriptions and complex configurations.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/auth/register" className="w-full sm:w-auto bg-[#F5C518] hover:bg-[#E6B800] text-black px-12 py-4 rounded-full font-bold text-lg transition-all shadow-lg">
-              免费试用
-            </Link>
+            {user ? (
+              <Link href="/chat" className="w-full sm:w-auto bg-[#F5C518] hover:bg-[#E6B800] text-black px-12 py-4 rounded-full font-bold text-lg transition-all shadow-lg">
+                开始聊天
+              </Link>
+            ) : (
+              <Link href="/auth/register" className="w-full sm:w-auto bg-[#F5C518] hover:bg-[#E6B800] text-black px-12 py-4 rounded-full font-bold text-lg transition-all shadow-lg">
+                免费试用
+              </Link>
+            )}
             <Link href="#models" className="w-full sm:w-auto border-2 border-black text-black hover:bg-black hover:text-white px-12 py-4 rounded-full font-bold text-lg transition-all">
               查看模型
             </Link>
