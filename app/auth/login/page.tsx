@@ -88,11 +88,6 @@ export default function LoginPage() {
         });
 
         if (loginError) throw loginError;
-
-        // 保存 session token
-        if (data.session) {
-          localStorage.setItem('supabase_token', data.session.access_token);
-        }
       } else {
         // 验证码登录
         if (!formData.verificationCode) {
@@ -107,11 +102,6 @@ export default function LoginPage() {
         });
 
         if (verifyError) throw verifyError;
-
-        // 保存 session token
-        if (data.session) {
-          localStorage.setItem('supabase_token', data.session.access_token);
-        }
       }
 
       router.push('/');

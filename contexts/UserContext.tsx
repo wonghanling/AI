@@ -25,7 +25,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (supabase) {
         await supabase.auth.signOut();
       }
-      localStorage.removeItem('supabase_token');
       setUser(null);
       setSession(null);
     } catch (error) {

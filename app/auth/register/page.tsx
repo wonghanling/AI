@@ -115,11 +115,6 @@ export default function RegisterPage() {
 
       if (updateError) throw updateError;
 
-      // 3. 保存 session token
-      if (data.session) {
-        localStorage.setItem('supabase_token', data.session.access_token);
-      }
-
       router.push('/');
     } catch (err: any) {
       setError(err.message || '注册失败，请重试');
