@@ -1,7 +1,15 @@
-// Supabase 客户端工具
-import { createClient } from '@supabase/supabase-js';
+// Supabase 客户端工具（单例模式）
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+// 单例实例
+let supabaseInstance: SupabaseClient | null = null;
 
 export const getSupabaseClient = () => {
+  // 如果已经有实例，直接返回
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -10,7 +18,15 @@ export const getSupabaseClient = () => {
     return null;
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey);
+  // 创建并缓存实例
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
+
+  return supabaseInstance;
 };
 
 // 获取当前用户 session

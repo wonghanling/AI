@@ -129,7 +129,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen w-full bg-white">
+    <div className="flex flex-col lg:flex-row min-h-screen w-full bg-white relative">
+      {/* 返回首页按钮 */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 z-50 flex items-center gap-2 text-white hover:text-[#F5C518] transition-colors group"
+      >
+        <svg className="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="font-medium">返回首页</span>
+      </Link>
       {/* Left Side - Dark Gradient */}
       <div className="lg:w-[45%] relative bg-gradient-to-br from-[#000000] via-[#1a1a1a] to-[#333333] flex flex-col justify-between p-8 lg:p-16 overflow-hidden min-h-[40vh] lg:min-h-screen">
         {/* Blur Effects */}

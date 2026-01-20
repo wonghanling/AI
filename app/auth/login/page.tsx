@@ -123,7 +123,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-white min-h-screen flex flex-col lg:flex-row overflow-x-hidden">
+    <div className="bg-white min-h-screen flex flex-col lg:flex-row overflow-x-hidden relative">
+      {/* 返回首页按钮 */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 z-50 flex items-center gap-2 text-white hover:text-[#F5C518] transition-colors group"
+      >
+        <svg className="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="font-medium">返回首页</span>
+      </Link>
       {/* Left Side - Dark Gradient with Card */}
       <section className="lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[#121212] via-[#2D2D2F] to-[#F5F5F7] min-h-[40vh] lg:min-h-screen flex">
         {/* Blur Effect */}
