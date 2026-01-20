@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading');
@@ -110,5 +110,36 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200 p-8">
+            <div className="flex justify-center mb-6">
+              <Image
+                src="/logo.png"
+                alt="BoLuoing"
+                width={60}
+                height={60}
+                className="object-contain"
+              />
+            </div>
+            <div className="flex justify-center mb-6">
+              <Loader2 size={64} className="text-[#F5C518] animate-spin" />
+            </div>
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">加载中</h1>
+              <p className="text-gray-600">正在验证支付结果...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
