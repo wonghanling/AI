@@ -11,14 +11,14 @@ interface Order {
   id: string;
   order_no: string;
   user_id: string;
-  plan_type: string;
-  amount: number;
+  order_type: string;
+  amount_rmb: number;
+  credits_amount: number;
   status: string;
   payment_method: string;
   trade_no?: string;
   created_at: string;
   paid_at?: string;
-  expires_at?: string;
 }
 
 function OrdersContent() {
@@ -102,14 +102,19 @@ function OrdersContent() {
     }
   };
 
-  const getPlanName = (planType: string) => {
-    switch (planType) {
+  const getPlanName = (orderType: string, creditsAmount: number) => {
+    if (orderType === 'credits') {
+      return `积分充值 ${creditsAmount} 积分`;
+    }
+    switch (orderType) {
+      case 'subscription':
+        return '专业版订阅';
       case 'free':
         return '免费版';
       case 'pro':
         return '专业版';
       default:
-        return planType;
+        return orderType;
     }
   };
 
@@ -190,14 +195,11 @@ function OrdersContent() {
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-bold mb-2">{getPlanName(order.plan_type)}</h3>
+                        <h3 className="text-lg font-bold mb-2">{getPlanName(order.order_type, order.credits_amount)}</h3>
                         <div className="space-y-1 text-sm text-gray-600">
                           <p>下单时间: {new Date(order.created_at).toLocaleString('zh-CN')}</p>
                           {order.paid_at && (
                             <p>支付时间: {new Date(order.paid_at).toLocaleString('zh-CN')}</p>
-                          )}
-                          {order.expires_at && (
-                            <p>到期时间: {new Date(order.expires_at).toLocaleString('zh-CN')}</p>
                           )}
                           {order.trade_no && (
                             <p>交易号: {order.trade_no}</p>
@@ -207,7 +209,7 @@ function OrdersContent() {
                       <div className="text-right">
                         <p className="text-sm text-gray-500 mb-1">订单金额</p>
                         <p className="text-2xl font-bold text-[#F5C518]">
-                          ¥{order.amount.toFixed(2)}
+                          ¥{order.amount_rmb.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -216,7 +218,13 @@ function OrdersContent() {
                     {order.status === 'pending' && (
                       <div className="pt-4 border-t border-gray-200">
                         <button
-                          onClick={() => router.push(`/payment?plan=${order.plan_type}`)}
+                          onClick={() => {
+                            if (order.order_type === 'credits') {
+                              router.push('/credits/recharge');
+                            } else {
+                              router.push('/payment?plan=pro');
+                            }
+                          }}
                           className="w-full bg-[#F5C518] hover:bg-[#E6B800] text-black py-3 rounded-full text-sm font-bold transition-all"
                         >
                           继续支付
