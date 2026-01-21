@@ -32,6 +32,14 @@ const IMAGE_MODELS: Record<string, { openrouterModel: string; cost: number }> = 
     openrouterModel: 'stability-ai/stable-diffusion-xl',
     cost: 0.01,
   },
+  'nano-banana': {
+    openrouterModel: 'google/gemini-2.5-flash-image',
+    cost: 0.005, // 5 积分 = ¥0.5，1 积分 = ¥0.1
+  },
+  'nano-banana-pro': {
+    openrouterModel: 'google/gemini-3-pro-image-preview',
+    cost: 0.009, // 9 积分 = ¥0.9
+  },
 };
 
 export async function POST(req: NextRequest) {
@@ -51,7 +59,15 @@ export async function POST(req: NextRequest) {
 
     // 2. 解析请求体
     const body = await req.json();
-    const { model, prompt, size = '1024x1024', quality = 'standard' } = body;
+    const {
+      model,
+      prompt,
+      aspectRatio = '1:1',
+      resolution = '1K',
+      count = 1,
+      size = '1024x1024',
+      quality = 'standard'
+    } = body;
 
     if (!model || !prompt) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
@@ -63,7 +79,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '无效的模型' }, { status: 400 });
     }
 
-    // 4. 检查用户配额
+    // 4. 计算积分消耗（根据分辨率）
+    let creditsPerImage = 5; // 默认 1K
+    if (model === 'nano-banana') {
+      if (resolution === '2K') creditsPerImage = 9;
+      else creditsPerImage = 5;
+    } else if (model === 'nano-banana-pro') {
+      if (resolution === '4K') creditsPerImage = 25;
+      else if (resolution === '2K') creditsPerImage = 15;
+      else creditsPerImage = 9;
+    }
+    const totalCredits = creditsPerImage * count;
+
+    // 5. 检查用户积分
     const { data: userData } = await supabaseAdmin
       .from('users')
       .select('user_type, credits')
@@ -73,34 +101,45 @@ export async function POST(req: NextRequest) {
     const userType = userData?.user_type || 'free';
     const credits = userData?.credits || 0;
 
-    // 免费用户检查每日配额
+    // 检查积分是否足够
+    if (credits < totalCredits) {
+      return NextResponse.json(
+        { error: `积分不足，需要 ${totalCredits} 积分，当前仅有 ${credits} 积分` },
+        { status: 403 }
+      );
+    }
+
+    // 免费用户额外检查每日配额
     if (userType === 'free') {
       const today = new Date().toISOString().split('T')[0];
-      const { count } = await supabaseAdmin
+      const { count: dailyCount } = await supabaseAdmin
         .from('image_generations')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('date', today);
 
-      if ((count || 0) >= 5) {
+      if ((dailyCount || 0) >= 5) {
         return NextResponse.json({ error: '今日免费配额已用完，请升级到专业版' }, { status: 403 });
       }
     }
 
-    // 5. 调用 OpenRouter 生成图片
-    let imageUrl = '';
+    // 6. 调用 OpenRouter 生成图片
+    const generatedImages: string[] = [];
     try {
-      const response = await openrouter.images.generate({
-        model: modelConfig.openrouterModel,
-        prompt: prompt,
-        n: 1,
-        size: size,
-      });
+      // 根据 count 参数生成多张图片
+      for (let i = 0; i < count; i++) {
+        const response = await openrouter.images.generate({
+          model: modelConfig.openrouterModel,
+          prompt: prompt,
+          n: 1,
+          size: size,
+        });
 
-      imageUrl = response.data?.[0]?.url || '';
-
-      if (!imageUrl) {
-        throw new Error('未能生成图片');
+        const imageUrl = response.data?.[0]?.url || '';
+        if (!imageUrl) {
+          throw new Error('未能生成图片');
+        }
+        generatedImages.push(imageUrl);
       }
     } catch (error: any) {
       console.error('Image generation error:', error);
@@ -110,41 +149,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6. 保存生成记录
-    const { data: imageRecord, error: insertError } = await supabaseAdmin
-      .from('image_generations')
-      .insert({
-        user_id: user.id,
-        model: model,
-        prompt: prompt,
-        image_url: imageUrl,
-        size: size,
-        quality: quality,
-        cost: modelConfig.cost,
-        date: new Date().toISOString().split('T')[0],
-      })
-      .select()
-      .single();
+    // 7. 保存生成记录（每张图片一条记录）
+    const imageRecords = [];
+    for (const imageUrl of generatedImages) {
+      const { data: imageRecord, error: insertError } = await supabaseAdmin
+        .from('image_generations')
+        .insert({
+          user_id: user.id,
+          model: model,
+          prompt: prompt,
+          image_url: imageUrl,
+          size: `${resolution} ${aspectRatio}`,
+          quality: quality,
+          cost: creditsPerImage,
+          date: new Date().toISOString().split('T')[0],
+        })
+        .select()
+        .single();
 
-    if (insertError) {
-      console.error('Failed to save image record:', insertError);
+      if (insertError) {
+        console.error('Failed to save image record:', insertError);
+      } else {
+        imageRecords.push(imageRecord);
+      }
     }
 
-    // 7. 扣除积分（如果使用积分系统）
-    if (userType === 'pro' && credits > 0) {
-      await supabaseAdmin
-        .from('users')
-        .update({ credits: Math.max(0, credits - modelConfig.cost) })
-        .eq('id', user.id);
-    }
+    // 8. 扣除积分
+    const newCredits = Math.max(0, credits - totalCredits);
+    await supabaseAdmin
+      .from('users')
+      .update({ credits: newCredits })
+      .eq('id', user.id);
 
     return NextResponse.json({
       success: true,
-      imageUrl: imageUrl,
+      images: generatedImages.map((url, i) => ({
+        url,
+        id: imageRecords[i]?.id,
+      })),
       model: model,
       prompt: prompt,
-      cost: modelConfig.cost,
-      recordId: imageRecord?.id,
+      totalCredits: totalCredits,
+      remainingBalance: newCredits,
     });
   } catch (error: any) {
     console.error('Image API error:', error);
