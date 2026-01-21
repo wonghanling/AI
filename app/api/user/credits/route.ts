@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       userType,
       credits,
+      balance: credits, // 添加 balance 字段，兼容前端
       usage: {
         advanced: {
           used: advancedCount || 0,
