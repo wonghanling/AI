@@ -71,16 +71,27 @@ function PaymentContent() {
     setError('');
 
     try {
+      // 获取认证 token
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        throw new Error('请先登录');
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('登录已过期，请重新登录');
+      }
+
       // 调用支付宝支付 API
       const response = await fetch('/api/payment/alipay', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           plan: plan,
           amount: currentPlan.price,
-          userEmail: userEmail,
         }),
       });
 
