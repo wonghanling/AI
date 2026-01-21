@@ -42,7 +42,7 @@ export const MODEL_MAP = {
     costPer1kTokens: 0.00025,
   },
   'gemini-flash': {
-    openrouterModel: 'google/gemini-flash-1.5-8b',
+    openrouterModel: 'google/gemini-2.0-flash-exp',
     displayName: 'Gemini 3 Flash',
     tier: 'basic',
     maxTokens: 8192,
