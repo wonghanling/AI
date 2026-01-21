@@ -72,28 +72,45 @@ export async function POST(req: NextRequest) {
         })
         .eq('order_no', outTradeNo);
 
-      // 更新用户订阅状态
+      // 根据订单类型处理
       if (orderData.user_id) {
-        const subscriptionEnd = new Date();
+        if (orderData.order_type === 'credits') {
+          // 积分充值：增加用户积分
+          const creditsToAdd = orderData.credits_amount || 0;
 
-        // 根据套餐类型设置订阅时长
-        if (orderData.order_type === 'monthly') {
-          subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
-        } else if (orderData.order_type === 'yearly') {
-          subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
-        } else {
+          // 获取当前积分
+          const { data: userData } = await supabaseAdmin
+            .from('users')
+            .select('credits')
+            .eq('id', orderData.user_id)
+            .single();
+
+          const currentCredits = userData?.credits || 0;
+
+          // 更新积分
+          await supabaseAdmin
+            .from('users')
+            .update({
+              credits: currentCredits + creditsToAdd,
+            })
+            .eq('id', orderData.user_id);
+
+          console.log(`User ${orderData.user_id} credits updated: +${creditsToAdd}`);
+        } else if (orderData.order_type === 'subscription') {
+          // 订阅充值：更新订阅状态
+          const subscriptionEnd = new Date();
           subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1); // 默认1个月
+
+          await supabaseAdmin
+            .from('users')
+            .update({
+              user_type: 'pro',
+              subscription_end: subscriptionEnd.toISOString(),
+            })
+            .eq('id', orderData.user_id);
+
+          console.log('User subscription updated:', orderData.user_id);
         }
-
-        await supabaseAdmin
-          .from('users')
-          .update({
-            user_type: 'pro',
-            subscription_end: subscriptionEnd.toISOString(),
-          })
-          .eq('id', orderData.user_id);
-
-        console.log('User subscription updated:', orderData.user_id);
       }
     }
 

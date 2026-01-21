@@ -314,9 +314,9 @@ function ImageGenerationContent() {
           <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg p-3 text-center">
             <div className="text-xs mb-1">剩余积分</div>
             <div className="text-2xl font-bold">{credits}</div>
-            <button className="mt-2 text-xs underline hover:no-underline">
+            <Link href="/credits/recharge" className="mt-2 text-xs underline hover:no-underline inline-block">
               充值
-            </button>
+            </Link>
           </div>
         </div>
       </aside>
