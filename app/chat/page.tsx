@@ -82,10 +82,45 @@ function ChatPageContent() {
     scrollToBottom();
   }, [messages]);
 
-  // 页面加载时获取配额
+  // 页面加载时获取配额和恢复对话历史
   useEffect(() => {
     fetchQuota();
+
+    // 从 localStorage 恢复对话历史
+    const savedConversations = localStorage.getItem('conversations');
+    const savedCurrentId = localStorage.getItem('currentConversationId');
+
+    if (savedConversations) {
+      try {
+        const parsed = JSON.parse(savedConversations);
+        setConversations(parsed);
+
+        if (savedCurrentId && parsed.find((c: Conversation) => c.id === savedCurrentId)) {
+          setCurrentConversationId(savedCurrentId);
+          const currentConv = parsed.find((c: Conversation) => c.id === savedCurrentId);
+          if (currentConv) {
+            setMessages(currentConv.messages);
+          }
+        }
+      } catch (e) {
+        console.error('恢复对话历史失败:', e);
+      }
+    }
   }, []);
+
+  // 保存对话历史到 localStorage
+  useEffect(() => {
+    if (conversations.length > 0) {
+      localStorage.setItem('conversations', JSON.stringify(conversations));
+    }
+  }, [conversations]);
+
+  // 保存当前对话 ID
+  useEffect(() => {
+    if (currentConversationId) {
+      localStorage.setItem('currentConversationId', currentConversationId);
+    }
+  }, [currentConversationId]);
 
   // 自动调整输入框高度
   useEffect(() => {
@@ -103,9 +138,27 @@ function ChatPageContent() {
       messages: [],
       createdAt: new Date(),
     };
-    setConversations([newConv, ...conversations]);
+    const updatedConversations = [newConv, ...conversations];
+    setConversations(updatedConversations);
     setCurrentConversationId(newConv.id);
     setMessages([]);
+  };
+
+  // 删除对话
+  const deleteConversation = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedConversations = conversations.filter(conv => conv.id !== id);
+    setConversations(updatedConversations);
+
+    if (currentConversationId === id) {
+      if (updatedConversations.length > 0) {
+        setCurrentConversationId(updatedConversations[0].id);
+        setMessages(updatedConversations[0].messages);
+      } else {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+    }
   };
 
   // 发送消息
@@ -207,15 +260,32 @@ function ChatPageContent() {
         }
       }
 
-      // 更新对话标题（使用第一条消息）
-      if (currentConversationId && conversations.length > 0) {
+      // 更新对话标题和消息（使用第一条消息）
+      const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantMessage, model: usedModel }];
+      setMessages(finalMessages);
+
+      if (currentConversationId) {
         setConversations(prev =>
           prev.map(conv =>
             conv.id === currentConversationId
-              ? { ...conv, title: userMessage.content.slice(0, 30) + '...', messages: [...newMessages, { role: 'assistant', content: assistantMessage }] }
+              ? {
+                  ...conv,
+                  title: conv.title === '新对话' ? userMessage.content.slice(0, 30) + (userMessage.content.length > 30 ? '...' : '') : conv.title,
+                  messages: finalMessages
+                }
               : conv
           )
         );
+      } else {
+        // 如果没有当前对话，创建一个新对话
+        const newConv: Conversation = {
+          id: Date.now().toString(),
+          title: userMessage.content.slice(0, 30) + (userMessage.content.length > 30 ? '...' : ''),
+          messages: finalMessages,
+          createdAt: new Date(),
+        };
+        setConversations(prev => [newConv, ...prev]);
+        setCurrentConversationId(newConv.id);
       }
 
       // 刷新配额
@@ -281,18 +351,32 @@ function ChatPageContent() {
         {/* 对话历史 */}
         <div className="flex-1 overflow-y-auto px-2">
           {conversations.map(conv => (
-            <button
+            <div
               key={conv.id}
-              onClick={() => {
-                setCurrentConversationId(conv.id);
-                setMessages(conv.messages);
-              }}
-              className={`w-full text-left px-3 py-2.5 rounded-lg mb-1 hover:bg-gray-800 transition-colors ${
+              className={`group relative mb-1 rounded-lg hover:bg-gray-800 transition-colors ${
                 currentConversationId === conv.id ? 'bg-gray-800' : ''
               }`}
             >
-              <p className="text-sm truncate">{conv.title}</p>
-            </button>
+              <button
+                onClick={() => {
+                  setCurrentConversationId(conv.id);
+                  setMessages(conv.messages);
+                  setShowSidebar(false); // 移动端点击后关闭侧边栏
+                }}
+                className="w-full text-left px-3 py-2.5"
+              >
+                <p className="text-sm truncate pr-6">{conv.title}</p>
+              </button>
+              <button
+                onClick={(e) => deleteConversation(conv.id, e)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-700 rounded transition-opacity"
+                title="删除对话"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           ))}
         </div>
 
