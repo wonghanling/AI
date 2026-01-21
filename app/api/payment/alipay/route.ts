@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. 生成支付宝支付表单
-    const paymentForm = await generateAlipayUrl(orderId, amount, plan, user.email || '');
+    const paymentForm = await generateAlipayUrl(orderId, amount, plan, user.email || '', req);
 
     return NextResponse.json({
       success: true,
@@ -88,9 +88,15 @@ async function generateAlipayUrl(
   orderId: string,
   amount: number,
   plan: string,
-  userEmail: string
+  userEmail: string,
+  req: NextRequest
 ): Promise<string> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  // 动态获取当前请求的域名
+  const host = req.headers.get('host') || 'localhost:3000';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const baseUrl = `${protocol}://${host}`;
+
+  console.log('Payment callback URL:', `${baseUrl}/payment/callback`);
 
   // 调用支付宝电脑网站支付接口
   const result = await alipaySdk.pageExec('alipay.trade.page.pay', {
