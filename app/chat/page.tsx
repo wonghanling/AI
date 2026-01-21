@@ -33,6 +33,7 @@ function ChatPageContent() {
   const [userType, setUserType] = useState<'free' | 'premium'>('free');
   const [error, setError] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false); // 移动端侧边栏控制
+  const [userId, setUserId] = useState<string | null>(null); // 添加用户 ID 状态
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -84,43 +85,54 @@ function ChatPageContent() {
 
   // 页面加载时获取配额和恢复对话历史
   useEffect(() => {
-    fetchQuota();
+    const initUser = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
 
-    // 从 localStorage 恢复对话历史
-    const savedConversations = localStorage.getItem('conversations');
-    const savedCurrentId = localStorage.getItem('currentConversationId');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
 
-    if (savedConversations) {
-      try {
-        const parsed = JSON.parse(savedConversations);
-        setConversations(parsed);
+        // 从 localStorage 恢复对话历史（使用用户 ID 作为 key）
+        const savedConversations = localStorage.getItem(`conversations_${user.id}`);
+        const savedCurrentId = localStorage.getItem(`currentConversationId_${user.id}`);
 
-        if (savedCurrentId && parsed.find((c: Conversation) => c.id === savedCurrentId)) {
-          setCurrentConversationId(savedCurrentId);
-          const currentConv = parsed.find((c: Conversation) => c.id === savedCurrentId);
-          if (currentConv) {
-            setMessages(currentConv.messages);
+        if (savedConversations) {
+          try {
+            const parsed = JSON.parse(savedConversations);
+            setConversations(parsed);
+
+            if (savedCurrentId && parsed.find((c: Conversation) => c.id === savedCurrentId)) {
+              setCurrentConversationId(savedCurrentId);
+              const currentConv = parsed.find((c: Conversation) => c.id === savedCurrentId);
+              if (currentConv) {
+                setMessages(currentConv.messages);
+              }
+            }
+          } catch (e) {
+            console.error('恢复对话历史失败:', e);
           }
         }
-      } catch (e) {
-        console.error('恢复对话历史失败:', e);
       }
-    }
-  }, []);
+    };
 
-  // 保存对话历史到 localStorage
-  useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem('conversations', JSON.stringify(conversations));
-    }
-  }, [conversations]);
+    fetchQuota();
+    initUser();
+  }, [fetchQuota]);
 
-  // 保存当前对话 ID
+  // 保存对话历史到 localStorage（使用用户 ID）
   useEffect(() => {
-    if (currentConversationId) {
-      localStorage.setItem('currentConversationId', currentConversationId);
+    if (conversations.length > 0 && userId) {
+      localStorage.setItem(`conversations_${userId}`, JSON.stringify(conversations));
     }
-  }, [currentConversationId]);
+  }, [conversations, userId]);
+
+  // 保存当前对话 ID（使用用户 ID）
+  useEffect(() => {
+    if (currentConversationId && userId) {
+      localStorage.setItem(`currentConversationId_${userId}`, currentConversationId);
+    }
+  }, [currentConversationId, userId]);
 
   // 自动调整输入框高度
   useEffect(() => {
