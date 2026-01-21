@@ -49,6 +49,7 @@ function ImageGenerationContent() {
   const [credits, setCredits] = useState(0);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [showSidebar, setShowSidebar] = useState(false); // 移动端侧边栏控制
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null); // 上传的图片 base64
   const [generatedImages, setGeneratedImages] = useState<Array<{
     id: string;
     url: string;
@@ -57,6 +58,40 @@ function ImageGenerationContent() {
   }>>([]);
 
   const currentModel = MODELS[selectedModel];
+
+  // 处理图片上传
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 检查文件大小（最大 10MB）
+    if (file.size > 10 * 1024 * 1024) {
+      setError('图片大小不能超过 10MB');
+      return;
+    }
+
+    // 检查文件类型
+    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+      setError('只支持 PNG、JPG、JPEG、WebP 格式');
+      return;
+    }
+
+    // 读取文件并转换为 base64
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setUploadedImage(event.target?.result as string);
+      setError('');
+    };
+    reader.onerror = () => {
+      setError('图片读取失败');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 清除上传的图片
+  const clearUploadedImage = () => {
+    setUploadedImage(null);
+  };
 
   // 获取用户积分
   useEffect(() => {
@@ -202,7 +237,7 @@ function ImageGenerationContent() {
         return;
       }
 
-      // 调用 API（暂时使用旧的 API，后续需要更新）
+      // 调用 API
       const response = await fetch('/api/image/generate', {
         method: 'POST',
         headers: {
@@ -214,7 +249,8 @@ function ImageGenerationContent() {
           model: selectedModel,
           aspectRatio: aspectRatio,
           resolution: resolution,
-          count: imageCount
+          count: imageCount,
+          imageUrl: uploadedImage, // 添加上传的图片
         })
       });
 
@@ -349,13 +385,44 @@ function ImageGenerationContent() {
               </div>
             )}
 
-            {/* 上传图片区域（可选功能） */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-6 text-center">
-              <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-sm text-gray-600 mb-1">拖放文件或点击上传</p>
-              <p className="text-xs text-gray-400">PNG、JPG、JPEG、WebP，最大10MB</p>
+            {/* 上传图片区域 */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                上传图片（可选）
+              </label>
+              {uploadedImage ? (
+                <div className="relative border-2 border-gray-300 rounded-lg p-4">
+                  <img
+                    src={uploadedImage}
+                    alt="Uploaded"
+                    className="max-h-64 mx-auto rounded-lg"
+                  />
+                  <button
+                    onClick={clearUploadedImage}
+                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                    title="删除图片"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-purple-400 transition-colors block">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={loading}
+                  />
+                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-600 mb-1">点击上传或拖放文件</p>
+                  <p className="text-xs text-gray-400">PNG、JPG、JPEG、WebP，最大10MB</p>
+                </label>
+              )}
             </div>
 
             {/* Prompt 输入 */}

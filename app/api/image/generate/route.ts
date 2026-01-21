@@ -123,22 +123,96 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. 调用 OpenRouter 生成图片
+    // 6. 调用 OpenRouter 生成图片（使用 chat completions API）
     const generatedImages: string[] = [];
     try {
       // 根据 count 参数生成多张图片
       for (let i = 0; i < count; i++) {
-        const response = await openrouter.images.generate({
-          model: modelConfig.openrouterModel,
-          prompt: prompt,
-          n: 1,
-          size: size,
+        // 构建消息内容
+        const messageContent: any = [];
+
+        // 如果有上传的图片，添加到消息中
+        if (body.imageUrl) {
+          messageContent.push({
+            type: 'image_url',
+            image_url: {
+              url: body.imageUrl,
+            },
+          });
+        }
+
+        // 添加文本 prompt
+        messageContent.push({
+          type: 'text',
+          text: prompt,
         });
 
-        const imageUrl = response.data?.[0]?.url || '';
-        if (!imageUrl) {
+        const response = await openrouter.chat.completions.create({
+          model: modelConfig.openrouterModel,
+          messages: [
+            {
+              role: 'user',
+              content: messageContent.length === 1 ? messageContent[0].text : messageContent,
+            },
+          ],
+        });
+
+        // 解析响应内容
+        const messageResponse = response.choices?.[0]?.message?.content;
+
+        if (!messageResponse) {
           throw new Error('未能生成图片');
         }
+
+        // 尝试解析 content，可能是字符串或包含 parts 的对象
+        let imageUrl = '';
+
+        // 如果是字符串，可能直接是 URL 或 base64
+        if (typeof messageResponse === 'string') {
+          // 检查是否是 URL
+          if (messageResponse.startsWith('http://') || messageResponse.startsWith('https://')) {
+            imageUrl = messageResponse;
+          }
+          // 检查是否是 base64
+          else if (messageResponse.startsWith('data:image/')) {
+            imageUrl = messageResponse;
+          }
+          // 尝试从 markdown 格式中提取 URL
+          else {
+            const urlMatch = messageResponse.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/);
+            if (urlMatch) {
+              imageUrl = urlMatch[1];
+            } else {
+              // 如果都不是，假设整个内容就是 URL
+              imageUrl = messageResponse.trim();
+            }
+          }
+        }
+        // 如果是对象，尝试从 parts 中提取
+        else if (typeof messageResponse === 'object' && 'parts' in messageResponse) {
+          const parts = (messageResponse as any).parts;
+          if (Array.isArray(parts)) {
+            for (const part of parts) {
+              if (part.type === 'image_url' && part.image_url?.url) {
+                imageUrl = part.image_url.url;
+                break;
+              } else if (part.type === 'text' && part.text) {
+                // 尝试从文本中提取 URL
+                const urlMatch = part.text.match(/https?:\/\/[^\s]+/);
+                if (urlMatch) {
+                  imageUrl = urlMatch[0];
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (!imageUrl) {
+          console.error('无法解析图片 URL，响应内容:', messageResponse);
+          throw new Error('无法解析图片 URL');
+        }
+
         generatedImages.push(imageUrl);
       }
     } catch (error: any) {
