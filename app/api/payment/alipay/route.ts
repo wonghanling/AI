@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
         user_id: userId || null,
         user_email: userEmail,
         plan: plan,
-        amount: amount,
+        amount_rmb: amount,
         status: 'pending',
         payment_method: 'alipay',
         created_at: new Date().toISOString(),
