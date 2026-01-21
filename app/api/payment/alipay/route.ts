@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import AlipaySdk from 'alipay-sdk';
+import { AlipaySdk } from 'alipay-sdk';
 
 // 初始化 Supabase 客户端（使用 service role key）
 const supabaseAdmin = createClient(
@@ -15,7 +15,7 @@ const alipaySdk = new AlipaySdk({
   alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY!,
   gateway: 'https://openapi.alipay.com/gateway.do',
   timeout: 5000,
-  camelCase: true,
+  camelcase: true,
 });
 
 export async function POST(req: NextRequest) {
