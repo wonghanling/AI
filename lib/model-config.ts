@@ -19,7 +19,7 @@ export const MODEL_MAP = {
     costPer1kTokens: 0.003,
   },
   'gemini-pro': {
-    openrouterModel: 'google/gemini-pro-1.5',
+    openrouterModel: 'google/gemini-pro-1.5-exp',
     displayName: 'Gemini Pro',
     tier: 'advanced',
     maxTokens: 8192,
@@ -42,7 +42,7 @@ export const MODEL_MAP = {
     costPer1kTokens: 0.00025,
   },
   'gemini-flash': {
-    openrouterModel: 'google/gemini-flash-1.5',
+    openrouterModel: 'google/gemini-flash-1.5-8b',
     displayName: 'Gemini 3 Flash',
     tier: 'basic',
     maxTokens: 8192,
