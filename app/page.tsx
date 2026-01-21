@@ -75,8 +75,9 @@ export default function LandingPage() {
               <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
             ) : user ? (
               <>
-                <Link href="/chat" className="text-sm font-medium text-gray-700 hover:text-black">
-                  进入聊天
+                <span className="text-sm font-medium text-gray-700">{user.email}</span>
+                <Link href="/orders" className="text-sm font-medium text-gray-700 hover:text-black">
+                  我的订单
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -84,15 +85,12 @@ export default function LandingPage() {
                 >
                   登出
                 </button>
-                <Link href="/orders" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
-                  我的订单
-                </Link>
               </>
             ) : (
               <>
                 <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
                 <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
-                  开始使用
+                  注册
                 </Link>
               </>
             )}
@@ -118,11 +116,11 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             {user ? (
               <Link href="/chat" className="w-full sm:w-auto bg-[#F5C518] hover:bg-[#E6B800] text-black px-12 py-4 rounded-full font-bold text-lg transition-all shadow-lg">
-                开始聊天
+                开始使用
               </Link>
             ) : (
               <Link href="/auth/register" className="w-full sm:w-auto bg-[#F5C518] hover:bg-[#E6B800] text-black px-12 py-4 rounded-full font-bold text-lg transition-all shadow-lg">
-                免费试用
+                免费开始
               </Link>
             )}
             <Link href="#models" className="w-full sm:w-auto border-2 border-black text-black hover:bg-black hover:text-white px-12 py-4 rounded-full font-bold text-lg transition-all">

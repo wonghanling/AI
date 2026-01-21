@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [sendingCode, setSendingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+// 检查是否已登录，如果已登录则跳转  useEffect(() => {    const checkUser = async () => {      const supabase = getSupabaseClient();      if (!supabase) return;      const { data: { user } } = await supabase.auth.getUser();      if (user) {        // 已登录，跳转到 chat 页面        router.push('/chat');      }    };    checkUser();  }, [router]);
 
   // 发送验证码
   const handleSendCode = async () => {
@@ -115,7 +116,7 @@ export default function RegisterPage() {
 
       if (updateError) throw updateError;
 
-      router.push('/');
+      router.push('/chat');
     } catch (err: any) {
       setError(err.message || '注册失败，请重试');
     } finally {

@@ -1,18 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 检查是否已登录，如果已登录则跳转
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // 已登录，跳转到 chat 页面
+        router.push('/chat');
+      }
+    };
+
+    checkUser();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +52,13 @@ export default function LoginPage() {
       }
 
       if (data.session) {
-        // 登录成功，跳转到 chat 页面
-        router.push('/chat');
+        // 登录成功，检查是否有 redirect 参数
+        const redirect = searchParams.get('redirect');
+        if (redirect) {
+          router.push(redirect);
+        } else {
+          router.push('/chat');
+        }
       }
     } catch (err: any) {
       console.error('登录失败:', err);
