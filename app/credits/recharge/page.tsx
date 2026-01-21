@@ -116,14 +116,17 @@ export default function RechargeCreditsPage() {
         throw new Error(data.error || '创建支付订单失败');
       }
 
-      // 在新窗口中渲染支付宝表单并自动提交
+      // 直接在当前页面渲染支付宝表单并自动提交
       if (data.paymentForm) {
-        const newWindow = window.open('', '_blank');
-        if (newWindow) {
-          newWindow.document.write(data.paymentForm);
-          newWindow.document.close();
-        } else {
-          throw new Error('无法打开支付窗口，请允许弹窗');
+        // 创建一个临时的 div 来渲染表单
+        const div = document.createElement('div');
+        div.innerHTML = data.paymentForm;
+        document.body.appendChild(div);
+
+        // 自动提交表单
+        const form = div.querySelector('form');
+        if (form) {
+          form.submit();
         }
       } else {
         throw new Error('未获取到支付表单');
