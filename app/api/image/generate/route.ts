@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. 保存生成记录（每张图片一条记录）
-    const imageRecords = [];
+    const imageRecords: any[] = [];
     for (const imageUrl of generatedImages) {
       const { data: imageRecord, error: insertError } = await supabaseAdmin
         .from('image_generations')
