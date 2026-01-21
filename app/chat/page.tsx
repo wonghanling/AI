@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -37,7 +37,7 @@ function ChatPageContent() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 获取配额信息
-  const fetchQuota = async () => {
+  const fetchQuota = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
       if (!supabase) return;
@@ -71,12 +71,12 @@ function ChatPageContent() {
     } catch (error) {
       console.error('获取配额失败:', error);
     }
-  };
+  }, []);
 
   // 自动滚动到底部
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -131,35 +131,37 @@ function ChatPageContent() {
   }, [input]);
 
   // 创建新对话
-  const createNewConversation = () => {
+  const createNewConversation = useCallback(() => {
     const newConv: Conversation = {
       id: Date.now().toString(),
       title: '新对话',
       messages: [],
       createdAt: new Date(),
     };
-    const updatedConversations = [newConv, ...conversations];
-    setConversations(updatedConversations);
+    setConversations(prev => [newConv, ...prev]);
     setCurrentConversationId(newConv.id);
     setMessages([]);
-  };
+  }, []);
 
   // 删除对话
-  const deleteConversation = (id: string, e: React.MouseEvent) => {
+  const deleteConversation = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updatedConversations = conversations.filter(conv => conv.id !== id);
-    setConversations(updatedConversations);
+    setConversations(prev => {
+      const updatedConversations = prev.filter(conv => conv.id !== id);
 
-    if (currentConversationId === id) {
-      if (updatedConversations.length > 0) {
-        setCurrentConversationId(updatedConversations[0].id);
-        setMessages(updatedConversations[0].messages);
-      } else {
-        setCurrentConversationId(null);
-        setMessages([]);
+      if (currentConversationId === id) {
+        if (updatedConversations.length > 0) {
+          setCurrentConversationId(updatedConversations[0].id);
+          setMessages(updatedConversations[0].messages);
+        } else {
+          setCurrentConversationId(null);
+          setMessages([]);
+        }
       }
-    }
-  };
+
+      return updatedConversations;
+    });
+  }, [currentConversationId]);
 
   // 发送消息
   const sendMessage = async () => {
@@ -300,14 +302,14 @@ function ChatPageContent() {
   };
 
   // 获取模型信息
-  const getModelInfo = (modelKey: ModelKey) => MODEL_MAP[modelKey];
+  const getModelInfo = useCallback((modelKey: ModelKey) => MODEL_MAP[modelKey], []);
 
   // 高级模型列表
-  const advancedModels: ModelKey[] = ['gpt-5.2', 'claude-sonnet-4', 'gemini-pro', 'grok'];
-  const basicModels: ModelKey[] = ['gpt-4.1-mini', 'claude-haiku', 'gemini-flash'];
+  const advancedModels: ModelKey[] = useMemo(() => ['gpt-5.2', 'claude-sonnet-4', 'gemini-pro', 'grok'], []);
+  const basicModels: ModelKey[] = useMemo(() => ['gpt-4.1-mini', 'claude-haiku', 'gemini-flash'], []);
 
-  const currentModelInfo = getModelInfo(selectedModel);
-  const isAdvancedModel = currentModelInfo.tier === 'advanced';
+  const currentModelInfo = useMemo(() => getModelInfo(selectedModel), [selectedModel, getModelInfo]);
+  const isAdvancedModel = useMemo(() => currentModelInfo.tier === 'advanced', [currentModelInfo]);
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">
