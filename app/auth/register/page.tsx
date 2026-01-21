@@ -19,7 +19,22 @@ export default function RegisterPage() {
   const [sendingCode, setSendingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
-// 检查是否已登录，如果已登录则跳转  useEffect(() => {    const checkUser = async () => {      const supabase = getSupabaseClient();      if (!supabase) return;      const { data: { user } } = await supabase.auth.getUser();      if (user) {        // 已登录，跳转到 chat 页面        router.push('/chat');      }    };    checkUser();  }, [router]);
+
+  // 检查是否已登录，如果已登录则跳转
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // 已登录，使用 replace 替换当前历史记录
+        router.replace('/chat');
+      }
+    };
+
+    checkUser();
+  }, [router]);
 
   // 发送验证码
   const handleSendCode = async () => {
@@ -116,7 +131,8 @@ export default function RegisterPage() {
 
       if (updateError) throw updateError;
 
-      router.push('/chat');
+      // 注册成功，使用 replace 避免返回按钮问题
+      router.replace('/chat');
     } catch (err: any) {
       setError(err.message || '注册失败，请重试');
     } finally {

@@ -27,8 +27,8 @@ function LoginForm() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // 已登录，跳转到 chat 页面
-        router.push('/chat');
+        // 已登录，使用 replace 替换当前历史记录，避免返回按钮问题
+        router.replace('/chat');
       }
     };
 
@@ -103,12 +103,12 @@ function LoginForm() {
       }
 
       if (data.session) {
-        // 登录成功
+        // 登录成功，使用 replace 避免返回按钮问题
         const redirect = searchParams.get('redirect');
         if (redirect) {
-          router.push(redirect);
+          router.replace(redirect);
         } else {
-          router.push('/chat');
+          router.replace('/chat');
         }
       }
     } catch (err: any) {
@@ -140,12 +140,12 @@ function LoginForm() {
       }
 
       if (data.session) {
-        // 登录成功，检查是否有 redirect 参数
+        // 登录成功，使用 replace 避免返回按钮问题
         const redirect = searchParams.get('redirect');
         if (redirect) {
-          router.push(redirect);
+          router.replace(redirect);
         } else {
-          router.push('/chat');
+          router.replace('/chat');
         }
       }
     } catch (err: any) {
