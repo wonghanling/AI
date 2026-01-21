@@ -90,7 +90,7 @@ function PaymentContent() {
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          plan: 'monthly', // 固定为 monthly，符合数据库约束
+          plan: 'subscription', // 符合数据库约束：'subscription' 或 'credits'
           amount: currentPlan.price,
         }),
       });
