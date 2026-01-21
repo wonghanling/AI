@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
         size: size,
       });
 
-      imageUrl = response.data[0]?.url || '';
+      imageUrl = response.data?.[0]?.url || '';
 
       if (!imageUrl) {
         throw new Error('未能生成图片');
