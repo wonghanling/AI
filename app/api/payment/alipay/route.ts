@@ -37,14 +37,14 @@ export async function POST(req: NextRequest) {
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from('payment_orders')
       .insert({
-        order_id: orderId,
+        order_no: orderId,
         user_id: userId || null,
-        user_email: userEmail,
-        plan: plan,
+        
+        order_type: plan,
         amount_rmb: amount,
         status: 'pending',
         payment_method: 'alipay',
-        created_at: new Date().toISOString(),
+        credits_amount: 0,
       })
       .select()
       .single();
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       orderId: orderId,
       paymentUrl: paymentUrl,
       amount: amount,
-      plan: plan,
+      order_type: plan,
     });
   } catch (error: any) {
     console.error('Payment API error:', error);
@@ -97,6 +97,7 @@ export async function GET(req: NextRequest) {
     // 处理支付宝的异步通知
     const { searchParams } = new URL(req.url);
     const orderId = searchParams.get('orderId');
+    const tradeNo = searchParams.get('tradeNo');
     const status = searchParams.get('status');
 
     if (!orderId) {
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
       const { data: orderData } = await supabaseAdmin
         .from('payment_orders')
         .select('*')
-        .eq('order_id', orderId)
+        .eq('order_no', orderId)
         .single();
 
       if (orderData) {
@@ -120,9 +121,10 @@ export async function GET(req: NextRequest) {
           .from('payment_orders')
           .update({
             status: 'paid',
+            trade_no: tradeNo,
             paid_at: new Date().toISOString(),
           })
-          .eq('order_id', orderId);
+          .eq('order_no', orderId);
 
         // 更新用户订阅状态
         if (orderData.user_id) {
