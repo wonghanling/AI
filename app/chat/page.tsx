@@ -18,7 +18,7 @@ interface Conversation {
   id: string;
   title: string;
   messages: Message[];
-  createdAt: Date;
+  createdAt: string; // 改为 string 以便 JSON 序列化
 }
 
 function ChatPageContent() {
@@ -136,7 +136,7 @@ function ChatPageContent() {
       id: Date.now().toString(),
       title: '新对话',
       messages: [],
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
     setConversations(prev => [newConv, ...prev]);
     setCurrentConversationId(newConv.id);
@@ -284,7 +284,7 @@ function ChatPageContent() {
           id: Date.now().toString(),
           title: userMessage.content.slice(0, 30) + (userMessage.content.length > 30 ? '...' : ''),
           messages: finalMessages,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         };
         setConversations(prev => [newConv, ...prev]);
         setCurrentConversationId(newConv.id);
@@ -572,7 +572,9 @@ function ChatPageContent() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-gray-900">
-                            {msg.model ? getModelInfo(msg.model as ModelKey).displayName : currentModelInfo.displayName}
+                            {msg.model && msg.model in MODEL_MAP
+                              ? getModelInfo(msg.model as ModelKey).displayName
+                              : currentModelInfo.displayName}
                           </span>
                         </div>
                         <div className="text-gray-900 prose prose-sm max-w-none">
