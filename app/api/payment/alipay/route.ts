@@ -64,13 +64,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '创建订单失败' }, { status: 500 });
     }
 
-    // 5. 生成支付宝支付链接
-    const paymentUrl = await generateAlipayUrl(orderId, amount, plan, user.email || '');
+    // 5. 生成支付宝支付表单
+    const paymentForm = await generateAlipayUrl(orderId, amount, plan, user.email || '');
 
     return NextResponse.json({
       success: true,
       orderId: orderId,
-      paymentUrl: paymentUrl,
+      paymentForm: paymentForm, // 返回 HTML 表单字符串
       amount: amount,
       order_type: plan,
     });

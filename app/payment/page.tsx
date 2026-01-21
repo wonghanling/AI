@@ -101,11 +101,17 @@ function PaymentContent() {
         throw new Error(data.error || '创建支付订单失败');
       }
 
-      // 跳转到支付宝支付页面
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
+      // 在新窗口中渲染支付宝表单并自动提交
+      if (data.paymentForm) {
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(data.paymentForm);
+          newWindow.document.close();
+        } else {
+          throw new Error('无法打开支付窗口，请允许弹窗');
+        }
       } else {
-        throw new Error('未获取到支付链接');
+        throw new Error('未获取到支付表单');
       }
     } catch (err: any) {
       setError(err.message || '支付失败，请重试');
