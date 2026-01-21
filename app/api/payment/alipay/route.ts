@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import AlipaySdk from 'alipay-sdk';
 
 // 初始化 Supabase 客户端（使用 service role key）
 const supabaseAdmin = createClient(
@@ -7,27 +8,37 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// 初始化支付宝 SDK
+const alipaySdk = new AlipaySdk({
+  appId: process.env.ALIPAY_APP_ID!,
+  privateKey: process.env.ALIPAY_PRIVATE_KEY!,
+  alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY!,
+  gateway: 'https://openapi.alipay.com/gateway.do',
+  timeout: 5000,
+  camelCase: true,
+});
+
 export async function POST(req: NextRequest) {
   try {
-    // 1. 解析请求体
-    const body = await req.json();
-    const { plan, amount, userEmail } = body;
-
-    if (!plan || !amount || !userEmail) {
-      return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
+    // 1. 验证用户身份（必须登录）
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: '未授权，请先登录' }, { status: 401 });
     }
 
-    // 2. 验证用户身份（可选，如果前端已经传了 email）
-    const authHeader = req.headers.get('authorization');
-    let userId = '';
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: '无效的认证令牌' }, { status: 401 });
+    }
 
-      if (user) {
-        userId = user.id;
-      }
+    // 2. 解析请求体
+    const body = await req.json();
+    const { plan, amount } = body;
+
+    if (!plan || !amount) {
+      return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
     // 3. 生成订单号
@@ -38,8 +49,7 @@ export async function POST(req: NextRequest) {
       .from('payment_orders')
       .insert({
         order_no: orderId,
-        user_id: userId || null,
-        
+        user_id: user.id, // 确保使用登录用户的 ID
         order_type: plan,
         amount_rmb: amount,
         status: 'pending',
@@ -55,9 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. 生成支付宝支付链接
-    // 注意：这里需要集成真实的支付宝 SDK
-    // 目前返回一个模拟的支付链接
-    const paymentUrl = generateAlipayUrl(orderId, amount, plan);
+    const paymentUrl = await generateAlipayUrl(orderId, amount, plan, user.email || '');
 
     return NextResponse.json({
       success: true,
@@ -75,76 +83,69 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// 生成支付宝支付链接（模拟）
-function generateAlipayUrl(orderId: string, amount: number, plan: string): string {
-  // TODO: 集成真实的支付宝 SDK
-  // 这里返回一个模拟的支付链接
-
-  // 在实际生产环境中，你需要：
-  // 1. 安装支付宝 SDK: npm install alipay-sdk
-  // 2. 配置支付宝应用信息（APPID、私钥、公钥等）
-  // 3. 调用支付宝 API 生成支付链接
-
+// 生成支付宝支付链接（电脑网站支付）
+async function generateAlipayUrl(
+  orderId: string,
+  amount: number,
+  plan: string,
+  userEmail: string
+): Promise<string> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-  // 模拟支付链接（实际应该是支付宝的链接）
-  return `${baseUrl}/payment/mock?orderId=${orderId}&amount=${amount}&plan=${plan}`;
+  // 调用支付宝电脑网站支付接口
+  const result = await alipaySdk.pageExec('alipay.trade.page.pay', {
+    bizContent: {
+      outTradeNo: orderId, // 商户订单号
+      productCode: 'FAST_INSTANT_TRADE_PAY',
+      totalAmount: amount.toFixed(2), // 订单金额，单位为元
+      subject: `BoLuoing AI - ${plan}`, // 订单标题
+      body: `购买 ${plan} 套餐`, // 订单描述
+    },
+    returnUrl: `${baseUrl}/payment/callback`, // 同步回调地址
+    notifyUrl: `${baseUrl}/api/payment/alipay/notify`, // 异步通知地址
+  });
+
+  return result;
 }
 
-// 支付回调接口（支付宝异步通知）
+// 支付同步回调接口（用户支付完成后跳转）
 export async function GET(req: NextRequest) {
   try {
-    // 处理支付宝的异步通知
+    // 获取支付宝回调参数
     const { searchParams } = new URL(req.url);
-    const orderId = searchParams.get('orderId');
-    const tradeNo = searchParams.get('tradeNo');
-    const status = searchParams.get('status');
+    const params: Record<string, string> = {};
 
-    if (!orderId) {
-      return NextResponse.json({ error: '缺少订单号' }, { status: 400 });
+    searchParams.forEach((value, key) => {
+      params[key] = value;
+    });
+
+    // 验证签名
+    const signVerified = alipaySdk.checkNotifySign(params);
+
+    if (!signVerified) {
+      console.error('Alipay signature verification failed');
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_SITE_URL}/payment/failed?reason=signature_error`
+      );
     }
 
-    // 验证支付宝签名（重要！）
-    // TODO: 实现支付宝签名验证
+    const outTradeNo = params.out_trade_no;
+    const tradeNo = params.trade_no;
 
-    // 更新订单状态
-    if (status === 'success') {
-      const { data: orderData } = await supabaseAdmin
-        .from('payment_orders')
-        .select('*')
-        .eq('order_no', orderId)
-        .single();
-
-      if (orderData) {
-        // 更新订单状态
-        await supabaseAdmin
-          .from('payment_orders')
-          .update({
-            status: 'paid',
-            trade_no: tradeNo,
-            paid_at: new Date().toISOString(),
-          })
-          .eq('order_no', orderId);
-
-        // 更新用户订阅状态
-        if (orderData.user_id) {
-          await supabaseAdmin
-            .from('users')
-            .update({
-              user_type: 'pro',
-              subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30天后
-            })
-            .eq('id', orderData.user_id);
-        }
-      }
+    if (!outTradeNo) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_SITE_URL}/payment/failed?reason=missing_order`
+      );
     }
 
-    return NextResponse.json({ success: true });
+    // 跳转到支付成功页面
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?orderId=${outTradeNo}&tradeNo=${tradeNo}`
+    );
   } catch (error: any) {
     console.error('Payment callback error:', error);
-    return NextResponse.json(
-      { error: error.message || '服务器错误' },
-      { status: 500 }
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_SITE_URL}/payment/failed?reason=server_error`
     );
   }
 }
