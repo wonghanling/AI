@@ -160,6 +160,9 @@ export async function POST(req: NextRequest) {
         // 解析响应内容
         const messageResponse = response.choices?.[0]?.message?.content;
 
+        console.log('OpenRouter 响应:', JSON.stringify(response, null, 2));
+        console.log('消息内容:', messageResponse);
+
         if (!messageResponse) {
           throw new Error('未能生成图片');
         }
