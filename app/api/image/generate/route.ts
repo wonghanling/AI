@@ -160,11 +160,13 @@ export async function POST(req: NextRequest) {
         // 解析响应内容
         const messageResponse = response.choices?.[0]?.message?.content;
 
-        console.log('OpenRouter 响应:', JSON.stringify(response, null, 2));
-        console.log('消息内容:', messageResponse);
+        console.log('=== OpenRouter 完整响应 ===');
+        console.log('Response:', JSON.stringify(response, null, 2));
+        console.log('Message Content:', messageResponse);
+        console.log('Content Type:', typeof messageResponse);
 
         if (!messageResponse) {
-          throw new Error('未能生成图片');
+          throw new Error('未能生成图片：响应内容为空');
         }
 
         // 尝试解析 content，可能是字符串或包含 parts 的对象
@@ -172,13 +174,19 @@ export async function POST(req: NextRequest) {
 
         // 如果是字符串，可能直接是 URL 或 base64
         if (typeof messageResponse === 'string') {
-          // 检查是否是 URL
-          if (messageResponse.startsWith('http://') || messageResponse.startsWith('https://')) {
+          // 检查是否是完整的 data URI
+          if (messageResponse.startsWith('data:image/')) {
             imageUrl = messageResponse;
           }
-          // 检查是否是 base64
-          else if (messageResponse.startsWith('data:image/')) {
+          // 检查是否是 HTTP(S) URL
+          else if (messageResponse.startsWith('http://') || messageResponse.startsWith('https://')) {
             imageUrl = messageResponse;
+          }
+          // 检查是否是纯 base64（没有 data URI 前缀）
+          else if (/^[A-Za-z0-9+/=]+$/.test(messageResponse.trim())) {
+            // 假设是 PNG 格式，添加 data URI 前缀
+            imageUrl = `data:image/png;base64,${messageResponse.trim()}`;
+            console.log('检测到纯 base64，已添加 data URI 前缀');
           }
           // 尝试从 markdown 格式中提取 URL
           else {
@@ -186,15 +194,21 @@ export async function POST(req: NextRequest) {
             if (urlMatch) {
               imageUrl = urlMatch[1];
             } else {
-              // 如果都不是，假设整个内容就是 URL
-              imageUrl = messageResponse.trim();
+              // 尝试提取任何 URL
+              const anyUrlMatch = messageResponse.match(/https?:\/\/[^\s\)]+/);
+              if (anyUrlMatch) {
+                imageUrl = anyUrlMatch[0];
+              } else {
+                console.error('无法识别的字符串格式:', messageResponse.substring(0, 200));
+              }
             }
           }
         }
         // 如果是对象，尝试从 parts 中提取
-        else if (typeof messageResponse === 'object' && 'parts' in messageResponse) {
-          const parts = (messageResponse as any).parts;
-          if (Array.isArray(parts)) {
+        else if (typeof messageResponse === 'object') {
+          // 检查是否有 parts 数组
+          if ('parts' in messageResponse && Array.isArray((messageResponse as any).parts)) {
+            const parts = (messageResponse as any).parts;
             for (const part of parts) {
               if (part.type === 'image_url' && part.image_url?.url) {
                 imageUrl = part.image_url.url;
@@ -206,16 +220,31 @@ export async function POST(req: NextRequest) {
                   imageUrl = urlMatch[0];
                   break;
                 }
+              } else if (part.type === 'image' && part.data) {
+                // 如果有 image 类型的 part，可能包含 base64 数据
+                imageUrl = `data:image/png;base64,${part.data}`;
+                break;
               }
             }
+          }
+          // 检查是否直接包含 image_url
+          else if ('image_url' in messageResponse) {
+            imageUrl = (messageResponse as any).image_url;
+          }
+          // 检查是否直接包含 url
+          else if ('url' in messageResponse) {
+            imageUrl = (messageResponse as any).url;
           }
         }
 
         if (!imageUrl) {
-          console.error('无法解析图片 URL，响应内容:', messageResponse);
-          throw new Error('无法解析图片 URL');
+          console.error('=== 无法解析图片 URL ===');
+          console.error('响应类型:', typeof messageResponse);
+          console.error('响应内容:', JSON.stringify(messageResponse, null, 2));
+          throw new Error('无法解析图片 URL，请查看服务器日志');
         }
 
+        console.log('成功解析图片 URL:', imageUrl.substring(0, 100));
         generatedImages.push(imageUrl);
       }
     } catch (error: any) {
