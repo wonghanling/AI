@@ -85,9 +85,9 @@ export async function POST(req: NextRequest) {
       if (resolution === '2K') creditsPerImage = 9;
       else creditsPerImage = 5;
     } else if (model === 'nano-banana-pro') {
-      if (resolution === '4K') creditsPerImage = 25;
-      else if (resolution === '2K') creditsPerImage = 15;
-      else creditsPerImage = 9;
+      if (resolution === '4K') creditsPerImage = 40;
+      else if (resolution === '2K') creditsPerImage = 20;
+      else creditsPerImage = 15;
     }
     const totalCredits = creditsPerImage * count;
 
