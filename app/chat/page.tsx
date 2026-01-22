@@ -180,7 +180,7 @@ function ChatPageContent() {
     if (!input.trim() || loading) return;
 
     setError(null); // 清除之前的错误
-    const userMessage: Message = { role: 'user', content: input.trim() };
+    const userMessage: Message = { role: 'user', content: input.trim(), model: selectedModel };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
