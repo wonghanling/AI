@@ -155,6 +155,10 @@ export async function POST(req: NextRequest) {
               content: messageContent.length === 1 ? messageContent[0].text : messageContent,
             },
           ],
+          // 对于图片生成模型，需要指定 modalities
+          ...(model.includes('nano-banana') && {
+            modalities: ['image', 'text'],
+          }),
         });
 
         // 解析响应内容
