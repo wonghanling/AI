@@ -178,7 +178,7 @@ function ProImageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50">
       {/* 顶部导航栏 */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -192,7 +192,7 @@ function ProImageContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <Link href="/chat" className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              <Link href="/chat" className="text-xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
                 BoLuoing AI
               </Link>
               <span className="hidden sm:inline text-sm text-gray-500">专业图片生成</span>
@@ -205,7 +205,7 @@ function ProImageContent() {
               >
                 Nano Banana
               </Link>
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -233,7 +233,7 @@ function ProImageContent() {
                         onClick={() => setSelectedModel(modelKey)}
                         className={`w-full text-left p-3 rounded-lg transition-all ${
                           selectedModel === modelKey
-                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
+                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-md'
                             : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
                         }`}
                       >
@@ -241,7 +241,7 @@ function ProImageContent() {
                         <div className={`text-xs mt-1 ${selectedModel === modelKey ? 'text-white/80' : 'text-gray-500'}`}>
                           {model.description}
                         </div>
-                        <div className={`text-sm mt-1 font-medium ${selectedModel === modelKey ? 'text-white' : 'text-purple-600'}`}>
+                        <div className={`text-sm mt-1 font-medium ${selectedModel === modelKey ? 'text-white' : 'text-yellow-600'}`}>
                           {model.credits} 积分/张
                         </div>
                       </button>
@@ -260,7 +260,7 @@ function ProImageContent() {
                   <select
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   >
                     {currentModel.aspectRatios.map((ratio) => (
                       <option key={ratio} value={ratio}>
@@ -282,7 +282,7 @@ function ProImageContent() {
                         onClick={() => setImageCount(count.value)}
                         className={`py-2 rounded-lg font-medium transition-all ${
                           imageCount === count.value
-                            ? 'bg-purple-500 text-white'
+                            ? 'bg-yellow-500 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -293,10 +293,10 @@ function ProImageContent() {
                 </div>
 
                 {/* 积分消耗提示 */}
-                <div className="bg-purple-50 rounded-lg p-3 text-sm">
+                <div className="bg-yellow-50 rounded-lg p-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">本次消耗</span>
-                    <span className="text-purple-600 font-bold text-lg">
+                    <span className="text-yellow-600 font-bold text-lg">
                       {calculateTotalCredits()} 积分
                     </span>
                   </div>
@@ -321,14 +321,14 @@ function ProImageContent() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
-                className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
                 disabled={loading}
               />
 
               <button
                 onClick={handleGenerate}
                 disabled={loading || !prompt.trim() || credits < calculateTotalCredits()}
-                className="w-full mt-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full mt-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -349,7 +349,7 @@ function ProImageContent() {
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-3">
-                积分不足？<Link href="/credits/recharge" className="text-purple-600 hover:underline">立即充值</Link>
+                积分不足？<Link href="/credits/recharge" className="text-yellow-600 hover:underline">立即充值</Link>
               </p>
             </div>
 
