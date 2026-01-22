@@ -327,7 +327,7 @@ function ImageGenerationContent() {
               onClick={() => setSelectedModel('nano-banana')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                 selectedModel === 'nano-banana'
-                  ? 'bg-yellow-50 text-yellow-600'
+                  ? 'bg-[#F5C518] text-black font-semibold'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -341,7 +341,7 @@ function ImageGenerationContent() {
               onClick={() => setSelectedModel('nano-banana-pro')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                 selectedModel === 'nano-banana-pro'
-                  ? 'bg-yellow-50 text-yellow-600'
+                  ? 'bg-[#F5C518] text-black font-semibold'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -354,10 +354,10 @@ function ImageGenerationContent() {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg p-3 text-center">
-            <div className="text-xs mb-1">剩余积分</div>
+          <div className="bg-[#F5C518] text-black rounded-lg p-3 text-center">
+            <div className="text-xs mb-1 font-semibold">剩余积分</div>
             <div className="text-2xl font-bold">{credits}</div>
-            <Link href="/credits/recharge" className="mt-2 text-xs underline hover:no-underline inline-block">
+            <Link href="/credits/recharge" className="mt-2 text-xs underline hover:no-underline inline-block font-semibold">
               充值
             </Link>
           </div>
@@ -378,7 +378,7 @@ function ImageGenerationContent() {
               </svg>
             </button>
             <h1 className="text-lg font-bold">{currentModel.displayName}</h1>
-            <div className="text-sm font-medium text-yellow-600">{credits} 积分</div>
+            <div className="text-sm font-medium text-gray-900">{credits} 积分</div>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-8 mb-6">
@@ -415,7 +415,7 @@ function ImageGenerationContent() {
                   </button>
                 </div>
               ) : (
-                <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-yellow-400 transition-colors block">
+                <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[#F5C518] transition-colors block">
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
@@ -442,7 +442,7 @@ function ImageGenerationContent() {
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={loading}
                 placeholder="描述您想要生成的图片..."
-                className="w-full h-24 px-3 md:px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none text-sm md:text-base"
+                className="w-full h-24 px-3 md:px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none text-sm md:text-base"
                 maxLength={500}
               />
               <div className="flex justify-between items-center mt-2">
@@ -466,7 +466,7 @@ function ImageGenerationContent() {
                 value={aspectRatio}
                 onChange={(e) => setAspectRatio(e.target.value)}
                 disabled={loading}
-                className="w-full px-3 md:px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm md:text-base"
+                className="w-full px-3 md:px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5C518] text-sm md:text-base"
               >
                 {currentModel.aspectRatios.map((ratio) => (
                   <option key={ratio} value={ratio}>
@@ -485,7 +485,7 @@ function ImageGenerationContent() {
                 value={resolution}
                 onChange={(e) => setResolution(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5C518] text-sm"
               >
                 {Object.entries(currentModel.resolutions).map(([key, res]) => (
                   <option key={key} value={key}>
@@ -504,7 +504,7 @@ function ImageGenerationContent() {
                 value={imageCount}
                 onChange={(e) => setImageCount(parseInt(e.target.value))}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5C518] text-sm"
               >
                 {IMAGE_COUNTS.map((count) => (
                   <option key={count.value} value={count.value}>
@@ -515,12 +515,12 @@ function ImageGenerationContent() {
             </div>
 
             {/* 重要提示 */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <div className="text-sm text-yellow-800">
+                <div className="text-sm text-gray-800">
                   <div className="font-semibold mb-1">重要提示</div>
                   <ul className="space-y-1 text-xs">
                     <li>• 积分用于图片生成等算力服务</li>
@@ -536,7 +536,7 @@ function ImageGenerationContent() {
             <button
               onClick={handleGenerate}
               disabled={loading || !prompt.trim() || cooldownSeconds > 0 || credits < calculateTotalCredits()}
-              className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-[#F5C518] hover:bg-[#E6B800] text-black font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -578,15 +578,15 @@ function ImageGenerationContent() {
                 <p className="text-xs text-gray-400">简单一步开始创作</p>
                 <div className="mt-6 space-y-2 text-left w-full max-w-xs">
                   <div className="flex items-start gap-2 text-xs text-gray-600">
-                    <span className="text-yellow-600 font-semibold">1</span>
+                    <span className="text-gray-900 font-semibold">1</span>
                     <span>输入图片描述（Prompt）</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs text-gray-600">
-                    <span className="text-yellow-600 font-semibold">2</span>
+                    <span className="text-gray-900 font-semibold">2</span>
                     <span>选择宽高比和分辨率</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs text-gray-600">
-                    <span className="text-yellow-600 font-semibold">3</span>
+                    <span className="text-gray-900 font-semibold">3</span>
                     <span>点击"创建图片"按钮</span>
                   </div>
                 </div>
@@ -607,7 +607,7 @@ function ImageGenerationContent() {
                         <a
                           href={image.url}
                           download
-                          className="text-xs text-yellow-600 hover:text-yellow-700 font-medium"
+                          className="text-xs text-gray-900 hover:text-black font-medium"
                         >
                           下载
                         </a>

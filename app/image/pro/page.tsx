@@ -192,7 +192,7 @@ function ProImageContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <Link href="/chat" className="text-xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+              <Link href="/chat" className="text-xl font-bold text-gray-900">
                 BoLuoing AI
               </Link>
               <span className="hidden sm:inline text-sm text-gray-500">专业图片生成</span>
@@ -205,7 +205,7 @@ function ProImageContent() {
               >
                 Nano Banana
               </Link>
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg">
+              <div className="flex items-center gap-2 px-4 py-2 bg-[#F5C518] text-black rounded-lg font-semibold">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -233,15 +233,15 @@ function ProImageContent() {
                         onClick={() => setSelectedModel(modelKey)}
                         className={`w-full text-left p-3 rounded-lg transition-all ${
                           selectedModel === modelKey
-                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-md'
+                            ? 'bg-[#F5C518] text-black shadow-md'
                             : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
                         }`}
                       >
                         <div className="font-semibold">{model.displayName}</div>
-                        <div className={`text-xs mt-1 ${selectedModel === modelKey ? 'text-white/80' : 'text-gray-500'}`}>
+                        <div className={`text-xs mt-1 ${selectedModel === modelKey ? 'text-black/70' : 'text-gray-500'}`}>
                           {model.description}
                         </div>
-                        <div className={`text-sm mt-1 font-medium ${selectedModel === modelKey ? 'text-white' : 'text-yellow-600'}`}>
+                        <div className={`text-sm mt-1 font-medium ${selectedModel === modelKey ? 'text-black' : 'text-gray-600'}`}>
                           {model.credits} 积分/张
                         </div>
                       </button>
@@ -260,7 +260,7 @@ function ProImageContent() {
                   <select
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F5C518] focus:border-transparent"
                   >
                     {currentModel.aspectRatios.map((ratio) => (
                       <option key={ratio} value={ratio}>
@@ -282,7 +282,7 @@ function ProImageContent() {
                         onClick={() => setImageCount(count.value)}
                         className={`py-2 rounded-lg font-medium transition-all ${
                           imageCount === count.value
-                            ? 'bg-yellow-500 text-white'
+                            ? 'bg-[#F5C518] text-black'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -293,10 +293,10 @@ function ProImageContent() {
                 </div>
 
                 {/* 积分消耗提示 */}
-                <div className="bg-yellow-50 rounded-lg p-3 text-sm">
+                <div className="bg-gray-50 rounded-lg p-3 text-sm border border-gray-200">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">本次消耗</span>
-                    <span className="text-yellow-600 font-bold text-lg">
+                    <span className="text-gray-900 font-bold text-lg">
                       {calculateTotalCredits()} 积分
                     </span>
                   </div>
@@ -321,14 +321,14 @@ function ProImageContent() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
-                className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
                 disabled={loading}
               />
 
               <button
                 onClick={handleGenerate}
                 disabled={loading || !prompt.trim() || credits < calculateTotalCredits()}
-                className="w-full mt-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full mt-4 bg-[#F5C518] hover:bg-[#E6B800] text-black font-bold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -349,7 +349,7 @@ function ProImageContent() {
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-3">
-                积分不足？<Link href="/credits/recharge" className="text-yellow-600 hover:underline">立即充值</Link>
+                积分不足？<Link href="/credits/recharge" className="text-[#F5C518] hover:underline font-semibold">立即充值</Link>
               </p>
             </div>
 
