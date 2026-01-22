@@ -24,9 +24,9 @@ const MODELS = {
     isPro: true,
     aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
     resolutions: {
-      '1K': { label: '1K', size: 1024, credits: 9 },
-      '2K': { label: '2K', size: 2048, credits: 15 },
-      '4K': { label: '4K', size: 4096, credits: 25 },
+      '1K': { label: '1K', size: 1024, credits: 15 },
+      '2K': { label: '2K', size: 2048, credits: 20 },
+      '4K': { label: '4K', size: 4096, credits: 40 },
     }
   }
 };
