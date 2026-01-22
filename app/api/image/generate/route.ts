@@ -161,13 +161,19 @@ export async function POST(req: NextRequest) {
           }),
         });
 
+        console.log('=== OpenRouter 完整响应 ===');
+        console.log('完整 Response 对象:', JSON.stringify(response, null, 2));
+        console.log('Choices 数组:', response.choices);
+        console.log('Choices 长度:', response.choices?.length);
+        console.log('第一个 Choice:', response.choices?.[0]);
+        console.log('Message 对象:', response.choices?.[0]?.message);
+
         // 解析响应内容
         const messageResponse = response.choices?.[0]?.message?.content;
 
-        console.log('=== OpenRouter 完整响应 ===');
-        console.log('Response:', JSON.stringify(response, null, 2));
         console.log('Message Content:', messageResponse);
         console.log('Content Type:', typeof messageResponse);
+        console.log('Content 是否为空:', !messageResponse);
 
         if (!messageResponse) {
           throw new Error('未能生成图片：响应内容为空');
