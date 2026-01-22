@@ -231,7 +231,8 @@ export async function POST(req: NextRequest) {
           }
 
           if (!imageUrl) {
-            console.error('无法解析图片 URL，内容:', content);
+            console.error('无法解析图片 URL');
+            console.error('Message 对象:', JSON.stringify(message, null, 2));
             throw new Error('无法解析图片 URL');
           }
 
