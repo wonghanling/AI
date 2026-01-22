@@ -98,13 +98,13 @@ function ImageGenerationContent() {
     const fetchCredits = async () => {
       const supabase = getSupabaseClient();
       if (!supabase) {
-        setCredits(100); // 模拟积分
+        setCredits(0); // 未登录积分为0
         return;
       }
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setCredits(100); // 未登录使用模拟积分
+        setCredits(0); // 未登录积分为0
         return;
       }
 
