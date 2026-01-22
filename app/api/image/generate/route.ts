@@ -186,27 +186,48 @@ export async function POST(req: NextRequest) {
           const data = await response.json();
           console.log('响应:', JSON.stringify(data, null, 2));
 
-          const content = data.choices?.[0]?.message?.content;
-          console.log('内容:', content);
-          console.log('内容类型:', typeof content);
+          const message = data.choices?.[0]?.message;
+          console.log('Message 对象:', message);
 
-          if (!content) {
-            throw new Error('响应内容为空');
+          if (!message) {
+            throw new Error('响应中没有 message');
           }
 
-          // 解析图片 URL
-          if (typeof content === 'string') {
-            if (content.startsWith('data:image/')) {
-              imageUrl = content;
-            } else if (content.startsWith('http')) {
-              imageUrl = content;
-            } else if (/^[A-Za-z0-9+/=]{100,}$/.test(content.trim())) {
-              imageUrl = `data:image/png;base64,${content.trim()}`;
-              console.log('检测到纯 base64，已添加前缀');
+          // 关键：图片在 message.images 数组中，不是在 content 里
+          if (message.images && Array.isArray(message.images) && message.images.length > 0) {
+            console.log('找到 images 数组，长度:', message.images.length);
+            const firstImage = message.images[0];
+            console.log('第一张图片对象:', firstImage);
+
+            if (firstImage.image_url && firstImage.image_url.url) {
+              imageUrl = firstImage.image_url.url;
+              console.log('从 images 数组提取图片 URL:', imageUrl.substring(0, 100));
             } else {
-              const match = content.match(/https?:\/\/[^\s)]+/);
-              if (match) imageUrl = match[0];
+              throw new Error('images 数组中没有有效的 image_url');
             }
+          }
+          // 备用：尝试从 content 中提取
+          else if (message.content) {
+            console.log('未找到 images 数组，尝试从 content 提取');
+            const content = message.content;
+            console.log('内容:', content);
+            console.log('内容类型:', typeof content);
+
+            if (typeof content === 'string') {
+              if (content.startsWith('data:image/')) {
+                imageUrl = content;
+              } else if (content.startsWith('http')) {
+                imageUrl = content;
+              } else if (/^[A-Za-z0-9+/=]{100,}$/.test(content.trim())) {
+                imageUrl = `data:image/png;base64,${content.trim()}`;
+                console.log('检测到纯 base64，已添加前缀');
+              } else {
+                const match = content.match(/https?:\/\/[^\s)]+/);
+                if (match) imageUrl = match[0];
+              }
+            }
+          } else {
+            throw new Error('响应中既没有 images 也没有 content');
           }
 
           if (!imageUrl) {
