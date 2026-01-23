@@ -15,12 +15,12 @@ const YUNWU_API_KEY = process.env.YUNWU_API_KEY!;
 const IMAGE_MODELS: Record<string, {
   yunwuModel: string;
   cost: number;
-  apiType: 'chat' | 'midjourney'; // 区分不同的 API 类型
+  apiType: 'chat' | 'midjourney' | 'replicate'; // 区分不同的 API 类型
 }> = {
   'stability-ai/sdxl': {
     yunwuModel: 'stability-ai/sdxl',
     cost: 3,
-    apiType: 'chat',
+    apiType: 'replicate', // 使用 Replicate 异步接口
   },
   'mj_imagine': {
     yunwuModel: 'midjourney',
@@ -171,6 +171,75 @@ export async function POST(req: NextRequest) {
                 break;
               } else if (statusData.status === 'FAILURE') {
                 throw new Error('图片生成失败');
+              }
+            }
+
+            attempts++;
+          }
+
+          if (!imageUrl) {
+            throw new Error('图片生成超时，请稍后重试');
+          }
+
+        } else if (modelConfig.apiType === 'replicate') {
+          // Replicate 异步接口（用于 SDXL 等模型）
+          const response = await fetch(`${YUNWU_BASE_URL}/replicate/v1/predictions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${YUNWU_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              version: modelConfig.yunwuModel,
+              input: {
+                prompt: prompt,
+                width: 1024,
+                height: 1024,
+                num_outputs: 1,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Replicate API 错误:', response.status, errorText);
+            throw new Error(`API 错误: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log('Replicate 响应:', JSON.stringify(data, null, 2));
+
+          const predictionId = data.id;
+          console.log('预测 ID:', predictionId);
+
+          // 轮询获取结果（最多等待 60 秒）
+          let attempts = 0;
+          const maxAttempts = 30; // 30 次 * 2 秒 = 60 秒
+
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 等待 2 秒
+
+            const statusResponse = await fetch(`${YUNWU_BASE_URL}/replicate/v1/predictions/${predictionId}`, {
+              headers: {
+                'Authorization': `Bearer ${YUNWU_API_KEY}`,
+              },
+            });
+
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              console.log(`轮询 ${attempts + 1}/${maxAttempts}:`, statusData.status);
+
+              if (statusData.status === 'succeeded' && statusData.output) {
+                // output 可能是数组或字符串
+                if (Array.isArray(statusData.output) && statusData.output.length > 0) {
+                  imageUrl = statusData.output[0];
+                } else if (typeof statusData.output === 'string') {
+                  imageUrl = statusData.output;
+                }
+                console.log('成功获取图片:', imageUrl);
+                break;
+              } else if (statusData.status === 'failed') {
+                throw new Error(statusData.error || '图片生成失败');
               }
             }
 
