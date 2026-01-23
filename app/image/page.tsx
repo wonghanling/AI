@@ -142,7 +142,7 @@ function ImageGenerationContent() {
       }
 
       try {
-        const response = await fetch('/api/image/history?limit=50', {
+        const response = await fetch('/api/image/history?limit=50&source=nano-banana', {
           headers: {
             'Authorization': `Bearer ${session.access_token}`
           }

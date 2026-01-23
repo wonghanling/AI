@@ -123,7 +123,7 @@ function ProImageContent() {
       }
 
       try {
-        const response = await fetch('/api/image/history?limit=50', {
+        const response = await fetch('/api/image/history?limit=50&source=pro', {
           headers: {
             'Authorization': `Bearer ${session.access_token}`
           }

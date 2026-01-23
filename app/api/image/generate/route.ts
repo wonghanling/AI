@@ -326,6 +326,7 @@ export async function POST(req: NextRequest) {
           size: `${resolution} ${aspectRatio}`,
           quality: quality,
           cost: creditsPerImage,
+          api_source: 'nano-banana', // 标记来源
           date: new Date().toISOString().split('T')[0],
         })
         .select()

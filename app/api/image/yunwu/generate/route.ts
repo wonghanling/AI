@@ -378,6 +378,7 @@ export async function POST(req: NextRequest) {
           size: aspectRatio,
           cost_credits: creditsPerImage,
           status: 'completed',
+          api_source: 'pro', // 标记来源为专业版
           created_at: new Date().toISOString(),
         })
         .select()

@@ -26,12 +26,20 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const apiSource = searchParams.get('source'); // 新增：按来源筛选
 
     // 3. 查询图片生成历史
-    const { data: images, error: queryError, count } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('image_generations')
       .select('*', { count: 'exact' })
-      .eq('user_id', user.id)
+      .eq('user_id', user.id);
+
+    // 如果指定了来源，则筛选
+    if (apiSource) {
+      query = query.eq('api_source', apiSource);
+    }
+
+    const { data: images, error: queryError, count } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
