@@ -189,11 +189,6 @@ function ImageGenerationContent() {
       return;
     }
 
-    if (prompt.length > 500) {
-      setError('描述不能超过 500 字');
-      return;
-    }
-
     if (cooldownSeconds > 0) {
       setError(`请等待 ${cooldownSeconds} 秒后再生成`);
       return;
@@ -443,12 +438,8 @@ function ImageGenerationContent() {
                 disabled={loading}
                 placeholder="描述您想要生成的图片..."
                 className="w-full h-24 px-3 md:px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none text-sm md:text-base"
-                maxLength={500}
               />
-              <div className="flex justify-between items-center mt-2">
-                <span className={`text-xs ${prompt.length > 450 ? 'text-red-500' : 'text-gray-500'}`}>
-                  {prompt.length}/500
-                </span>
+              <div className="flex justify-end items-center mt-2">
                 {cooldownSeconds > 0 && (
                   <span className="text-xs text-orange-500 font-medium">
                     冷却中: {cooldownSeconds}秒
