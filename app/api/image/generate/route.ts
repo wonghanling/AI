@@ -324,10 +324,10 @@ export async function POST(req: NextRequest) {
           prompt: prompt,
           image_url: imageUrl,
           size: `${resolution} ${aspectRatio}`,
-          quality: quality,
-          cost: creditsPerImage,
+          cost_credits: creditsPerImage,
+          status: 'completed',
           api_source: 'nano-banana', // 标记来源
-          date: new Date().toISOString().split('T')[0],
+          created_at: new Date().toISOString(),
         })
         .select()
         .single();
