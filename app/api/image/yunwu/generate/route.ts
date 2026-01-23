@@ -190,12 +190,9 @@ export async function POST(req: NextRequest) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              version: modelConfig.yunwuModel,
+              model: modelConfig.yunwuModel,
               input: {
                 prompt: prompt,
-                width: 1024,
-                height: 1024,
-                num_outputs: 1,
               },
             }),
           });
