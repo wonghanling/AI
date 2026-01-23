@@ -8,30 +8,39 @@ const supabaseAdmin = createClient(
 );
 
 // 云雾 API 配置
-const YUNWU_API_URL = 'https://api.yunwu.zeabur.app/v1/chat/completions';
+const YUNWU_BASE_URL = 'https://allapi.store';
 const YUNWU_API_KEY = process.env.YUNWU_API_KEY!;
 
 // 模型配置
-const IMAGE_MODELS: Record<string, { yunwuModel: string; cost: number }> = {
+const IMAGE_MODELS: Record<string, {
+  yunwuModel: string;
+  cost: number;
+  apiType: 'chat' | 'midjourney'; // 区分不同的 API 类型
+}> = {
   'stability-ai/sdxl': {
     yunwuModel: 'stability-ai/sdxl',
     cost: 3,
+    apiType: 'chat',
   },
   'mj_imagine': {
-    yunwuModel: 'mj_imagine',
+    yunwuModel: 'midjourney',
     cost: 6,
+    apiType: 'midjourney',
   },
   'flux.1.1-pro': {
     yunwuModel: 'flux.1.1-pro',
     cost: 10,
+    apiType: 'chat',
   },
   'flux-pro': {
     yunwuModel: 'flux-pro',
     cost: 6,
+    apiType: 'chat',
   },
   'flux-schnell': {
     yunwuModel: 'flux-schnell',
     cost: 3,
+    apiType: 'chat',
   },
 };
 
@@ -113,73 +122,142 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < count; i++) {
         console.log('=== 云雾 API 调用 ===');
         console.log('模型:', modelConfig.yunwuModel);
+        console.log('API 类型:', modelConfig.apiType);
         console.log('Prompt:', prompt);
 
-        // 构建提示词（如果有宽高比要求，添加到提示词中）
-        let fullPrompt = prompt;
-        if (aspectRatio && aspectRatio !== '1:1') {
-          fullPrompt = `${prompt}, aspect ratio ${aspectRatio}`;
-        }
-
-        const response = await fetch(YUNWU_API_URL, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${YUNWU_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: modelConfig.yunwuModel,
-            messages: [
-              {
-                role: 'user',
-                content: fullPrompt,
-              },
-            ],
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('云雾 API 错误:', response.status, errorText);
-          throw new Error(`API 错误: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('响应:', JSON.stringify(data, null, 2));
-
-        const messageContent = data.choices?.[0]?.message?.content;
-
-        if (!messageContent) {
-          throw new Error('未能生成图片');
-        }
-
-        // 解析图片 URL（格式：![image](url)）
         let imageUrl = '';
-        if (typeof messageContent === 'string') {
-          // 尝试匹配 Markdown 格式的图片链接
-          const markdownMatch = messageContent.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/);
-          if (markdownMatch) {
-            imageUrl = markdownMatch[1];
-          } else if (messageContent.startsWith('http://') || messageContent.startsWith('https://')) {
-            imageUrl = messageContent;
-          } else if (messageContent.startsWith('data:image/')) {
-            imageUrl = messageContent;
-          } else {
-            // 尝试直接提取 URL
-            const urlMatch = messageContent.match(/https?:\/\/[^\s)]+/);
-            if (urlMatch) {
-              imageUrl = urlMatch[0];
+
+        // 根据 API 类型选择不同的调用方式
+        if (modelConfig.apiType === 'midjourney') {
+          // Midjourney 专用接口
+          const response = await fetch(`${YUNWU_BASE_URL}/mj/submit/imagine`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${YUNWU_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              botType: 'MID_JOURNEY',
+              prompt: prompt,
+              base64Array: [],
+              notifyHook: '',
+              state: '',
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Midjourney API 错误:', response.status, errorText);
+            throw new Error(`API 错误: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log('Midjourney 响应:', JSON.stringify(data, null, 2));
+
+          if (data.code !== 1) {
+            throw new Error(data.description || '生成失败');
+          }
+
+          const taskId = data.result;
+          console.log('任务 ID:', taskId);
+
+          // 轮询获取结果（最多等待 60 秒）
+          let attempts = 0;
+          const maxAttempts = 30; // 30 次 * 2 秒 = 60 秒
+
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 等待 2 秒
+
+            const statusResponse = await fetch(`${YUNWU_BASE_URL}/mj/task/${taskId}/fetch`, {
+              headers: {
+                'Authorization': `Bearer ${YUNWU_API_KEY}`,
+              },
+            });
+
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              console.log(`轮询 ${attempts + 1}/${maxAttempts}:`, statusData.status);
+
+              if (statusData.status === 'SUCCESS' && statusData.imageUrl) {
+                imageUrl = statusData.imageUrl;
+                console.log('成功获取图片:', imageUrl);
+                break;
+              } else if (statusData.status === 'FAILURE') {
+                throw new Error('图片生成失败');
+              }
+            }
+
+            attempts++;
+          }
+
+          if (!imageUrl) {
+            throw new Error('图片生成超时，请稍后重试');
+          }
+
+        } else {
+          // 其他模型使用 chat completions 接口
+          const fullPrompt = aspectRatio && aspectRatio !== '1:1'
+            ? `${prompt}, aspect ratio ${aspectRatio}`
+            : prompt;
+
+          const response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${YUNWU_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: modelConfig.yunwuModel,
+              messages: [
+                {
+                  role: 'user',
+                  content: fullPrompt,
+                },
+              ],
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('云雾 API 错误:', response.status, errorText);
+            throw new Error(`API 错误: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log('响应:', JSON.stringify(data, null, 2));
+
+          const messageContent = data.choices?.[0]?.message?.content;
+
+          if (!messageContent) {
+            throw new Error('未能生成图片');
+          }
+
+          // 解析图片 URL
+          if (typeof messageContent === 'string') {
+            const markdownMatch = messageContent.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/);
+            if (markdownMatch) {
+              imageUrl = markdownMatch[1];
+            } else if (messageContent.startsWith('http://') || messageContent.startsWith('https://')) {
+              imageUrl = messageContent;
+            } else if (messageContent.startsWith('data:image/')) {
+              imageUrl = messageContent;
+            } else {
+              const urlMatch = messageContent.match(/https?:\/\/[^\s)]+/);
+              if (urlMatch) {
+                imageUrl = urlMatch[0];
+              }
             }
           }
+
+          if (!imageUrl) {
+            console.error('无法解析图片 URL');
+            console.error('响应内容:', messageContent);
+            throw new Error('无法解析图片 URL');
+          }
+
+          console.log('成功提取图片:', imageUrl.substring(0, 100));
         }
 
-        if (!imageUrl) {
-          console.error('无法解析图片 URL');
-          console.error('响应内容:', messageContent);
-          throw new Error('无法解析图片 URL');
-        }
-
-        console.log('成功提取图片:', imageUrl.substring(0, 100));
         generatedImages.push(imageUrl);
       }
     } catch (error: any) {
