@@ -510,9 +510,13 @@ function ProImageContent() {
                       <img
                         src={image.url}
                         alt={image.prompt}
-                        className="w-full h-auto"
+                        className="w-full h-64 object-cover"
                       />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                        {/* 显示提示词（限制长度） */}
+                        <p className="text-white text-sm text-center line-clamp-3 mb-2">
+                          {image.prompt}
+                        </p>
                         <a
                           href={image.url}
                           download

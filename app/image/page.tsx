@@ -595,11 +595,13 @@ function ImageGenerationContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {generatedImages.map((image) => (
                   <div key={image.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                    <img
-                      src={image.url}
-                      alt={image.prompt}
-                      className="w-full aspect-square object-cover"
-                    />
+                    <div className="relative w-full h-64 bg-gray-100">
+                      <img
+                        src={image.url}
+                        alt={image.prompt}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <div className="p-3">
                       <p className="text-xs text-gray-600 mb-2 line-clamp-2">{image.prompt}</p>
                       <div className="flex items-center justify-between">
