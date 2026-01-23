@@ -109,20 +109,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 免费用户额外检查每日配额
-    if (userType === 'free') {
-      const today = new Date().toISOString().split('T')[0];
-      const { count: dailyCount } = await supabaseAdmin
-        .from('image_generations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('date', today);
-
-      if ((dailyCount || 0) >= 5) {
-        return NextResponse.json({ error: '今日免费配额已用完，请升级到专业版' }, { status: 403 });
-      }
-    }
-
     // 6. 调用 OpenRouter 生成图片
     const generatedImages: string[] = [];
     try {

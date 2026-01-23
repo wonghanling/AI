@@ -100,20 +100,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 免费用户额外检查每日配额
-    if (userType === 'free') {
-      const today = new Date().toISOString().split('T')[0];
-      const { count: dailyCount } = await supabaseAdmin
-        .from('image_generations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', `${today}T00:00:00Z`)
-        .lte('created_at', `${today}T23:59:59Z`);
-
-      if ((dailyCount || 0) >= 5) {
-        return NextResponse.json({ error: '今日免费配额已用完，请升级到专业版' }, { status: 403 });
-      }
-    }
+    // 图片生成没有免费配额限制，只按积分扣费
 
     // 6. 调用云雾 API 生成图片
     const generatedImages: string[] = [];
