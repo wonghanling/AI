@@ -299,7 +299,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 7. 保存生成记录（每张图片一条记录）
+    // 7. 检查用户历史记录数量，超过 50 张则删除最旧的
+    const { count: historyCount } = await supabaseAdmin
+      .from('image_generations')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    const MAX_HISTORY = 50;
+    if (historyCount && historyCount >= MAX_HISTORY) {
+      // 删除最旧的记录，为新记录腾出空间
+      const deleteCount = historyCount - MAX_HISTORY + generatedImages.length;
+      const { data: oldestRecords } = await supabaseAdmin
+        .from('image_generations')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(deleteCount);
+
+      if (oldestRecords && oldestRecords.length > 0) {
+        const idsToDelete = oldestRecords.map(r => r.id);
+        await supabaseAdmin
+          .from('image_generations')
+          .delete()
+          .in('id', idsToDelete);
+
+        console.log(`已删除用户 ${user.id} 的 ${idsToDelete.length} 条旧记录`);
+      }
+    }
+
+    // 8. 保存生成记录（每张图片一条记录）
     const imageRecords: any[] = [];
     for (const imageUrl of generatedImages) {
       const { data: imageRecord, error: insertError } = await supabaseAdmin
@@ -324,7 +352,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 8. 扣除积分
+    // 9. 扣除积分
     const newCredits = Math.max(0, credits - totalCredits);
     await supabaseAdmin
       .from('users')

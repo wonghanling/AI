@@ -108,6 +108,43 @@ function ProImageContent() {
     fetchCredits();
   }, []);
 
+  // 获取历史图片记录
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/image/history?limit=50', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const formattedImages = data.images.map((img: any) => ({
+            id: img.id,
+            url: img.image_url,
+            prompt: img.prompt,
+          }));
+          setGeneratedImages(formattedImages);
+        }
+      } catch (err) {
+        console.error('获取历史记录失败:', err);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
   // 计算总积分消耗
   const calculateTotalCredits = () => {
     return currentModel.credits * imageCount;
