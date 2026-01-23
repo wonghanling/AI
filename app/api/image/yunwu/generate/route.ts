@@ -15,12 +15,14 @@ const YUNWU_API_KEY = process.env.YUNWU_API_KEY!;
 const IMAGE_MODELS: Record<string, {
   yunwuModel: string;
   cost: number;
-  apiType: 'chat' | 'midjourney' | 'replicate'; // 区分不同的 API 类型
+  apiType: 'chat' | 'midjourney' | 'replicate';
+  requiresImage?: boolean; // 是否需要上传图片
 }> = {
   'stability-ai/sdxl': {
-    yunwuModel: 'stability-ai/sdxl',
+    yunwuModel: 'stability-ai/stable-diffusion-img2img',
     cost: 3,
-    apiType: 'replicate', // 使用 Replicate 异步接口
+    apiType: 'replicate',
+    requiresImage: true, // 图生图需要上传图片
   },
   'mj_imagine': {
     yunwuModel: 'midjourney',
@@ -66,6 +68,7 @@ export async function POST(req: NextRequest) {
       prompt,
       aspectRatio = '1:1',
       count = 1,
+      imageBase64, // 图生图的基础图片（base64）
     } = body;
 
     if (!model || !prompt) {
@@ -76,6 +79,11 @@ export async function POST(req: NextRequest) {
     const modelConfig = IMAGE_MODELS[model];
     if (!modelConfig) {
       return NextResponse.json({ error: '无效的模型' }, { status: 400 });
+    }
+
+    // 检查图生图模型是否提供了图片
+    if (modelConfig.requiresImage && !imageBase64) {
+      return NextResponse.json({ error: '该模型需要上传一张图片' }, { status: 400 });
     }
 
     // 4. 计算积分消耗
@@ -183,18 +191,26 @@ export async function POST(req: NextRequest) {
 
         } else if (modelConfig.apiType === 'replicate') {
           // Replicate 异步接口（用于 SDXL 等模型）
+          const requestBody: any = {
+            model: modelConfig.yunwuModel,
+            input: {
+              prompt: prompt,
+            },
+          };
+
+          // 如果是图生图模型，添加图片数据
+          if (modelConfig.requiresImage && imageBase64) {
+            requestBody.input.image = imageBase64;
+            requestBody.input.prompt_strength = 0.8; // 提示词强度（0-1，越高越接近提示词）
+          }
+
           const response = await fetch(`${YUNWU_BASE_URL}/replicate/v1/predictions`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${YUNWU_API_KEY}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              model: modelConfig.yunwuModel,
-              input: {
-                prompt: prompt,
-              },
-            }),
+            body: JSON.stringify(requestBody),
           });
 
           if (!response.ok) {

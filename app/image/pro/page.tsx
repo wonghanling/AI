@@ -66,6 +66,7 @@ function ProImageContent() {
   const [error, setError] = useState('');
   const [credits, setCredits] = useState(0);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null); // 上传的图片 base64
   const [generatedImages, setGeneratedImages] = useState<Array<{
     id: string;
     url: string;
@@ -150,10 +151,51 @@ function ProImageContent() {
     return currentModel.credits * imageCount;
   };
 
+  // 处理图片上传
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+      setError('请上传图片文件');
+      return;
+    }
+
+    // 检查文件大小（最大 5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      setError('图片大小不能超过 5MB');
+      return;
+    }
+
+    // 转换为 base64
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setUploadedImage(base64);
+      setError('');
+    };
+    reader.onerror = () => {
+      setError('图片读取失败');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 清除上传的图片
+  const handleClearImage = () => {
+    setUploadedImage(null);
+  };
+
   // 生成图片
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       setError('请输入图片描述');
+      return;
+    }
+
+    // 检查 SDXL 模型是否上传了图片
+    if (selectedModel === 'sdxl' && !uploadedImage) {
+      setError('该模型需要上传一张图片');
       return;
     }
 
@@ -177,18 +219,25 @@ function ProImageContent() {
         throw new Error('请先登录');
       }
 
+      const requestBody: any = {
+        model: currentModel.name,
+        prompt: prompt.trim(),
+        aspectRatio,
+        count: imageCount,
+      };
+
+      // 如果是 SDXL 模型，添加图片数据
+      if (selectedModel === 'sdxl' && uploadedImage) {
+        requestBody.imageBase64 = uploadedImage;
+      }
+
       const response = await fetch('/api/image/yunwu/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          model: currentModel.name,
-          prompt: prompt.trim(),
-          aspectRatio,
-          count: imageCount,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -206,6 +255,10 @@ function ProImageContent() {
       }
 
       setPrompt('');
+      // 生成成功后清除上传的图片
+      if (selectedModel === 'sdxl') {
+        setUploadedImage(null);
+      }
     } catch (err: any) {
       console.error('生成失败:', err);
       setError(err.message || '生成失败，请重试');
@@ -346,7 +399,9 @@ function ProImageContent() {
           <div className="lg:col-span-2 space-y-6">
             {/* 输入区域 */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-lg font-bold mb-4">图片描述</h2>
+              <h2 className="text-lg font-bold mb-4">
+                {selectedModel === 'sdxl' ? '图片描述（图生图）' : '图片描述'}
+              </h2>
 
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -354,10 +409,65 @@ function ProImageContent() {
                 </div>
               )}
 
+              {/* 图片上传区域（仅 SDXL 模型显示） */}
+              {selectedModel === 'sdxl' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    上传基础图片 <span className="text-red-500">*</span>
+                  </label>
+
+                  {!uploadedImage ? (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#F5C518] transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="image-upload"
+                        disabled={loading}
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">点击上传图片</span>
+                        <span className="text-xs text-gray-400 mt-1">支持 JPG、PNG，最大 5MB</span>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="relative rounded-lg overflow-hidden border border-gray-300">
+                      <img
+                        src={uploadedImage}
+                        alt="上传的图片"
+                        className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                      />
+                      <button
+                        onClick={handleClearImage}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                        disabled={loading}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 提示：上传一张图片，AI 会根据你的描述修改这张图片
+                  </p>
+                </div>
+              )}
+
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
+                placeholder={selectedModel === 'sdxl'
+                  ? "描述你想要如何修改这张图片，例如：把猫咪变成狗狗，保持其他不变..."
+                  : "描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
+                }
                 className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
                 disabled={loading}
               />
