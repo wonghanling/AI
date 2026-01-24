@@ -46,6 +46,14 @@ const MODELS = {
     description: '快速生成，性价比高',
     aspectRatios: ['1:1', '16:9', '9:16'],
   },
+  'doubao': {
+    id: 'doubao',
+    name: 'doubao-seedream-4-5-251128',
+    displayName: '豆包 Seecream',
+    credits: 3,
+    description: '豆包图片生成，性价比高',
+    aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+  },
 };
 
 type ModelKey = keyof typeof MODELS;
@@ -58,7 +66,7 @@ const IMAGE_COUNTS = [
 ];
 
 function ProImageContent() {
-  const [selectedModel, setSelectedModel] = useState<ModelKey>('flux-schnell');
+  const [selectedModel, setSelectedModel] = useState<ModelKey>('doubao');
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [imageCount, setImageCount] = useState(1);

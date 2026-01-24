@@ -44,6 +44,11 @@ const IMAGE_MODELS: Record<string, {
     cost: 3,
     apiType: 'chat',
   },
+  'doubao-seedream-4-5-251128': {
+    yunwuModel: 'doubao-seedream-4-5-251128',
+    cost: 3,
+    apiType: 'chat',
+  },
 };
 
 export async function POST(req: NextRequest) {
