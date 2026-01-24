@@ -15,7 +15,7 @@ const YUNWU_API_KEY = process.env.YUNWU_API_KEY!;
 const IMAGE_MODELS: Record<string, {
   yunwuModel: string;
   cost: number;
-  apiType: 'chat' | 'midjourney' | 'replicate';
+  apiType: 'chat' | 'midjourney' | 'replicate' | 'image-generation';
   requiresImage?: boolean; // 是否需要上传图片
 }> = {
   'stability-ai/sdxl': {
@@ -47,7 +47,8 @@ const IMAGE_MODELS: Record<string, {
   'doubao-seedream-4-5-251128': {
     yunwuModel: 'doubao-seedream-4-5-251128',
     cost: 3,
-    apiType: 'chat',
+    apiType: 'image-generation',
+    requiresImage: true, // 支持图生图
   },
 };
 
@@ -267,6 +268,59 @@ export async function POST(req: NextRequest) {
           if (!imageUrl) {
             throw new Error('图片生成超时，请稍后重试');
           }
+
+        } else if (modelConfig.apiType === 'image-generation') {
+          // 豆包等模型使用 image generations 接口
+          const requestBody: any = {
+            model: modelConfig.yunwuModel,
+            prompt: prompt,
+            n: 1,
+            size: aspectRatio || '1:1',
+          };
+
+          // 如果是图生图模型，添加图片数据
+          if (modelConfig.requiresImage && imageBase64) {
+            requestBody.image = imageBase64;
+          }
+
+          console.log('=== Image Generation API 调用 ===');
+          console.log('模型:', modelConfig.yunwuModel);
+          console.log('Prompt:', prompt);
+          console.log('包含图片:', !!imageBase64);
+
+          const response = await fetch(`${YUNWU_BASE_URL}/v1/images/generations`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${YUNWU_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Image Generation API 错误:', response.status, errorText);
+            throw new Error(`API 错误: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log('响应:', JSON.stringify(data, null, 2));
+
+          // 标准 OpenAI 格式: data.data[0].url
+          if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+            imageUrl = data.data[0].url || data.data[0].b64_json;
+            if (data.data[0].b64_json && !imageUrl) {
+              imageUrl = `data:image/png;base64,${data.data[0].b64_json}`;
+            }
+          }
+
+          if (!imageUrl) {
+            console.error('无法解析图片 URL');
+            console.error('响应内容:', JSON.stringify(data, null, 2));
+            throw new Error('无法解析图片 URL');
+          }
+
+          console.log('成功提取图片:', imageUrl.substring(0, 100));
 
         } else {
           // 其他模型使用 chat completions 接口

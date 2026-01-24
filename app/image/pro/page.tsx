@@ -160,6 +160,13 @@ function ProImageContent() {
     fetchHistory();
   }, []);
 
+  // 监听模型切换，清除上传的图片（如果切换到不需要图片的模型）
+  useEffect(() => {
+    if (selectedModel !== 'sdxl' && selectedModel !== 'doubao') {
+      setUploadedImage(null);
+    }
+  }, [selectedModel]);
+
   // 计算总积分消耗
   const calculateTotalCredits = () => {
     return currentModel.credits * imageCount;
@@ -207,8 +214,8 @@ function ProImageContent() {
       return;
     }
 
-    // 检查 SDXL 模型是否上传了图片
-    if (selectedModel === 'sdxl' && !uploadedImage) {
+    // 检查需要上传图片的模型是否上传了图片
+    if ((selectedModel === 'sdxl' || selectedModel === 'doubao') && !uploadedImage) {
       setError('该模型需要上传一张图片');
       return;
     }
@@ -240,8 +247,8 @@ function ProImageContent() {
         count: imageCount,
       };
 
-      // 如果是 SDXL 模型，添加图片数据
-      if (selectedModel === 'sdxl' && uploadedImage) {
+      // 如果是需要图片的模型，添加图片数据
+      if ((selectedModel === 'sdxl' || selectedModel === 'doubao') && uploadedImage) {
         requestBody.imageBase64 = uploadedImage;
       }
 
@@ -270,7 +277,7 @@ function ProImageContent() {
 
       setPrompt('');
       // 生成成功后清除上传的图片
-      if (selectedModel === 'sdxl') {
+      if (selectedModel === 'sdxl' || selectedModel === 'doubao') {
         setUploadedImage(null);
       }
     } catch (err: any) {
@@ -414,7 +421,7 @@ function ProImageContent() {
             {/* 输入区域 */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h2 className="text-lg font-bold mb-4">
-                {selectedModel === 'sdxl' ? '图片描述（图生图）' : '图片描述'}
+                {(selectedModel === 'sdxl' || selectedModel === 'doubao') ? '图片描述（图生图）' : '图片描述'}
               </h2>
 
               {error && (
@@ -423,8 +430,8 @@ function ProImageContent() {
                 </div>
               )}
 
-              {/* 图片上传区域（仅 SDXL 模型显示） */}
-              {selectedModel === 'sdxl' && (
+              {/* 图片上传区域（SDXL 和豆包模型显示） */}
+              {(selectedModel === 'sdxl' || selectedModel === 'doubao') && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     上传基础图片 <span className="text-red-500">*</span>
@@ -478,7 +485,7 @@ function ProImageContent() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={selectedModel === 'sdxl'
+                placeholder={(selectedModel === 'sdxl' || selectedModel === 'doubao')
                   ? "描述你想要如何修改这张图片，例如：把猫咪变成狗狗，保持其他不变..."
                   : "描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
                 }
