@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 8. 调用 OpenRouter（带降级重试）
+      let usedModelKey = model_key; // 使用的模型 key
       let usedModel = modelConfig.openrouterModel;
       let response;
       let tokensUsed = 0;
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
         const fallbackKey = FALLBACK_MAP[model_key];
         if (fallbackKey) {
           const fallbackConfig = MODEL_MAP[fallbackKey];
+          usedModelKey = fallbackKey; // 更新为降级后的模型 key
           usedModel = fallbackConfig.openrouterModel;
           response = await openrouter.chat.completions.create({
             model: fallbackConfig.openrouterModel,
@@ -176,9 +178,9 @@ export async function POST(req: NextRequest) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({
                 type: 'metadata',
                 data: {
-                  used_model: usedModel,
-                  display_name: modelConfig.displayName,
-                  fallback: usedModel !== modelConfig.openrouterModel,
+                  used_model: usedModelKey,
+                  display_name: MODEL_MAP[usedModelKey].displayName,
+                  fallback: usedModelKey !== model_key,
                 }
               })}\n\n`));
 
@@ -207,7 +209,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
           content: completion.choices[0]?.message?.content || '',
-          used_model: usedModel,
+          used_model: usedModelKey,
           usage: completion.usage,
         });
       }
