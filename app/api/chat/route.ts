@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 8. 调用 OpenRouter（带降级重试）
-      let usedModelKey = model_key; // 使用的模型 key
+      let usedModelKey: ModelKey = model_key; // 使用的模型 key（添加类型注解）
       let usedModel = modelConfig.openrouterModel;
       let response;
       let tokensUsed = 0;
