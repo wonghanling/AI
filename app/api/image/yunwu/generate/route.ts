@@ -16,13 +16,14 @@ const IMAGE_MODELS: Record<string, {
   yunwuModel: string;
   cost: number;
   apiType: 'chat' | 'midjourney' | 'replicate' | 'image-generation';
-  requiresImage?: boolean; // 是否需要上传图片
+  requiresImage?: boolean; // 是否必须上传图片
+  supportsImage?: boolean; // 是否支持上传图片（可选）
 }> = {
   'stability-ai/sdxl': {
     yunwuModel: 'stability-ai/stable-diffusion-img2img',
     cost: 3,
     apiType: 'replicate',
-    requiresImage: true, // 图生图需要上传图片
+    requiresImage: true, // 必须上传图片（图生图）
   },
   'mj_imagine': {
     yunwuModel: 'midjourney',
@@ -48,7 +49,7 @@ const IMAGE_MODELS: Record<string, {
     yunwuModel: 'doubao-seedream-4-5-251128',
     cost: 3,
     apiType: 'image-generation',
-    requiresImage: true, // 支持图生图
+    supportsImage: true, // 支持图片（可选），既可以文生图也可以图生图
   },
 };
 
@@ -278,8 +279,8 @@ export async function POST(req: NextRequest) {
             size: aspectRatio || '1:1',
           };
 
-          // 如果是图生图模型，添加图片数据
-          if (modelConfig.requiresImage && imageBase64) {
+          // 如果提供了图片，添加图片数据（支持图生图）
+          if ((modelConfig.requiresImage || modelConfig.supportsImage) && imageBase64) {
             requestBody.image = imageBase64;
           }
 

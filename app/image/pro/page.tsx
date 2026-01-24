@@ -214,8 +214,8 @@ function ProImageContent() {
       return;
     }
 
-    // 检查需要上传图片的模型是否上传了图片
-    if ((selectedModel === 'sdxl' || selectedModel === 'doubao') && !uploadedImage) {
+    // 检查必须上传图片的模型是否上传了图片（只有 SDXL 必须上传）
+    if (selectedModel === 'sdxl' && !uploadedImage) {
       setError('该模型需要上传一张图片');
       return;
     }
@@ -421,7 +421,13 @@ function ProImageContent() {
             {/* 输入区域 */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h2 className="text-lg font-bold mb-4">
-                {(selectedModel === 'sdxl' || selectedModel === 'doubao') ? '图片描述（图生图）' : '图片描述'}
+                {selectedModel === 'sdxl'
+                  ? '图片描述（图生图）'
+                  : selectedModel === 'doubao' && uploadedImage
+                  ? '图片描述（图生图）'
+                  : selectedModel === 'doubao' && !uploadedImage
+                  ? '图片描述（文生图）'
+                  : '图片描述'}
               </h2>
 
               {error && (
@@ -434,7 +440,8 @@ function ProImageContent() {
               {(selectedModel === 'sdxl' || selectedModel === 'doubao') && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    上传基础图片 <span className="text-red-500">*</span>
+                    上传基础图片 {selectedModel === 'sdxl' && <span className="text-red-500">*</span>}
+                    {selectedModel === 'doubao' && <span className="text-gray-400 text-xs ml-1">（可选，支持文生图和图生图）</span>}
                   </label>
 
                   {!uploadedImage ? (
@@ -477,7 +484,9 @@ function ProImageContent() {
                     </div>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    💡 提示：上传一张图片，AI 会根据你的描述修改这张图片
+                    💡 提示：{selectedModel === 'sdxl'
+                      ? '上传一张图片，AI 会根据你的描述修改这张图片'
+                      : '可选择上传图片进行图生图，或直接输入描述进行文生图'}
                   </p>
                 </div>
               )}
@@ -485,9 +494,14 @@ function ProImageContent() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={(selectedModel === 'sdxl' || selectedModel === 'doubao')
-                  ? "描述你想要如何修改这张图片，例如：把猫咪变成狗狗，保持其他不变..."
-                  : "描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
+                placeholder={
+                  selectedModel === 'sdxl'
+                    ? "描述你想要如何修改这张图片，例如：把猫咪变成狗狗，保持其他不变..."
+                    : selectedModel === 'doubao' && uploadedImage
+                    ? "描述你想要如何修改这张图片，例如：把猫咪变成狗狗，保持其他不变..."
+                    : selectedModel === 'doubao' && !uploadedImage
+                    ? "描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
+                    : "描述你想要生成的图片，例如：一只可爱的猫咪坐在窗台上，阳光洒在它身上..."
                 }
                 className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
                 disabled={loading}
