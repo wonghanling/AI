@@ -308,22 +308,33 @@ export async function POST(req: NextRequest) {
           if (record.image_url) {
             try {
               // 如果是 Supabase Storage 的 URL，提取文件路径并删除
-              if (record.image_url.includes('supabase')) {
+              if (record.image_url.includes('supabase') && record.image_url.includes('/storage/v1/object/public/')) {
                 const urlParts = record.image_url.split('/storage/v1/object/public/');
                 if (urlParts.length > 1) {
-                  const [bucket, ...pathParts] = urlParts[1].split('/');
-                  const filePath = pathParts.join('/');
+                  const pathWithBucket = urlParts[1];
+                  const firstSlashIndex = pathWithBucket.indexOf('/');
 
-                  await supabaseAdmin.storage
-                    .from(bucket)
-                    .remove([filePath]);
+                  if (firstSlashIndex > 0) {
+                    const bucket = pathWithBucket.substring(0, firstSlashIndex);
+                    const filePath = pathWithBucket.substring(firstSlashIndex + 1);
 
-                  console.log(`已删除 Storage 文件: ${bucket}/${filePath}`);
+                    if (bucket && filePath) {
+                      const { error: deleteError } = await supabaseAdmin.storage
+                        .from(bucket)
+                        .remove([filePath]);
+
+                      if (deleteError) {
+                        console.error(`删除 Storage 文件失败 (${bucket}/${filePath}):`, deleteError);
+                      } else {
+                        console.log(`已删除 Storage 文件: ${bucket}/${filePath}`);
+                      }
+                    }
+                  }
                 }
               }
               // 如果是 base64 或外部 URL，不需要删除
             } catch (storageError) {
-              console.error('删除 Storage 文件失败:', storageError);
+              console.error('删除 Storage 文件异常:', storageError);
               // 继续执行，不影响数据库记录删除
             }
           }
