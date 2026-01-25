@@ -397,7 +397,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 7. 检查用户历史记录数量，超过 50 张则删除最旧的（包括 Storage 文件）
+    // 7. 检查用户历史记录数量，达到 50 张则清空所有记录（包括 Storage 文件）
     const { count: historyCount } = await supabaseAdmin
       .from('image_generations')
       .select('*', { count: 'exact', head: true })
@@ -405,18 +405,17 @@ export async function POST(req: NextRequest) {
 
     const MAX_HISTORY = 50;
     if (historyCount && historyCount >= MAX_HISTORY) {
-      // 删除最旧的记录，为新记录腾出空间
-      const deleteCount = historyCount - MAX_HISTORY + generatedImages.length;
-      const { data: oldestRecords } = await supabaseAdmin
+      console.log(`用户 ${user.id} 历史记录已达到 ${historyCount} 条，开始清空所有记录`);
+
+      // 获取所有历史记录（用于删除 Storage 文件）
+      const { data: allRecords } = await supabaseAdmin
         .from('image_generations')
         .select('id, image_url')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(deleteCount);
+        .eq('user_id', user.id);
 
-      if (oldestRecords && oldestRecords.length > 0) {
-        // 删除 Storage 文件
-        for (const record of oldestRecords) {
+      if (allRecords && allRecords.length > 0) {
+        // 删除所有 Storage 文件
+        for (const record of allRecords) {
           if (record.image_url) {
             try {
               // 如果是 Supabase Storage 的 URL，提取文件路径并删除
@@ -452,14 +451,13 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // 删除数据库记录
-        const idsToDelete = oldestRecords.map(r => r.id);
+        // 删除所有数据库记录
         await supabaseAdmin
           .from('image_generations')
           .delete()
-          .in('id', idsToDelete);
+          .eq('user_id', user.id);
 
-        console.log(`已删除用户 ${user.id} 的 ${idsToDelete.length} 条旧记录（包括文件）`);
+        console.log(`已清空用户 ${user.id} 的所有 ${allRecords.length} 条历史记录（包括文件）`);
       }
     }
 
