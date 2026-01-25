@@ -397,7 +397,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 7. 检查用户历史记录数量，超过 50 张则删除最旧的
+    // 7. 检查用户历史记录数量，超过 50 张则删除最旧的（包括 Storage 文件）
     const { count: historyCount } = await supabaseAdmin
       .from('image_generations')
       .select('*', { count: 'exact', head: true })
@@ -409,19 +409,46 @@ export async function POST(req: NextRequest) {
       const deleteCount = historyCount - MAX_HISTORY + generatedImages.length;
       const { data: oldestRecords } = await supabaseAdmin
         .from('image_generations')
-        .select('id')
+        .select('id, image_url')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .limit(deleteCount);
 
       if (oldestRecords && oldestRecords.length > 0) {
+        // 删除 Storage 文件
+        for (const record of oldestRecords) {
+          if (record.image_url) {
+            try {
+              // 如果是 Supabase Storage 的 URL，提取文件路径并删除
+              if (record.image_url.includes('supabase')) {
+                const urlParts = record.image_url.split('/storage/v1/object/public/');
+                if (urlParts.length > 1) {
+                  const [bucket, ...pathParts] = urlParts[1].split('/');
+                  const filePath = pathParts.join('/');
+
+                  await supabaseAdmin.storage
+                    .from(bucket)
+                    .remove([filePath]);
+
+                  console.log(`已删除 Storage 文件: ${bucket}/${filePath}`);
+                }
+              }
+              // 如果是外部 URL（云雾 API 返回的），不需要删除
+            } catch (storageError) {
+              console.error('删除 Storage 文件失败:', storageError);
+              // 继续执行，不影响数据库记录删除
+            }
+          }
+        }
+
+        // 删除数据库记录
         const idsToDelete = oldestRecords.map(r => r.id);
         await supabaseAdmin
           .from('image_generations')
           .delete()
           .in('id', idsToDelete);
 
-        console.log(`已删除用户 ${user.id} 的 ${idsToDelete.length} 条旧记录`);
+        console.log(`已删除用户 ${user.id} 的 ${idsToDelete.length} 条旧记录（包括文件）`);
       }
     }
 
