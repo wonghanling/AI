@@ -72,9 +72,9 @@ const IMAGE_PRICING_INFO = [
 
 // 视频积分定价说明
 const VIDEO_PRICING_INFO = [
-  { model: 'Runway Gen-3', duration: '5-10秒', credits: 50, price: 5.0 },
-  { model: 'Luma Dream Machine', duration: '5秒', credits: 30, price: 3.0 },
-  { model: 'Flux Video', duration: '5秒', credits: 40, price: 4.0 },
+  { model: 'Sora', credits: '3-10' },
+  { model: 'Veo3', credits: '3-10' },
+  { model: 'Grok', credits: '3-10' },
 ];
 
 export default function RechargeCreditsPage() {
@@ -82,7 +82,8 @@ export default function RechargeCreditsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const [currentCredits, setCurrentCredits] = useState(0);
+  const [imageCredits, setImageCredits] = useState(0);
+  const [videoCredits, setVideoCredits] = useState(0);
   const [creditType, setCreditType] = useState<CreditType>('image'); // 积分类型切换
 
   // 根据积分类型选择套餐
@@ -112,7 +113,8 @@ export default function RechargeCreditsPage() {
             });
             if (response.ok) {
               const data = await response.json();
-              setCurrentCredits(data.balance || 0);
+              setImageCredits(data.imageCredits || 0);
+              setVideoCredits(data.videoCredits || 0);
             }
           } catch (err) {
             console.error('获取积分失败:', err);
@@ -199,9 +201,17 @@ export default function RechargeCreditsPage() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">充值积分</h1>
           <p className="text-gray-800">选择适合您的积分套餐</p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full border-2 border-black">
-            <span className="text-sm text-gray-700">当前积分：</span>
-            <span className="text-lg font-bold text-black">{currentCredits}</span>
+          <div className="mt-4 flex justify-center gap-4">
+            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full border-2 border-black">
+              <ImageIcon size={16} className="text-gray-700" />
+              <span className="text-sm text-gray-700">图片积分：</span>
+              <span className="text-lg font-bold text-black">{imageCredits}</span>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full border-2 border-black">
+              <Video size={16} className="text-gray-700" />
+              <span className="text-sm text-gray-700">视频积分：</span>
+              <span className="text-lg font-bold text-black">{videoCredits}</span>
+            </div>
           </div>
         </div>
 
@@ -311,26 +321,40 @@ export default function RechargeCreditsPage() {
               <thead>
                 <tr className="border-b-2 border-gray-300">
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">模型</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">
-                    {creditType === 'image' ? '分辨率' : '时长'}
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">消耗积分</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">约等于</th>
+                  {creditType === 'image' && (
+                    <>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">分辨率</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">消耗积分</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">约等于</th>
+                    </>
+                  )}
+                  {creditType === 'video' && (
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">消耗积分</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {currentPricingInfo.map((item, index) => (
                   <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm text-gray-900 font-medium">{item.model}</td>
-                    <td className="py-3 px-4 text-sm text-gray-700">
-                      {creditType === 'image' ? (item as any).resolution : (item as any).duration}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-right font-bold text-black">
-                      {item.credits} 积分
-                    </td>
-                    <td className="py-3 px-4 text-sm text-right text-gray-700 font-medium">
-                      ¥{item.price.toFixed(1)}
-                    </td>
+                    {creditType === 'image' && (
+                      <>
+                        <td className="py-3 px-4 text-sm text-gray-700">
+                          {(item as any).resolution}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-right font-bold text-black">
+                          {(item as any).credits} 积分
+                        </td>
+                        <td className="py-3 px-4 text-sm text-right text-gray-700 font-medium">
+                          ¥{(item as any).price.toFixed(1)}
+                        </td>
+                      </>
+                    )}
+                    {creditType === 'video' && (
+                      <td className="py-3 px-4 text-sm text-right font-bold text-black">
+                        {(item as any).credits} 积分
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
