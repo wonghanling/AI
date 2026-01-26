@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // 2. 解析请求体
     const body = await req.json();
-    const { plan, amount, credits } = body;
+    const { plan, amount, credits, creditType } = body; // 新增 creditType
 
     if (!plan || !amount) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
         status: 'pending',
         payment_method: 'alipay',
         credits_amount: credits || 0, // 如果是积分充值，记录积分数量
+        credit_type: creditType || 'image', // 新增：记录积分类型（image/video）
       })
       .select()
       .single();

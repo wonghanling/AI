@@ -75,27 +75,41 @@ export async function POST(req: NextRequest) {
       // 根据订单类型处理
       if (orderData.user_id) {
         if (orderData.order_type === 'credits') {
-          // 积分充值：增加用户积分
+          // 积分充值：根据积分类型增加对应的积分
           const creditsToAdd = orderData.credits_amount || 0;
+          const creditType = orderData.credit_type || 'image'; // 默认为图片积分
 
           // 获取当前积分
           const { data: userData } = await supabaseAdmin
             .from('users')
-            .select('credits')
+            .select('image_credits, video_credits')
             .eq('id', orderData.user_id)
             .single();
 
-          const currentCredits = userData?.credits || 0;
+          const currentImageCredits = userData?.image_credits || 0;
+          const currentVideoCredits = userData?.video_credits || 0;
 
-          // 更新积分
-          await supabaseAdmin
-            .from('users')
-            .update({
-              credits: currentCredits + creditsToAdd,
-            })
-            .eq('id', orderData.user_id);
+          // 根据积分类型更新对应的积分
+          if (creditType === 'video') {
+            await supabaseAdmin
+              .from('users')
+              .update({
+                video_credits: currentVideoCredits + creditsToAdd,
+              })
+              .eq('id', orderData.user_id);
 
-          console.log(`User ${orderData.user_id} credits updated: +${creditsToAdd}`);
+            console.log(`User ${orderData.user_id} video_credits updated: +${creditsToAdd}`);
+          } else {
+            // 默认为图片积分
+            await supabaseAdmin
+              .from('users')
+              .update({
+                image_credits: currentImageCredits + creditsToAdd,
+              })
+              .eq('id', orderData.user_id);
+
+            console.log(`User ${orderData.user_id} image_credits updated: +${creditsToAdd}`);
+          }
         } else if (orderData.order_type === 'subscription') {
           // 订阅充值：更新订阅状态
           const subscriptionEnd = new Date();

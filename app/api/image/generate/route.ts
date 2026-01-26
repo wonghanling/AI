@@ -94,17 +94,17 @@ export async function POST(req: NextRequest) {
     // 5. 检查用户积分
     const { data: userData } = await supabaseAdmin
       .from('users')
-      .select('user_type, credits')
+      .select('user_type, image_credits')
       .eq('id', user.id)
       .single();
 
     const userType = userData?.user_type || 'free';
-    const credits = userData?.credits || 0;
+    const imageCredits = userData?.image_credits || 0;
 
     // 检查积分是否足够
-    if (credits < totalCredits) {
+    if (imageCredits < totalCredits) {
       return NextResponse.json(
-        { error: `积分不足，需要 ${totalCredits} 积分，当前仅有 ${credits} 积分` },
+        { error: `积分不足，需要 ${totalCredits} 积分，当前仅有 ${imageCredits} 积分` },
         { status: 403 }
       );
     }
@@ -376,10 +376,10 @@ export async function POST(req: NextRequest) {
     }
 
     // 9. 扣除积分
-    const newCredits = Math.max(0, credits - totalCredits);
+    const newImageCredits = Math.max(0, imageCredits - totalCredits);
     await supabaseAdmin
       .from('users')
-      .update({ credits: newCredits })
+      .update({ image_credits: newImageCredits })
       .eq('id', user.id);
 
     return NextResponse.json({
@@ -391,7 +391,7 @@ export async function POST(req: NextRequest) {
       model: model,
       prompt: prompt,
       totalCredits: totalCredits,
-      remainingBalance: newCredits,
+      remainingBalance: newImageCredits,
     });
   } catch (error: any) {
     console.error('Image API error:', error);
