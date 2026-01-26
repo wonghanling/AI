@@ -79,28 +79,26 @@ export async function POST(req: NextRequest) {
           const creditsToAdd = orderData.credits_amount || 0;
           const creditType = orderData.credit_type || 'image'; // 默认为图片积分
 
-          // 获取当前积分
-          const { data: userData } = await supabaseAdmin
-            .from('users')
-            .select('image_credits, video_credits')
-            .eq('id', orderData.user_id)
-            .single();
-
-          const currentImageCredits = userData?.image_credits || 0;
-          const currentVideoCredits = userData?.video_credits || 0;
-
           // 根据积分类型更新对应的积分
           if (creditType === 'video') {
-            await supabaseAdmin
-              .from('users')
-              .update({
-                video_credits: currentVideoCredits + creditsToAdd,
-              })
-              .eq('id', orderData.user_id);
+            // TODO: 视频积分充值 - 待视频网站完成后实现
+            // 需要：
+            // 1. 获取用户的 global_user_id
+            // 2. 调用视频网站 API: POST /api/credits/add
+            // 3. 传递 { global_user_id, amount, source: 'main_site_recharge' }
 
-            console.log(`User ${orderData.user_id} video_credits updated: +${creditsToAdd}`);
+            console.log(`TODO: 视频积分充值 ${creditsToAdd} 积分给用户 ${orderData.user_id}`);
+            console.log('待视频网站完成后实现此功能');
           } else {
-            // 默认为图片积分
+            // 图片积分充值
+            const { data: userData } = await supabaseAdmin
+              .from('users')
+              .select('image_credits')
+              .eq('id', orderData.user_id)
+              .single();
+
+            const currentImageCredits = userData?.image_credits || 0;
+
             await supabaseAdmin
               .from('users')
               .update({
