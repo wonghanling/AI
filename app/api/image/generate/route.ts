@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 
 // 初始化 Supabase 客户端（使用 service role key）
 const supabaseAdmin = createClient(
@@ -8,37 +7,19 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// 初始化 OpenRouter 客户端
-const openrouter = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY!,
-  defaultHeaders: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://boluoing.com',
-    'X-Title': 'BoLuoing AI',
-  },
-});
+// 云雾 API 配置
+const YUNWU_BASE_URL = 'https://allapi.store';
+const YUNWU_API_KEY = process.env.YUNWU_API_KEY!;
 
 // 图片模型配置
-const IMAGE_MODELS: Record<string, { openrouterModel: string; cost: number }> = {
-  'flux-schnell': {
-    openrouterModel: 'black-forest-labs/flux-schnell',
-    cost: 0.003,
-  },
-  'flux-pro': {
-    openrouterModel: 'black-forest-labs/flux-pro',
-    cost: 0.05,
-  },
-  'stable-diffusion': {
-    openrouterModel: 'stability-ai/stable-diffusion-xl',
-    cost: 0.01,
-  },
+const IMAGE_MODELS: Record<string, { yunwuModel: string; cost: number }> = {
   'nano-banana': {
-    openrouterModel: 'google/gemini-2.5-flash-image',
-    cost: 0.005, // 5 积分 = ¥0.5，1 积分 = ¥0.1
+    yunwuModel: 'gemini-2.5-flash-image',
+    cost: 0.005, // 5 积分
   },
   'nano-banana-pro': {
-    openrouterModel: 'google/gemini-3-pro-image-preview',
-    cost: 0.009, // 9 积分 = ¥0.9
+    yunwuModel: 'gemini-3-pro-image-preview',
+    cost: 0.009, // 基础价格，实际根据分辨率计算
   },
 };
 
@@ -80,14 +61,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. 计算积分消耗（根据分辨率）
-    let creditsPerImage = 5; // 默认 1K
+    let creditsPerImage = 5; // 默认 Nano Banana 固定 5 积分
     if (model === 'nano-banana') {
-      if (resolution === '2K') creditsPerImage = 9;
-      else creditsPerImage = 5;
+      creditsPerImage = 5; // 固定 5 积分/次
     } else if (model === 'nano-banana-pro') {
-      if (resolution === '4K') creditsPerImage = 40;
-      else if (resolution === '2K') creditsPerImage = 20;
-      else creditsPerImage = 15;
+      if (resolution === '4K') creditsPerImage = 15;
+      else if (resolution === '2K') creditsPerImage = 9;
+      else creditsPerImage = 7; // 1K
     }
     const totalCredits = creditsPerImage * count;
 
@@ -109,22 +89,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6. 调用 OpenRouter 生成图片
+    // 6. 调用云雾 API 生成图片
     const generatedImages: string[] = [];
     try {
       // 根据 count 参数生成多张图片
       for (let i = 0; i < count; i++) {
         let imageUrl = '';
 
-        // Nano Banana 模型使用原生 fetch + modalities
+        // Nano Banana 模型使用 fetch + modalities
         if (model.includes('nano-banana')) {
-          console.log('=== Nano Banana 模型调用 ===');
-          console.log('模型:', modelConfig.openrouterModel);
+          console.log('=== Nano Banana 模型调用（云雾API）===');
+          console.log('模型:', modelConfig.yunwuModel);
           console.log('Prompt:', prompt);
 
           // 构建请求体
           const requestBody: any = {
-            model: modelConfig.openrouterModel,
+            model: modelConfig.yunwuModel,
             messages: [
               {
                 role: 'user',
@@ -151,14 +131,12 @@ export async function POST(req: NextRequest) {
 
           console.log('请求体:', JSON.stringify(requestBody, null, 2));
 
-          // 使用 fetch 直接调用
-          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          // 使用 fetch 调用云雾 API
+          const response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              'Authorization': `Bearer ${YUNWU_API_KEY}`,
               'Content-Type': 'application/json',
-              'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://boluoing.com',
-              'X-Title': 'BoLuoing AI',
             },
             body: JSON.stringify(requestBody),
           });
@@ -223,56 +201,6 @@ export async function POST(req: NextRequest) {
           }
 
           console.log('成功提取图片:', imageUrl.substring(0, 100));
-        } else {
-          // 其他模型使用 OpenAI SDK
-          const messageContent: any = [];
-
-          if (body.imageUrl) {
-            messageContent.push({
-              type: 'image_url',
-              image_url: { url: body.imageUrl },
-            });
-          }
-
-          messageContent.push({
-            type: 'text',
-            text: prompt,
-          });
-
-          const response = await openrouter.chat.completions.create({
-            model: modelConfig.openrouterModel,
-            messages: [
-              {
-                role: 'user',
-                content: messageContent.length === 1 ? messageContent[0].text : messageContent,
-              },
-            ],
-          });
-
-          const messageResponse = response.choices?.[0]?.message?.content;
-
-          if (!messageResponse) {
-            throw new Error('未能生成图片');
-          }
-
-          if (typeof messageResponse === 'string') {
-            if (messageResponse.startsWith('http://') || messageResponse.startsWith('https://')) {
-              imageUrl = messageResponse;
-            } else if (messageResponse.startsWith('data:image/')) {
-              imageUrl = messageResponse;
-            } else {
-              const urlMatch = messageResponse.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/);
-              if (urlMatch) {
-                imageUrl = urlMatch[1];
-              } else {
-                imageUrl = messageResponse.trim();
-              }
-            }
-          }
-
-          if (!imageUrl) {
-            throw new Error('无法解析图片 URL');
-          }
         }
 
         generatedImages.push(imageUrl);

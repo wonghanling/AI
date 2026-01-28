@@ -13,8 +13,7 @@ const MODELS = {
     isPro: false,
     aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16'],
     resolutions: {
-      '1K': { label: '1K', size: 1024, credits: 5 },
-      '2K': { label: '2K', size: 2048, credits: 9 },
+      '1K': { label: '固定', size: 1024, credits: 5 }, // 固定 5 积分
     }
   },
   'nano-banana-pro': {
@@ -24,9 +23,9 @@ const MODELS = {
     isPro: true,
     aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
     resolutions: {
-      '1K': { label: '1K', size: 1024, credits: 15 },
-      '2K': { label: '2K', size: 2048, credits: 20 },
-      '4K': { label: '4K', size: 4096, credits: 40 },
+      '1K': { label: '1K', size: 1024, credits: 7 },
+      '2K': { label: '2K', size: 2048, credits: 9 },
+      '4K': { label: '4K', size: 4096, credits: 15 },
     }
   }
 };
@@ -42,7 +41,7 @@ function ImageGenerationContent() {
   const [selectedModel, setSelectedModel] = useState<'nano-banana' | 'nano-banana-pro'>('nano-banana-pro');
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
-  const [resolution, setResolution] = useState('2K');
+  const [resolution, setResolution] = useState('1K'); // Nano Banana 默认 1K（固定）
   const [imageCount, setImageCount] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
