@@ -161,16 +161,16 @@ export async function POST(req: NextRequest) {
             throw new Error('响应中没有 candidates');
           }
 
-          const parts = candidate.content?.parts;
-          if (!parts || !Array.isArray(parts)) {
+          const responseParts = candidate.content?.parts;
+          if (!responseParts || !Array.isArray(responseParts)) {
             console.error('响应中没有 parts');
             throw new Error('响应中没有 parts');
           }
 
-          console.log('Parts 数组:', JSON.stringify(parts, null, 2));
+          console.log('Parts 数组:', JSON.stringify(responseParts, null, 2));
 
           // 从 parts 中查找图片
-          for (const part of parts) {
+          for (const part of responseParts) {
             // 检查 inline_data (base64 图片)
             if (part.inline_data && part.inline_data.data) {
               const mimeType = part.inline_data.mime_type || 'image/png';

@@ -494,8 +494,6 @@ function ChatPageContent() {
                             <div className="flex items-center justify-between gap-2">
                               <p className="font-medium text-sm flex-shrink-0">{model.displayName}</p>
                               <div className="flex gap-1.5 flex-shrink-0">
-                              <p className="font-medium text-sm">{model.displayName}</p>
-                              <div className="flex gap-1.5">
                                 {model.capabilities?.includes('vision') && (
                                   <span className="w-5 h-5 flex items-center justify-center" title="识图">
                                     <Image src="/eye-fill-svgrepo-com.svg" alt="识图" width={16} height={16} className="opacity-70" />
