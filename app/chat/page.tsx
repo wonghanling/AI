@@ -489,18 +489,26 @@ function ChatPageContent() {
                           >
                             <div className="flex items-center justify-between">
                               <p className="font-medium text-sm">{model.displayName}</p>
-                              <div className="flex gap-1">
+                              <div className="flex gap-1.5">
                                 {model.capabilities?.includes('vision') && (
-                                  <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded" title="识图">👁️</span>
+                                  <span className="w-5 h-5 flex items-center justify-center" title="识图">
+                                    <Image src="/eye-fill-svgrepo-com.svg" alt="识图" width={16} height={16} className="opacity-70" />
+                                  </span>
                                 )}
                                 {model.capabilities?.includes('thinking') && (
-                                  <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded" title="思考">🧠</span>
+                                  <span className="w-5 h-5 flex items-center justify-center" title="思考">
+                                    <Image src="/lamp-charge-svgrepo-com.svg" alt="思考" width={16} height={16} className="opacity-70" />
+                                  </span>
                                 )}
                                 {model.capabilities?.includes('internet') && (
-                                  <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded" title="联网">🌐</span>
+                                  <span className="w-5 h-5 flex items-center justify-center" title="联网">
+                                    <Image src="/network-backup-svgrepo-com.svg" alt="联网" width={16} height={16} className="opacity-70" />
+                                  </span>
                                 )}
                                 {model.capabilities?.includes('coding') && (
-                                  <span className="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded" title="编程">💻</span>
+                                  <span className="w-5 h-5 flex items-center justify-center" title="编程">
+                                    <Image src="/programming-code-svgrepo-com.svg" alt="编程" width={16} height={16} className="opacity-70" />
+                                  </span>
                                 )}
                               </div>
                             </div>
