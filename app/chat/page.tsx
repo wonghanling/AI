@@ -26,7 +26,7 @@ function ChatPageContent() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [selectedModel, setSelectedModel] = useState<ModelKey>('gemini-flash');
+  const [selectedModel, setSelectedModel] = useState<ModelKey>('gpt-5.2');
   const [loading, setLoading] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [quota, setQuota] = useState({ advanced: 3, basic: 10 });
@@ -316,9 +316,23 @@ function ChatPageContent() {
   // 获取模型信息
   const getModelInfo = useCallback((modelKey: ModelKey) => MODEL_MAP[modelKey], []);
 
-  // 高级模型列表
-  const advancedModels: ModelKey[] = useMemo(() => ['gpt-5.2', 'claude-sonnet-4', 'gemini-pro', 'grok'], []);
-  const basicModels: ModelKey[] = useMemo(() => ['gpt-4.1-mini', 'claude-haiku', 'gemini-flash'], []);
+  // 高级模型列表 - 更新为云雾API的12个高级模型
+  const advancedModels: ModelKey[] = useMemo(() => [
+    'gpt-5.2',
+    'gpt-5.1-2025-11-13',
+    'gpt-5.1-thinking-all',
+    'gemini-3-pro-preview',
+    'gemini-3-flash-preview',
+    'gemini-2.5-flash-all',
+    'gemini-2.5-pro-all',
+    'claude-3-5-haiku-20241022',
+    'claude-3-sonnet-all',
+    'grok-4.1',
+    'grok-4',
+    'gpt-5.1-chat',
+  ], []);
+  // 普通模型列表 - 待用户提供
+  const basicModels: ModelKey[] = useMemo(() => [], []);
 
   const currentModelInfo = useMemo(() => getModelInfo(selectedModel), [selectedModel, getModelInfo]);
   const isAdvancedModel = useMemo(() => currentModelInfo.tier === 'advanced', [currentModelInfo]);
@@ -455,7 +469,9 @@ function ChatPageContent() {
                   <div className="p-3 border-b border-gray-100">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-medium text-gray-500">高级模型</p>
-                      <span className="text-xs text-gray-400">剩余 {quota.advanced} 次/天</span>
+                      <span className="text-xs text-gray-400">
+                        {userType === 'free' ? `剩余 ${quota.advanced} 次/天` : `剩余 ${quota.advanced} 次/小时`}
+                      </span>
                     </div>
                     <div className="space-y-1">
                       {advancedModels.map(modelKey => {
@@ -471,7 +487,26 @@ function ChatPageContent() {
                               selectedModel === modelKey ? 'bg-gray-100' : ''
                             }`}
                           >
-                            <p className="font-medium text-sm">{model.displayName}</p>
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-sm">{model.displayName}</p>
+                              <div className="flex gap-1">
+                                {model.capabilities?.includes('vision') && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded" title="识图">👁️</span>
+                                )}
+                                {model.capabilities?.includes('thinking') && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded" title="思考">🧠</span>
+                                )}
+                                {model.capabilities?.includes('internet') && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded" title="联网">🌐</span>
+                                )}
+                                {model.capabilities?.includes('coding') && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded" title="编程">💻</span>
+                                )}
+                              </div>
+                            </div>
+                            {model.description && (
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-1">{model.description}</p>
+                            )}
                           </button>
                         );
                       })}
@@ -479,31 +514,35 @@ function ChatPageContent() {
                   </div>
 
                   {/* 普通模型 */}
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-gray-500">普通模型</p>
-                      <span className="text-xs text-gray-400">剩余 {quota.basic} 次/天</span>
+                  {basicModels.length > 0 && (
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-medium text-gray-500">普通模型</p>
+                        <span className="text-xs text-gray-400">
+                          {userType === 'free' ? `剩余 ${quota.basic} 次/天` : `剩余 ${quota.basic} 次/小时`}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {basicModels.map(modelKey => {
+                          const model = getModelInfo(modelKey);
+                          return (
+                            <button
+                              key={modelKey}
+                              onClick={() => {
+                                setSelectedModel(modelKey);
+                                setShowModelSelector(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                                selectedModel === modelKey ? 'bg-gray-100' : ''
+                              }`}
+                            >
+                              <p className="font-medium text-sm">{model.displayName}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {basicModels.map(modelKey => {
-                        const model = getModelInfo(modelKey);
-                        return (
-                          <button
-                            key={modelKey}
-                            onClick={() => {
-                              setSelectedModel(modelKey);
-                              setShowModelSelector(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                              selectedModel === modelKey ? 'bg-gray-100' : ''
-                            }`}
-                          >
-                            <p className="font-medium text-sm">{model.displayName}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
