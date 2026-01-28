@@ -208,9 +208,19 @@ export async function POST(req: NextRequest) {
         generatedImages.push(imageUrl);
       }
     } catch (error: any) {
-      console.error('图片生成错误:', error);
+      console.error('=== 图片生成错误 ===');
+      console.error('错误类型:', error.constructor.name);
+      console.error('错误消息:', error.message);
+      console.error('错误堆栈:', error.stack);
+
       return NextResponse.json(
-        { error: '图片生成失败: ' + (error.message || '未知错误') },
+        {
+          error: '图片生成失败: ' + (error.message || '未知错误'),
+          errorType: error.constructor.name,
+          errorStack: error.stack,
+          model: model,
+          prompt: prompt
+        },
         { status: 500 }
       );
     }
