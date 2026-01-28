@@ -439,24 +439,25 @@ function ChatPageContent() {
       <div className="flex-1 flex flex-col">
         {/* 顶部栏 */}
         <div className="h-14 border-b border-gray-200 flex items-center justify-between px-4 md:px-6">
-          {/* 移动端汉堡菜单 */}
-          <button
-            onClick={() => setShowSidebar(true)}
-            className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          {/* 左侧：汉堡菜单 + 模型选择器 */}
+          <div className="flex items-center gap-2">
+            {/* 移动端汉堡菜单 */}
+            <button
+              onClick={() => setShowSidebar(true)}
+              className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-          <div className="flex items-center gap-3">
             {/* 模型选择器 */}
             <div className="relative">
               <button
                 onClick={() => setShowModelSelector(!showModelSelector)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
               >
-                <span className="font-medium">{currentModelInfo.displayName}</span>
+                <span className="font-medium text-sm md:text-base">{currentModelInfo.displayName}</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -570,23 +571,26 @@ function ChatPageContent() {
                 </div>
               )}
             </div>
+          </div>
 
+          {/* 右侧：模型标签 + 配额显示 */}
+          <div className="flex items-center gap-2">
             {/* 模型标签 */}
             <span className={`text-xs px-2 py-1 rounded ${
               isAdvancedModel ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
             }`}>
               {isAdvancedModel ? '高级' : '普通'}
             </span>
-          </div>
 
-          {/* 配额显示 - 移动端简化 */}
-          <div className="text-sm text-gray-600">
-            {userType === 'free' ? (
-              <span className="hidden sm:inline">今日剩余: {isAdvancedModel ? quota.advanced : quota.basic} 次</span>
-            ) : (
-              <span className="hidden sm:inline">本小时剩余: {isAdvancedModel ? quota.advanced : quota.basic} 次</span>
-            )}
-            <span className="sm:hidden">{isAdvancedModel ? quota.advanced : quota.basic}</span>
+            {/* 配额显示 - 移动端简化 */}
+            <div className="text-sm text-gray-600">
+              {userType === 'free' ? (
+                <span className="hidden sm:inline">今日剩余: {isAdvancedModel ? quota.advanced : quota.basic} 次</span>
+              ) : (
+                <span className="hidden sm:inline">本小时剩余: {isAdvancedModel ? quota.advanced : quota.basic} 次</span>
+              )}
+              <span className="sm:hidden">{isAdvancedModel ? quota.advanced : quota.basic}</span>
+            </div>
           </div>
         </div>
 
