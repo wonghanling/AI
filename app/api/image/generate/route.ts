@@ -96,50 +96,45 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < count; i++) {
         let imageUrl = '';
 
-        // Nano Banana 模型使用 Gemini 原生格式
+        // Nano Banana 模型使用 OpenAI 兼容格式
         if (model.includes('nano-banana')) {
-          console.log('=== Nano Banana 模型调用（云雾API - Gemini原生格式）===');
+          console.log('=== Nano Banana 模型调用（云雾API - OpenAI兼容格式）===');
           console.log('模型:', modelConfig.yunwuModel);
           console.log('Prompt:', prompt);
 
-          // 构建 Gemini 原生格式的 contents
-          const parts: any[] = [];
+          // 构建 OpenAI 兼容格式的 messages
+          const messageContent: any[] = [];
 
           // 如果有上传的图片，先添加图片
           if (body.imageUrl) {
             console.log('包含上传的图片');
-            // 提取 base64 数据
-            const base64Match = body.imageUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/);
-            if (base64Match) {
-              const mimeType = `image/${base64Match[1]}`;
-              const base64Data = base64Match[2];
-              parts.push({
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Data
-                }
-              });
-            }
+            messageContent.push({
+              type: 'image_url',
+              image_url: {
+                url: body.imageUrl
+              }
+            });
           }
 
           // 添加文本 prompt
-          parts.push({
+          messageContent.push({
+            type: 'text',
             text: prompt
           });
 
           const requestBody = {
-            contents: [{
-              parts: parts
+            model: modelConfig.yunwuModel,
+            messages: [{
+              role: 'user',
+              content: messageContent
             }],
-            generationConfig: {
-              response_modalities: ['IMAGE']
-            }
+            max_tokens: 4096
           };
 
           console.log('请求体:', JSON.stringify(requestBody, null, 2));
 
-          // 使用 Gemini 原生端点
-          const response = await fetch(`${YUNWU_BASE_URL}/v1beta/models/${modelConfig.yunwuModel}:generateContent`, {
+          // 使用 OpenAI 兼容端点
+          const response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${YUNWU_API_KEY}`,
@@ -155,44 +150,52 @@ export async function POST(req: NextRequest) {
           }
 
           const data = await response.json();
-          console.log('=== Gemini 原生格式响应 ===');
+          console.log('=== OpenAI 兼容格式响应 ===');
           console.log('完整响应:', JSON.stringify(data, null, 2));
 
-          // Gemini 原生格式：candidates[0].content.parts[]
-          const candidate = data.candidates?.[0];
-          if (!candidate) {
-            throw new Error('响应中没有 candidates');
+          // OpenAI 兼容格式：choices[0].message.content
+          const message = data.choices?.[0]?.message;
+          if (!message) {
+            throw new Error('响应中没有 message');
           }
 
-          const responseParts = candidate.content?.parts;
-          if (!responseParts || !Array.isArray(responseParts)) {
-            throw new Error('响应中没有 parts');
-          }
+          console.log('Message 对象:', JSON.stringify(message, null, 2));
 
-          console.log('Parts 数组长度:', responseParts.length);
-
-          // 从 parts 中查找图片
-          for (const part of responseParts) {
-            // 检查 inline_data (base64 图片)
-            if (part.inline_data && part.inline_data.data) {
-              const mimeType = part.inline_data.mime_type || 'image/png';
-              imageUrl = `data:${mimeType};base64,${part.inline_data.data}`;
-              console.log('✅ 从 inline_data 提取图片 (base64)');
-              break;
+          // 尝试多种可能的响应格式
+          // 1. 检查 message.content 是否是 URL
+          if (typeof message.content === 'string') {
+            if (message.content.startsWith('http://') || message.content.startsWith('https://')) {
+              imageUrl = message.content;
+              console.log('✅ 从 message.content 提取图片 URL');
+            } else if (message.content.startsWith('data:image/')) {
+              imageUrl = message.content;
+              console.log('✅ 从 message.content 提取 base64 图片');
             }
-            // 检查 text 中的 URL（备用）
-            else if (part.text && typeof part.text === 'string') {
-              if (part.text.startsWith('http://') || part.text.startsWith('https://')) {
-                imageUrl = part.text;
-                console.log('✅ 从 text 提取图片 URL');
-                break;
-              }
+          }
+
+          // 2. 检查 message.images 数组（某些 API 可能用这个）
+          if (!imageUrl && message.images && Array.isArray(message.images) && message.images.length > 0) {
+            const firstImage = message.images[0];
+            if (firstImage.image_url?.url) {
+              imageUrl = firstImage.image_url.url;
+              console.log('✅ 从 message.images 提取图片 URL');
+            }
+          }
+
+          // 3. 检查 data.data（某些 API 可能直接返回在顶层）
+          if (!imageUrl && data.data) {
+            if (typeof data.data === 'string') {
+              imageUrl = data.data;
+              console.log('✅ 从 data.data 提取图片');
+            } else if (data.data.url) {
+              imageUrl = data.data.url;
+              console.log('✅ 从 data.data.url 提取图片');
             }
           }
 
           if (!imageUrl) {
             console.error('无法解析图片');
-            console.error('Parts:', JSON.stringify(responseParts, null, 2));
+            console.error('完整响应:', JSON.stringify(data, null, 2));
             throw new Error('无法解析图片 URL');
           }
 
