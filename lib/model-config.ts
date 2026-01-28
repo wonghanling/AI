@@ -138,25 +138,55 @@ export const MODEL_MAP = {
     costPer1kTokens: { prompt: 0.00075, completion: 0.006 },
   },
 
-  // 普通模型 - 待用户提供
-  // 'claude-haiku': {
-  //   yunwuModel: 'anthropic/claude-3-haiku',
-  //   displayName: 'Claude 4.5 Haiku',
-  //   tier: 'basic',
-  //   maxTokens: 4096,
-  //   capabilities: ['dialogue'] as ModelCapability[],
-  //   costPer1kTokens: { prompt: 0.00025, completion: 0.00125 },
-  // },
+  // 普通模型 - 免费用户每天10次
+  'grok-3-mini': {
+    yunwuModel: 'grok-3-mini',
+    displayName: 'Grok 3 Mini',
+    description: 'Grok 3 mini，高性价比推理能力，能够进行数秒到数分钟的思考，纠正错误，探索替代方案',
+    tier: 'basic',
+    maxTokens: 4096,
+    capabilities: ['dialogue'] as ModelCapability[],
+    // 使用限时特价分组价格
+    costPer1kTokens: { prompt: 0.00018, completion: 0.000301 },
+  },
+  'gemini-2.5-flash-lite-preview-06-17': {
+    yunwuModel: 'gemini-2.5-flash-lite-preview-06-17',
+    displayName: 'Gemini 2.5 Flash Lite',
+    description: 'Gemini 2.5 Flash Lite Preview 由 google-vertex 提供，可控制是否启用思考',
+    tier: 'basic',
+    maxTokens: 8192,
+    capabilities: ['dialogue', 'vision'] as ModelCapability[],
+    // 使用限时特价分组价格
+    costPer1kTokens: { prompt: 0.00006, completion: 0.00024 },
+  },
+  'gpt-4o-mini': {
+    yunwuModel: 'gpt-4o-mini',
+    displayName: 'GPT-4o Mini',
+    description: 'GPT-4o mini 是由 openai 提供的人工智能模型',
+    tier: 'basic',
+    maxTokens: 4096,
+    capabilities: ['dialogue', 'vision'] as ModelCapability[],
+    // 使用限时特价分组价格
+    costPer1kTokens: { prompt: 0.00009, completion: 0.00036 },
+  },
 } as const;
 
 export type ModelKey = keyof typeof MODEL_MAP;
 
-// 降级策略：高级模型 -> 普通模型（待普通模型配置后更新）
+// 降级策略：高级模型 -> 普通模型
 export const FALLBACK_MAP: Record<string, ModelKey> = {
-  // 'gpt-5.2': 'gpt-4.1-mini',
-  // 'claude-3-5-haiku-20241022': 'claude-haiku',
-  // 'gemini-3-pro-preview': 'gemini-flash',
-  // 'grok-4': 'gemini-flash',
+  'gpt-5.2': 'gpt-4o-mini',
+  'gpt-5.1-2025-11-13': 'gpt-4o-mini',
+  'gpt-5.1-thinking-all': 'gpt-4o-mini',
+  'gpt-5.1-chat': 'gpt-4o-mini',
+  'gemini-3-pro-preview': 'gemini-2.5-flash-lite-preview-06-17',
+  'gemini-3-flash-preview': 'gemini-2.5-flash-lite-preview-06-17',
+  'gemini-2.5-flash-all': 'gemini-2.5-flash-lite-preview-06-17',
+  'gemini-2.5-pro-all': 'gemini-2.5-flash-lite-preview-06-17',
+  'claude-3-5-haiku-20241022': 'grok-3-mini',
+  'claude-3-sonnet-all': 'grok-3-mini',
+  'grok-4.1': 'grok-3-mini',
+  'grok-4': 'grok-3-mini',
 };
 
 // 配额限制

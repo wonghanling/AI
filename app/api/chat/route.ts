@@ -94,10 +94,9 @@ export async function POST(req: NextRequest) {
         if (modelConfig.tier === 'advanced' && usedCount >= 3) {
           return NextResponse.json({ error: '今日高级模型配额已用完，请升级到专业版' }, { status: 403 });
         }
-        // 暂时注释掉普通模型检查，等待普通模型配置完成后启用
-        // if (modelConfig.tier === 'basic' && usedCount >= 10) {
-        //   return NextResponse.json({ error: '今日普通模型配额已用完，请明天再试' }, { status: 403 });
-        // }
+        if (modelConfig.tier === 'basic' && usedCount >= 10) {
+          return NextResponse.json({ error: '今日普通模型配额已用完，请明天再试' }, { status: 403 });
+        }
       }
 
       // 8. 调用云雾 API（带降级重试）

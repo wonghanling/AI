@@ -331,8 +331,12 @@ function ChatPageContent() {
     'grok-4',
     'gpt-5.1-chat',
   ], []);
-  // 普通模型列表 - 待用户提供
-  const basicModels: ModelKey[] = useMemo(() => [], []);
+  // 普通模型列表 - 免费用户每天10次
+  const basicModels: ModelKey[] = useMemo(() => [
+    'grok-3-mini',
+    'gemini-2.5-flash-lite-preview-06-17',
+    'gpt-4o-mini',
+  ], []);
 
   const currentModelInfo = useMemo(() => getModelInfo(selectedModel), [selectedModel, getModelInfo]);
   const isAdvancedModel = useMemo(() => currentModelInfo.tier === 'advanced', [currentModelInfo]);
