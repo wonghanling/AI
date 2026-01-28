@@ -464,7 +464,7 @@ function ChatPageContent() {
 
               {/* 模型选择下拉菜单 */}
               {showModelSelector && (
-                <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] overflow-y-auto">
+                <div className="absolute top-full left-0 mt-2 w-80 md:w-80 w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] overflow-y-auto">
                   <div className="p-3 border-b border-gray-200">
                     <h3 className="font-semibold text-sm text-gray-900">选择模型</h3>
                   </div>
@@ -491,7 +491,9 @@ function ChatPageContent() {
                               selectedModel === modelKey ? 'bg-gray-100' : ''
                             }`}
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-medium text-sm flex-shrink-0">{model.displayName}</p>
+                              <div className="flex gap-1.5 flex-shrink-0">
                               <p className="font-medium text-sm">{model.displayName}</p>
                               <div className="flex gap-1.5">
                                 {model.capabilities?.includes('vision') && (
@@ -517,7 +519,7 @@ function ChatPageContent() {
                               </div>
                             </div>
                             {model.description && (
-                              <p className="text-xs text-gray-500 mt-1 line-clamp-1">{model.description}</p>
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words">{model.description}</p>
                             )}
                           </button>
                         );
@@ -548,7 +550,19 @@ function ChatPageContent() {
                                 selectedModel === modelKey ? 'bg-gray-100' : ''
                               }`}
                             >
-                              <p className="font-medium text-sm">{model.displayName}</p>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-medium text-sm flex-shrink-0">{model.displayName}</p>
+                                <div className="flex gap-1.5 flex-shrink-0">
+                                  {model.capabilities?.includes('vision') && (
+                                    <span className="w-5 h-5 flex items-center justify-center" title="识图">
+                                      <Image src="/eye-fill-svgrepo-com.svg" alt="识图" width={16} height={16} className="opacity-70" />
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {model.description && (
+                                <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words">{model.description}</p>
+                              )}
                             </button>
                           );
                         })}
@@ -622,7 +636,7 @@ function ChatPageContent() {
                         </svg>
                       </div>
                       <div className="flex-1 pt-1">
-                        <p className="text-gray-900 whitespace-pre-wrap">{msg.content}</p>
+                        <p className="text-gray-900 whitespace-pre-wrap break-words">{msg.content}</p>
                       </div>
                     </div>
                   ) : (
@@ -632,7 +646,7 @@ function ChatPageContent() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-gray-900">
                             {msg.model && msg.model in MODEL_MAP
@@ -640,7 +654,7 @@ function ChatPageContent() {
                               : currentModelInfo.displayName}
                           </span>
                         </div>
-                        <div className="text-gray-900 prose prose-sm max-w-none">
+                        <div className="text-gray-900 prose prose-sm max-w-none break-words overflow-hidden">
                           {msg.content ? (
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
@@ -648,30 +662,30 @@ function ChatPageContent() {
                                 code({ node, className, children, ...props }: any) {
                                   const isInline = !className;
                                   return isInline ? (
-                                    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                                    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono break-all" {...props}>
                                       {children}
                                     </code>
                                   ) : (
-                                    <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono" {...props}>
+                                    <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre-wrap break-words" {...props}>
                                       {children}
                                     </code>
                                   );
                                 },
                                 pre({ children }) {
-                                  return <div className="my-2">{children}</div>;
+                                  return <div className="my-2 overflow-x-auto">{children}</div>;
                                 },
                                 p({ children }) {
-                                  return <p className="mb-2 last:mb-0">{children}</p>;
+                                  return <p className="mb-2 last:mb-0 break-words">{children}</p>;
                                 },
                                 ul({ children }) {
-                                  return <ul className="list-disc list-inside mb-2">{children}</ul>;
+                                  return <ul className="list-disc list-inside mb-2 break-words">{children}</ul>;
                                 },
                                 ol({ children }) {
-                                  return <ol className="list-decimal list-inside mb-2">{children}</ol>;
+                                  return <ol className="list-decimal list-inside mb-2 break-words">{children}</ol>;
                                 },
                                 a({ href, children }) {
                                   return (
-                                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
                                       {children}
                                     </a>
                                   );
