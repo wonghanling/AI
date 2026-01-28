@@ -96,43 +96,46 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < count; i++) {
         let imageUrl = '';
 
-        // Nano Banana 模型使用 fetch + modalities
+        // Nano Banana 模型使用 Gemini 原生格式
         if (model.includes('nano-banana')) {
-          console.log('=== Nano Banana 模型调用（云雾API）===');
+          console.log('=== Nano Banana 模型调用（云雾API - Gemini原生格式）===');
           console.log('模型:', modelConfig.yunwuModel);
           console.log('Prompt:', prompt);
 
-          // 构建请求体
-          const requestBody: any = {
-            model: modelConfig.yunwuModel,
-            messages: [
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-            modalities: ['image', 'text'], // 关键：必须添加 modalities
-          };
+          // 构建 Gemini 原生格式请求体
+          const parts: any[] = [{ text: prompt }];
 
-          // 如果有上传的图片
+          // 如果有上传的图片，添加到 parts
           if (body.imageUrl) {
             console.log('包含上传的图片');
-            requestBody.messages[0].content = [
-              {
-                type: 'image_url',
-                image_url: { url: body.imageUrl },
-              },
-              {
-                type: 'text',
-                text: prompt,
-              },
-            ];
+            // 提取 base64 数据
+            const base64Match = body.imageUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/);
+            if (base64Match) {
+              const mimeType = `image/${base64Match[1]}`;
+              const base64Data = base64Match[2];
+              parts.unshift({
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64Data
+                }
+              });
+            }
           }
+
+          const requestBody = {
+            contents: [{
+              role: 'user',
+              parts: parts
+            }],
+            generationConfig: {
+              responseModalities: ['IMAGE']
+            }
+          };
 
           console.log('请求体:', JSON.stringify(requestBody, null, 2));
 
-          // 使用 fetch 调用云雾 API
-          const response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
+          // 使用 Gemini 原生端点
+          const response = await fetch(`${YUNWU_BASE_URL}/v1beta/models/${modelConfig.yunwuModel}:generateContent`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${YUNWU_API_KEY}`,
@@ -148,59 +151,57 @@ export async function POST(req: NextRequest) {
           }
 
           const data = await response.json();
-          console.log('响应:', JSON.stringify(data, null, 2));
+          console.log('=== Gemini 原生格式响应 ===');
+          console.log(JSON.stringify(data, null, 2));
 
-          const message = data.choices?.[0]?.message;
-          console.log('Message 对象:', message);
-
-          if (!message) {
-            throw new Error('响应中没有 message');
+          // Gemini 原生格式：candidates[0].content.parts
+          const candidate = data.candidates?.[0];
+          if (!candidate) {
+            console.error('响应中没有 candidates');
+            throw new Error('响应中没有 candidates');
           }
 
-          // 关键：图片在 message.images 数组中，不是在 content 里
-          if (message.images && Array.isArray(message.images) && message.images.length > 0) {
-            console.log('找到 images 数组，长度:', message.images.length);
-            const firstImage = message.images[0];
-            console.log('第一张图片对象:', firstImage);
+          const parts = candidate.content?.parts;
+          if (!parts || !Array.isArray(parts)) {
+            console.error('响应中没有 parts');
+            throw new Error('响应中没有 parts');
+          }
 
-            if (firstImage.image_url && firstImage.image_url.url) {
-              imageUrl = firstImage.image_url.url;
-              console.log('从 images 数组提取图片 URL:', imageUrl.substring(0, 100));
-            } else {
-              throw new Error('images 数组中没有有效的 image_url');
+          console.log('Parts 数组:', JSON.stringify(parts, null, 2));
+
+          // 从 parts 中查找图片
+          for (const part of parts) {
+            // 检查 inline_data (base64 图片)
+            if (part.inline_data && part.inline_data.data) {
+              const mimeType = part.inline_data.mime_type || 'image/png';
+              imageUrl = `data:${mimeType};base64,${part.inline_data.data}`;
+              console.log('✅ 从 inline_data 提取图片 (base64)');
+              break;
             }
-          }
-          // 备用：尝试从 content 中提取
-          else if (message.content) {
-            console.log('未找到 images 数组，尝试从 content 提取');
-            const content = message.content;
-            console.log('内容:', content);
-            console.log('内容类型:', typeof content);
-
-            if (typeof content === 'string') {
-              if (content.startsWith('data:image/')) {
-                imageUrl = content;
-              } else if (content.startsWith('http')) {
-                imageUrl = content;
-              } else if (/^[A-Za-z0-9+/=]{100,}$/.test(content.trim())) {
-                imageUrl = `data:image/png;base64,${content.trim()}`;
-                console.log('检测到纯 base64，已添加前缀');
-              } else {
-                const match = content.match(/https?:\/\/[^\s)]+/);
-                if (match) imageUrl = match[0];
+            // 检查 text 中的 URL
+            else if (part.text && typeof part.text === 'string') {
+              if (part.text.startsWith('http://') || part.text.startsWith('https://')) {
+                imageUrl = part.text;
+                console.log('✅ 从 text 提取图片 URL:', imageUrl.substring(0, 100));
+                break;
+              }
+              // 尝试从文本中提取 URL
+              const urlMatch = part.text.match(/https?:\/\/[^\s)]+/);
+              if (urlMatch) {
+                imageUrl = urlMatch[0];
+                console.log('✅ 从 text 中匹配到图片 URL:', imageUrl.substring(0, 100));
+                break;
               }
             }
-          } else {
-            throw new Error('响应中既没有 images 也没有 content');
           }
 
           if (!imageUrl) {
-            console.error('无法解析图片 URL');
-            console.error('Message 对象:', JSON.stringify(message, null, 2));
+            console.error('=== 无法解析图片 URL ===');
+            console.error('完整响应:', JSON.stringify(data, null, 2));
             throw new Error('无法解析图片 URL');
           }
 
-          console.log('成功提取图片:', imageUrl.substring(0, 100));
+          console.log('✅ 成功提取图片');
         }
 
         generatedImages.push(imageUrl);
