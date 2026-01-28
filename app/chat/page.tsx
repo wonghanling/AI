@@ -464,7 +464,7 @@ function ChatPageContent() {
 
               {/* 模型选择下拉菜单 */}
               {showModelSelector && (
-                <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] overflow-y-auto">
                   <div className="p-3 border-b border-gray-200">
                     <h3 className="font-semibold text-sm text-gray-900">选择模型</h3>
                   </div>
