@@ -199,7 +199,22 @@ export async function POST(req: NextRequest) {
           if (!imageUrl) {
             console.error('=== 无法解析图片 ===');
             console.error('Parts:', JSON.stringify(responseParts, null, 2));
-            throw new Error('无法解析图片 URL');
+
+            // 返回完整响应给前端，便于调试
+            return NextResponse.json({
+              error: '无法解析图片 URL - 请查看 debug 信息',
+              debug: {
+                fullResponse: data,
+                candidate: candidate,
+                responseParts: responseParts,
+                partsAnalysis: responseParts.map((p: any) => ({
+                  keys: Object.keys(p),
+                  hasInlineData: !!p.inline_data,
+                  hasText: !!p.text,
+                  textPreview: p.text ? p.text.substring(0, 200) : null
+                }))
+              }
+            }, { status: 500 });
           }
 
           console.log('✅ 成功提取图片');
