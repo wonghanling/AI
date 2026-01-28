@@ -96,46 +96,50 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < count; i++) {
         let imageUrl = '';
 
-        // Nano Banana 模型使用 Chat 兼容格式
+        // Nano Banana 模型使用 Gemini 原生格式
         if (model.includes('nano-banana')) {
-          console.log('=== Nano Banana 模型调用（云雾API - Chat兼容格式）===');
+          console.log('=== Nano Banana 模型调用（云雾API - Gemini原生格式）===');
           console.log('模型:', modelConfig.yunwuModel);
           console.log('Prompt:', prompt);
 
-          // 构建 Chat 兼容格式的 messages
-          const messageContent: any[] = [];
+          // 构建 Gemini 原生格式的 contents
+          const parts: any[] = [];
 
           // 如果有上传的图片，先添加图片
           if (body.imageUrl) {
             console.log('包含上传的图片');
-            messageContent.push({
-              type: 'image_url',
-              image_url: {
-                url: body.imageUrl
-              }
-            });
+            // 提取 base64 数据
+            const base64Match = body.imageUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/);
+            if (base64Match) {
+              const mimeType = `image/${base64Match[1]}`;
+              const base64Data = base64Match[2];
+              parts.push({
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64Data
+                }
+              });
+            }
           }
 
           // 添加文本 prompt
-          messageContent.push({
-            type: 'text',
+          parts.push({
             text: prompt
           });
 
           const requestBody = {
-            model: modelConfig.yunwuModel,
-            messages: [{
-              role: 'user',
-              content: messageContent
+            contents: [{
+              parts: parts
             }],
-            modalities: ['image', 'text'], // 关键：必须添加 modalities
-            max_tokens: 4096
+            generationConfig: {
+              response_modalities: ['IMAGE']
+            }
           };
 
           console.log('请求体:', JSON.stringify(requestBody, null, 2));
 
-          // 使用 Chat 兼容端点
-          const response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
+          // 使用 Gemini 原生端点
+          const response = await fetch(`${YUNWU_BASE_URL}/v1beta/models/${modelConfig.yunwuModel}:generateContent`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${YUNWU_API_KEY}`,
@@ -151,60 +155,48 @@ export async function POST(req: NextRequest) {
           }
 
           const data = await response.json();
-          console.log('=== Chat 兼容格式响应 ===');
-          console.log('完整响应结构:', JSON.stringify(data, null, 2));
+          console.log('=== Gemini 原生格式响应 ===');
+          console.log('完整响应:', JSON.stringify(data, null, 2));
 
-          const message = data.choices?.[0]?.message;
-          console.log('Message 对象:', message);
-
-          if (!message) {
-            throw new Error('响应中没有 message');
+          // Gemini 原生格式：candidates[0].content.parts[]
+          const candidate = data.candidates?.[0];
+          if (!candidate) {
+            throw new Error('响应中没有 candidates');
           }
 
-          // 关键：图片在 message.images 数组中，不是在 content 里
-          if (message.images && Array.isArray(message.images) && message.images.length > 0) {
-            console.log('找到 images 数组，长度:', message.images.length);
-            const firstImage = message.images[0];
-            console.log('第一张图片对象:', firstImage);
+          const responseParts = candidate.content?.parts;
+          if (!responseParts || !Array.isArray(responseParts)) {
+            throw new Error('响应中没有 parts');
+          }
 
-            if (firstImage.image_url && firstImage.image_url.url) {
-              imageUrl = firstImage.image_url.url;
-              console.log('✅ 从 images 数组提取图片 URL:', imageUrl.substring(0, 100));
-            } else {
-              throw new Error('images 数组中没有有效的 image_url');
+          console.log('Parts 数组长度:', responseParts.length);
+
+          // 从 parts 中查找图片
+          for (const part of responseParts) {
+            // 检查 inline_data (base64 图片)
+            if (part.inline_data && part.inline_data.data) {
+              const mimeType = part.inline_data.mime_type || 'image/png';
+              imageUrl = `data:${mimeType};base64,${part.inline_data.data}`;
+              console.log('✅ 从 inline_data 提取图片 (base64)');
+              break;
             }
-          }
-          // 备用：尝试从 content 中提取
-          else if (message.content) {
-            console.log('未找到 images 数组，尝试从 content 提取');
-            const content = message.content;
-            console.log('内容:', content);
-            console.log('内容类型:', typeof content);
-
-            if (typeof content === 'string') {
-              if (content.startsWith('data:image/')) {
-                imageUrl = content;
-              } else if (content.startsWith('http')) {
-                imageUrl = content;
-              } else if (/^[A-Za-z0-9+/=]{100,}$/.test(content.trim())) {
-                imageUrl = `data:image/png;base64,${content.trim()}`;
-                console.log('检测到纯 base64，已添加前缀');
-              } else {
-                const match = content.match(/https?:\/\/[^\s)]+/);
-                if (match) imageUrl = match[0];
+            // 检查 text 中的 URL（备用）
+            else if (part.text && typeof part.text === 'string') {
+              if (part.text.startsWith('http://') || part.text.startsWith('https://')) {
+                imageUrl = part.text;
+                console.log('✅ 从 text 提取图片 URL');
+                break;
               }
             }
-          } else {
-            throw new Error('响应中既没有 images 也没有 content');
           }
 
           if (!imageUrl) {
-            console.error('无法解析图片 URL');
-            console.error('Message 对象:', JSON.stringify(message, null, 2));
+            console.error('无法解析图片');
+            console.error('Parts:', JSON.stringify(responseParts, null, 2));
             throw new Error('无法解析图片 URL');
           }
 
-          console.log('✅ 成功提取图片:', imageUrl.substring(0, 100));
+          console.log('✅ 成功提取图片');
         }
 
         generatedImages.push(imageUrl);
