@@ -179,11 +179,12 @@ export async function POST(req: NextRequest) {
           for (const part of responseParts) {
             console.log('检查 part:', Object.keys(part));
 
-            // 检查 inline_data (base64 图片)
-            if (part.inline_data && part.inline_data.data) {
-              const mimeType = part.inline_data.mime_type || 'image/png';
-              imageUrl = `data:${mimeType};base64,${part.inline_data.data}`;
-              console.log('✅ 从 inline_data 提取图片 (base64)');
+            // 检查 inlineData (驼峰命名，云雾API) 或 inline_data (下划线命名)
+            const inlineData = part.inlineData || part.inline_data;
+            if (inlineData && inlineData.data) {
+              const mimeType = inlineData.mimeType || inlineData.mime_type || 'image/png';
+              imageUrl = `data:${mimeType};base64,${inlineData.data}`;
+              console.log('✅ 从 inlineData 提取图片 (base64)');
               break;
             }
             // 检查 text 中的 URL（备用）
@@ -209,7 +210,7 @@ export async function POST(req: NextRequest) {
                 responseParts: responseParts,
                 partsAnalysis: responseParts.map((p: any) => ({
                   keys: Object.keys(p),
-                  hasInlineData: !!p.inline_data,
+                  hasInlineData: !!(p.inlineData || p.inline_data),
                   hasText: !!p.text,
                   textPreview: p.text ? p.text.substring(0, 200) : null
                 }))
