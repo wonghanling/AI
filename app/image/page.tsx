@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
@@ -43,6 +43,7 @@ function ImageGenerationContent() {
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [resolution, setResolution] = useState('1K'); // Nano Banana 默认 1K（固定）
   const [imageCount, setImageCount] = useState(1);
+  const [isPending, startTransition] = useTransition();
 
   // 当切换模型时，重置分辨率为该模型的第一个可用分辨率
   useEffect(() => {
@@ -50,7 +51,7 @@ function ImageGenerationContent() {
     if (!availableResolutions.includes(resolution)) {
       setResolution(availableResolutions[0]);
     }
-  }, [selectedModel]);
+  }, [selectedModel, resolution]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [credits, setCredits] = useState(0);
@@ -65,10 +66,10 @@ function ImageGenerationContent() {
     size: string;
   }>>([]);
 
-  const currentModel = MODELS[selectedModel];
+  const currentModel = useMemo(() => MODELS[selectedModel], [selectedModel]);
 
   // 处理图片上传
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -94,12 +95,12 @@ function ImageGenerationContent() {
       setError('图片读取失败');
     };
     reader.readAsDataURL(file);
-  };
+  }, []);
 
   // 清除上传的图片
-  const clearUploadedImage = () => {
+  const clearUploadedImage = useCallback(() => {
     setUploadedImage(null);
-  };
+  }, []);
 
   // 获取用户积分
   useEffect(() => {
@@ -190,13 +191,13 @@ function ImageGenerationContent() {
   }, [cooldownSeconds]);
 
   // 计算总积分消耗
-  const calculateTotalCredits = () => {
+  const calculateTotalCredits = useMemo(() => {
     const resolutionCredits = currentModel.resolutions[resolution as keyof typeof currentModel.resolutions]?.credits || 0;
     return resolutionCredits * imageCount;
-  };
+  }, [currentModel, resolution, imageCount]);
 
   // 生成图片
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
       setError('请输入图片描述');
       return;
@@ -207,7 +208,7 @@ function ImageGenerationContent() {
       return;
     }
 
-    const totalCredits = calculateTotalCredits();
+    const totalCredits = calculateTotalCredits;
     if (credits < totalCredits) {
       setError(`积分不足，需要 ${totalCredits} 积分`);
       return;
@@ -294,7 +295,7 @@ function ImageGenerationContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [prompt, cooldownSeconds, calculateTotalCredits, credits, selectedModel, aspectRatio, resolution, imageCount, uploadedImage, generatedImages]);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -340,7 +341,8 @@ function ImageGenerationContent() {
             </Link>
 
             <button
-              onClick={() => setSelectedModel('nano-banana')}
+              onClick={() => startTransition(() => setSelectedModel('nano-banana'))}
+              disabled={isPending}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                 selectedModel === 'nano-banana'
                   ? 'bg-[#F5C518] text-black font-semibold'
@@ -354,7 +356,8 @@ function ImageGenerationContent() {
             </button>
 
             <button
-              onClick={() => setSelectedModel('nano-banana-pro')}
+              onClick={() => startTransition(() => setSelectedModel('nano-banana-pro'))}
+              disabled={isPending}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                 selectedModel === 'nano-banana-pro'
                   ? 'bg-[#F5C518] text-black font-semibold'
@@ -547,7 +550,7 @@ function ImageGenerationContent() {
             {/* 生成按钮 */}
             <button
               onClick={handleGenerate}
-              disabled={loading || !prompt.trim() || cooldownSeconds > 0 || credits < calculateTotalCredits()}
+              disabled={loading || !prompt.trim() || cooldownSeconds > 0 || credits < calculateTotalCredits}
               className="w-full bg-[#F5C518] hover:bg-[#E6B800] text-black font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -565,13 +568,13 @@ function ImageGenerationContent() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  <span>创建图片 · {calculateTotalCredits()} 积分</span>
+                  <span>创建图片 · {calculateTotalCredits} 积分</span>
                 </>
               )}
             </button>
 
             <p className="text-xs text-gray-500 text-center mt-3">
-              本次生成将消耗 {calculateTotalCredits()} 积分
+              本次生成将消耗 {calculateTotalCredits} 积分
             </p>
           </div>
 
