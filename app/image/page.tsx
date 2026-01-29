@@ -125,11 +125,11 @@ function ImageGenerationContent() {
 
         if (response.ok) {
           const data = await response.json();
-          setCredits(data.balance || 0);
+          setCredits(data.imageCredits || 0);
         }
       } catch (err) {
         console.error('获取积分失败:', err);
-        setCredits(100);
+        setCredits(0);
       }
     };
 
