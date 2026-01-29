@@ -12,6 +12,8 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   model?: string;
+  imageUrl?: string;  // 图片的 base64 数据
+  imageType?: string; // 图片的 MIME 类型
 }
 
 interface Conversation {
@@ -34,8 +36,11 @@ function ChatPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false); // 移动端侧边栏控制
   const [userId, setUserId] = useState<string | null>(null); // 添加用户 ID 状态
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null); // 上传的图片 base64
+  const [imageError, setImageError] = useState<string | null>(null); // 图片上传错误
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 获取配额信息
   const fetchQuota = useCallback(async () => {
@@ -81,7 +86,51 @@ function ChatPageContent() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
+
+  // 检查当前模型是否支持视觉
+  const supportsVision = useMemo(() => {
+    const model = MODEL_MAP[selectedModel];
+    return model?.capabilities.includes('vision') || model?.capabilities.includes('multimodal');
+  }, [selectedModel]);
+
+  // 处理图片上传
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 检查文件大小（最大 10MB）
+    if (file.size > 10 * 1024 * 1024) {
+      setImageError('图片大小不能超过 10MB');
+      return;
+    }
+
+    // 检查文件类型
+    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+      setImageError('只支持 PNG、JPG、JPEG、WebP 格式');
+      return;
+    }
+
+    // 读取文件并转换为 base64
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setUploadedImage(event.target?.result as string);
+      setImageError(null);
+    };
+    reader.onerror = () => {
+      setImageError('图片读取失败');
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  // 清除上传的图片
+  const clearUploadedImage = useCallback(() => {
+    setUploadedImage(null);
+    setImageError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
 
   // 页面加载时获取配额和恢复对话历史
   useEffect(() => {
@@ -180,11 +229,21 @@ function ChatPageContent() {
     if (!input.trim() || loading) return;
 
     setError(null); // 清除之前的错误
-    const userMessage: Message = { role: 'user', content: input.trim(), model: selectedModel };
+    const userMessage: Message = {
+      role: 'user',
+      content: input.trim(),
+      model: selectedModel,
+      imageUrl: uploadedImage || undefined,
+      imageType: uploadedImage ? uploadedImage.split(';')[0].split(':')[1] : undefined,
+    };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
+
+    // 清除上传的图片
+    const currentImage = uploadedImage;
+    clearUploadedImage();
 
     try {
       // 获取 Supabase session token
@@ -208,6 +267,7 @@ function ChatPageContent() {
           messages: newMessages.map(m => ({
             role: m.role,
             content: m.content,
+            imageUrl: m.imageUrl,
           })),
           model_key: selectedModel,
           stream: true,
@@ -653,6 +713,15 @@ function ChatPageContent() {
                         </svg>
                       </div>
                       <div className="flex-1 pt-1">
+                        {msg.imageUrl && (
+                          <div className="mb-2">
+                            <img
+                              src={msg.imageUrl}
+                              alt="上传的图片"
+                              className="max-w-xs rounded-lg border border-gray-200"
+                            />
+                          </div>
+                        )}
                         <p className="text-gray-900 whitespace-pre-wrap break-words">{msg.content}</p>
                       </div>
                     </div>
@@ -754,38 +823,99 @@ function ChatPageContent() {
           )}
 
           <div className="max-w-3xl mx-auto px-3 md:px-4 py-3 md:py-4">
-            <div className="relative">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                placeholder="输入消息... (Shift + Enter 换行)"
-                className="w-full px-3 md:px-4 py-3 md:py-3 pr-12 md:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none max-h-40 text-base"
-                rows={1}
-                disabled={loading}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={loading || !input.trim()}
-                className="absolute right-2 bottom-2 p-2 md:p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors touch-manipulation"
-              >
-                {loading ? (
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            {/* 图片上传错误提示 */}
+            {imageError && (
+              <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
+                <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-red-800 flex-1">{imageError}</p>
+                <button onClick={() => setImageError(null)} className="text-red-500 hover:text-red-700">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </button>
+              </div>
+            )}
+
+            {/* 图片预览 */}
+            {uploadedImage && (
+              <div className="mb-3 relative inline-block">
+                <img
+                  src={uploadedImage}
+                  alt="预览"
+                  className="max-w-xs max-h-40 rounded-lg border border-gray-300"
+                />
+                <button
+                  onClick={clearUploadedImage}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 flex items-center justify-center"
+                  title="删除图片"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                )}
-              </button>
+                </button>
+              </div>
+            )}
+
+            <div className="relative flex items-end gap-2">
+              {/* 图片上传按钮 - 只在支持视觉的模型时显示 */}
+              {supportsVision && (
+                <div className="flex-shrink-0">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={loading}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading || !!uploadedImage}
+                    className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="上传图片"
+                  >
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  placeholder="输入消息... (Shift + Enter 换行)"
+                  className="w-full px-3 md:px-4 py-3 md:py-3 pr-12 md:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none max-h-40 text-base"
+                  rows={1}
+                  disabled={loading}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={loading || !input.trim()}
+                  className="absolute right-2 bottom-2 p-2 md:p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors touch-manipulation"
+                >
+                  {loading ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
               Boluolab 可能会出错。请核查重要信息。

@@ -106,6 +106,36 @@ export async function POST(req: NextRequest) {
       let tokensUsed = 0;
 
       try {
+        // 处理消息格式，支持图片
+        const formattedMessages = messages.map((msg: any) => {
+          // 如果消息包含图片，转换为多模态格式
+          if (msg.imageUrl && msg.role === 'user') {
+            const base64Match = msg.imageUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/);
+            if (base64Match) {
+              return {
+                role: msg.role,
+                content: [
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: msg.imageUrl
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: msg.content
+                  }
+                ]
+              };
+            }
+          }
+          // 普通文本消息
+          return {
+            role: msg.role,
+            content: msg.content
+          };
+        });
+
         // 调用云雾 API
         response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
           method: 'POST',
@@ -115,7 +145,7 @@ export async function POST(req: NextRequest) {
           },
           body: JSON.stringify({
             model: modelConfig.yunwuModel,
-            messages: messages,
+            messages: formattedMessages,
             stream: stream,
             max_tokens: modelConfig.maxTokens,
           }),
@@ -133,6 +163,34 @@ export async function POST(req: NextRequest) {
           usedModelKey = fallbackKey; // 更新为降级后的模型 key
           usedModel = fallbackConfig.yunwuModel;
 
+          // 处理消息格式（降级时也需要支持图片）
+          const formattedMessages = messages.map((msg: any) => {
+            if (msg.imageUrl && msg.role === 'user') {
+              const base64Match = msg.imageUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/);
+              if (base64Match) {
+                return {
+                  role: msg.role,
+                  content: [
+                    {
+                      type: 'image_url',
+                      image_url: {
+                        url: msg.imageUrl
+                      }
+                    },
+                    {
+                      type: 'text',
+                      text: msg.content
+                    }
+                  ]
+                };
+              }
+            }
+            return {
+              role: msg.role,
+              content: msg.content
+            };
+          });
+
           response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
             method: 'POST',
             headers: {
@@ -141,7 +199,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               model: fallbackConfig.yunwuModel,
-              messages: messages,
+              messages: formattedMessages,
               stream: stream,
               max_tokens: fallbackConfig.maxTokens,
             }),
