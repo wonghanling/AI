@@ -43,6 +43,14 @@ function ImageGenerationContent() {
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [resolution, setResolution] = useState('1K'); // Nano Banana 默认 1K（固定）
   const [imageCount, setImageCount] = useState(1);
+
+  // 当切换模型时，重置分辨率为该模型的第一个可用分辨率
+  useEffect(() => {
+    const availableResolutions = Object.keys(MODELS[selectedModel].resolutions);
+    if (!availableResolutions.includes(resolution)) {
+      setResolution(availableResolutions[0]);
+    }
+  }, [selectedModel]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [credits, setCredits] = useState(0);

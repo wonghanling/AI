@@ -124,13 +124,42 @@ export async function POST(req: NextRequest) {
             text: prompt
           });
 
+          // 根据 aspectRatio 和 resolution 计算图片尺寸
+          const calculateImageSize = (aspectRatio: string, resolution: string) => {
+            const baseSize = resolution === '4K' ? 4096 : resolution === '2K' ? 2048 : 1024;
+            const [widthRatio, heightRatio] = aspectRatio.split(':').map(Number);
+
+            // 计算实际宽高，保持比例
+            let width = baseSize;
+            let height = baseSize;
+
+            if (widthRatio > heightRatio) {
+              // 横向图片
+              height = Math.round(baseSize * heightRatio / widthRatio);
+            } else if (heightRatio > widthRatio) {
+              // 纵向图片
+              width = Math.round(baseSize * widthRatio / heightRatio);
+            }
+
+            return { width, height };
+          };
+
+          const imageSize = calculateImageSize(aspectRatio, resolution);
+          console.log('计算的图片尺寸:', imageSize);
+
           const requestBody = {
             contents: [{
               role: 'user',  // 关键：必须包含 role
               parts: parts
             }],
             generationConfig: {
-              responseModalities: ['TEXT', 'IMAGE']  // 关键：同时包含 TEXT 和 IMAGE
+              responseModalities: ['TEXT', 'IMAGE'],  // 关键：同时包含 TEXT 和 IMAGE
+              imageGenerationConfig: {
+                aspectRatio: aspectRatio,  // 添加宽高比
+                // 如果 API 支持，也可以直接指定尺寸
+                // width: imageSize.width,
+                // height: imageSize.height,
+              }
             }
           };
 
