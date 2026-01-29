@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
             }],
             generationConfig: {
               responseModalities: ['TEXT', 'IMAGE'],  // 关键：同时包含 TEXT 和 IMAGE
-              imageGenerationConfig: {
+              imageConfig: {
                 aspectRatio: aspectRatio,  // 添加宽高比
                 // 如果 API 支持，也可以直接指定尺寸
                 // width: imageSize.width,
