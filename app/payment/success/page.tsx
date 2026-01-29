@@ -53,7 +53,7 @@ function PaymentSuccessContent() {
           <div className="flex justify-center mb-6">
             <Image
               src="/logo.png"
-              alt="BoLuoing"
+              alt="Boluolab"
               width={60}
               height={60}
               className="object-contain"
@@ -122,7 +122,7 @@ export default function PaymentSuccessPage() {
             <div className="flex justify-center mb-6">
               <Image
                 src="/logo.png"
-                alt="BoLuoing"
+                alt="Boluolab"
                 width={60}
                 height={60}
                 className="object-contain"

@@ -105,7 +105,7 @@ async function generateAlipayUrl(
       outTradeNo: orderId, // 商户订单号
       productCode: 'FAST_INSTANT_TRADE_PAY',
       totalAmount: amount.toFixed(2), // 订单金额，单位为元
-      subject: `BoLuoing AI - ${plan}`, // 订单标题
+      subject: `Boluolab AI - ${plan}`, // 订单标题
       body: `购买 ${plan} 套餐`, // 订单描述
     },
     returnUrl: `${baseUrl}/payment/callback`, // 同步回调地址

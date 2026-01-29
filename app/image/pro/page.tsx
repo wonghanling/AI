@@ -305,7 +305,7 @@ function ProImageContent() {
                 </svg>
               </button>
               <Link href="/chat" className="text-xl font-bold text-gray-900">
-                BoLuoing AI
+                Boluolab AI
               </Link>
               <span className="hidden sm:inline text-sm text-gray-500">专业图片生成</span>
             </div>

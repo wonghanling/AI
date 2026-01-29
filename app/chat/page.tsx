@@ -362,8 +362,8 @@ function ChatPageContent() {
         {/* Logo */}
         <div className="p-4 border-b border-gray-800">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="BoLuoing" width={32} height={32} />
-            <span className="font-semibold text-lg">BoLuoing</span>
+            <Image src="/logo.png" alt="Boluolab" width={32} height={32} />
+            <span className="font-semibold text-lg">Boluolab</span>
           </Link>
         </div>
 
@@ -788,7 +788,7 @@ function ChatPageContent() {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              BoLuoing 可能会出错。请核查重要信息。
+              Boluolab 可能会出错。请核查重要信息。
             </p>
           </div>
         </div>

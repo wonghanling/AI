@@ -167,7 +167,7 @@ export default function RegisterPage() {
                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
               </svg>
             </div>
-            <h2 className="text-white text-lg font-bold tracking-widest uppercase">BoLuoing</h2>
+            <h2 className="text-white text-lg font-bold tracking-widest uppercase">Boluolab</h2>
           </div>
 
           {/* Main Text */}
@@ -204,7 +204,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <div className="z-10 flex items-center gap-8 text-white/20 text-[10px] tracking-[0.4em] font-medium uppercase">
-          <span>© 2026 BoLuoing 智能</span>
+          <span>© 2026 Boluolab 智能</span>
           <div className="w-8 h-[1px] bg-white/10"></div>
           <span>加密会话</span>
         </div>

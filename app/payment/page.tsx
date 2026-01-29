@@ -139,12 +139,12 @@ function PaymentContent() {
             <div className="flex items-center gap-3 mb-4">
               <Image
                 src="/logo.png"
-                alt="BoLuoing"
+                alt="Boluolab"
                 width={40}
                 height={40}
                 className="object-contain"
               />
-              <h1 className="text-2xl font-bold">BoLuoing</h1>
+              <h1 className="text-2xl font-bold">Boluolab</h1>
             </div>
             <h2 className="text-3xl font-bold mb-2">{currentPlan.name}</h2>
             <p className="text-white/70 text-sm">{currentPlan.nameEn}</p>

@@ -143,12 +143,12 @@ function OrdersContent() {
           <div className="flex items-center gap-2">
             <Image
               src="/logo.png"
-              alt="BoLuoing"
+              alt="Boluolab"
               width={32}
               height={32}
               className="object-contain"
             />
-            <span className="font-bold text-xl tracking-tight">BoLuoing</span>
+            <span className="font-bold text-xl tracking-tight">Boluolab</span>
           </div>
         </div>
       </nav>

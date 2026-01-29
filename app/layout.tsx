@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BoLuoing - AI 工具镜像网站",
+  title: "Boluolab -图像与视频工具",
   description: "所有顶级 AI，一站式使用",
 };
 

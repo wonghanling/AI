@@ -56,12 +56,12 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Image
               src="/logo.png"
-              alt="BoLuoing"
+              alt="Boluolab"
               width={32}
               height={32}
               className="object-contain"
             />
-            <span className="font-bold text-lg md:text-xl tracking-tight">BoLuoing</span>
+            <span className="font-bold text-lg md:text-xl tracking-tight">Boluolab</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
@@ -610,12 +610,12 @@ export default function LandingPage() {
               <div className="flex items-center gap-2 mb-6">
                 <Image
                   src="/logo.png"
-                  alt="BoLuoing"
+                  alt="Boluolab"
                   width={32}
                   height={32}
                   className="object-contain"
                 />
-                <span className="font-bold text-xl tracking-tight">BoLuoing</span>
+                <span className="font-bold text-xl tracking-tight">Boluolab</span>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed max-w-[240px]">
                 全球最先进人工智能的终极目的地. 一个界面, 无限可能.
@@ -658,7 +658,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-200 text-xs text-gray-500">
-            <p>© 2026 BoLuoing. 保留所有权利.</p>
+            <p>© 2026 Boluolab. 保留所有权利.</p>
             <p>为智能的未来而生.</p>
           </div>
         </div>
