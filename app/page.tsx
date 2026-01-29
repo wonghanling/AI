@@ -405,9 +405,9 @@ export default function LandingPage() {
           <p className="text-sm text-gray-400">One Price, All Features</p>
         </div>
 
-        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-8">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
           {/* Free Plan */}
-          <div className="bg-white rounded-2xl p-10 border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.12)] relative">
+          <div className="bg-white rounded-2xl p-6 md:p-10 border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.12)] relative">
             <div className="text-center mb-8">
               <h3 className="font-bold text-lg mb-1">免费版</h3>
               <p className="text-xs text-gray-400 mb-3">Free Plan</p>
@@ -482,7 +482,7 @@ export default function LandingPage() {
           </div>
 
           {/* Pro Plan */}
-          <div className="bg-white rounded-2xl p-10 border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.12)] relative overflow-hidden">
+          <div className="bg-white rounded-2xl p-6 md:p-10 border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.12)] relative overflow-hidden">
             {/* Popular Badge */}
             <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden">
               <div className="absolute top-4 right-[-32px] bg-[#F5C518] text-black text-xs font-bold py-1 px-8 rotate-45 shadow-md">
