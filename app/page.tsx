@@ -52,7 +52,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white font-sans text-black">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-300">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image
               src="/logo.png"
@@ -61,7 +61,7 @@ export default function LandingPage() {
               height={32}
               className="object-contain"
             />
-            <span className="font-bold text-xl tracking-tight">BoLuoing</span>
+            <span className="font-bold text-lg md:text-xl tracking-tight">BoLuoing</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
@@ -70,26 +70,26 @@ export default function LandingPage() {
             <Link href="#features" className="hover:text-black transition-colors">功能</Link>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {loading ? (
-              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+              <div className="w-16 md:w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
             ) : user ? (
               <>
-                <span className="text-sm font-medium text-gray-700">{user.email}</span>
-                <Link href="/orders" className="text-sm font-medium text-gray-700 hover:text-black">
-                  我的订单
+                <span className="hidden sm:inline text-xs md:text-sm font-medium text-gray-700 truncate max-w-[100px] md:max-w-none">{user.email}</span>
+                <Link href="/orders" className="text-xs md:text-sm font-medium text-gray-700 hover:text-black whitespace-nowrap">
+                  订单
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="text-sm font-medium text-gray-700 hover:text-black"
+                  className="text-xs md:text-sm font-medium text-gray-700 hover:text-black whitespace-nowrap"
                 >
                   登出
                 </button>
               </>
             ) : (
               <>
-                <Link href="/auth/login" className="text-sm font-medium text-gray-700 hover:text-black">登录</Link>
-                <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-5 py-2 rounded-full text-sm font-bold transition-all shadow-sm">
+                <Link href="/auth/login" className="text-xs md:text-sm font-medium text-gray-700 hover:text-black">登录</Link>
+                <Link href="/auth/register" className="bg-[#F5C518] hover:bg-[#E6B800] text-black px-3 md:px-5 py-2 rounded-full text-xs md:text-sm font-bold transition-all shadow-sm whitespace-nowrap">
                   注册
                 </Link>
               </>
@@ -405,7 +405,7 @@ export default function LandingPage() {
           <p className="text-sm text-gray-400">One Price, All Features</p>
         </div>
 
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-8">
           {/* Free Plan */}
           <div className="bg-white rounded-2xl p-10 border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.12)] relative">
             <div className="text-center mb-8">

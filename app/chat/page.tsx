@@ -465,7 +465,7 @@ function ChatPageContent() {
 
               {/* 模型选择下拉菜单 */}
               {showModelSelector && (
-                <div className="absolute top-full left-0 mt-2 w-80 md:w-80 w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] overflow-y-auto">
+                <div className="absolute top-full left-0 mt-2 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] overflow-y-auto">
                   <div className="p-3 border-b border-gray-200">
                     <h3 className="font-semibold text-sm text-gray-900">选择模型</h3>
                   </div>
@@ -492,8 +492,8 @@ function ChatPageContent() {
                               selectedModel === modelKey ? 'bg-gray-100' : ''
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-medium text-sm flex-shrink-0">{model.displayName}</p>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-medium text-sm flex-shrink min-w-0 truncate">{model.displayName}</p>
                               <div className="flex gap-1.5 flex-shrink-0">
                                 {model.capabilities?.includes('vision') && (
                                   <span className="w-5 h-5 flex items-center justify-center" title="识图">
@@ -518,7 +518,7 @@ function ChatPageContent() {
                               </div>
                             </div>
                             {model.description && (
-                              <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words">{model.description}</p>
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words pr-8">{model.description}</p>
                             )}
                           </button>
                         );
@@ -549,18 +549,33 @@ function ChatPageContent() {
                                 selectedModel === modelKey ? 'bg-gray-100' : ''
                               }`}
                             >
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="font-medium text-sm flex-shrink-0">{model.displayName}</p>
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="font-medium text-sm flex-shrink min-w-0 truncate">{model.displayName}</p>
                                 <div className="flex gap-1.5 flex-shrink-0">
                                   {model.capabilities?.includes('vision') && (
                                     <span className="w-5 h-5 flex items-center justify-center" title="识图">
                                       <Image src="/eye-fill-svgrepo-com.svg" alt="识图" width={16} height={16} className="opacity-70" />
                                     </span>
                                   )}
+                                  {model.capabilities?.includes('thinking') && (
+                                    <span className="w-5 h-5 flex items-center justify-center" title="思考">
+                                      <Image src="/lamp-charge-svgrepo-com.svg" alt="思考" width={16} height={16} className="opacity-70" />
+                                    </span>
+                                  )}
+                                  {model.capabilities?.includes('internet') && (
+                                    <span className="w-5 h-5 flex items-center justify-center" title="联网">
+                                      <Image src="/network-backup-svgrepo-com.svg" alt="联网" width={16} height={16} className="opacity-70" />
+                                    </span>
+                                  )}
+                                  {model.capabilities?.includes('coding') && (
+                                    <span className="w-5 h-5 flex items-center justify-center" title="编程">
+                                      <Image src="/programming-code-svgrepo-com.svg" alt="编程" width={16} height={16} className="opacity-70" />
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               {model.description && (
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words">{model.description}</p>
+                                <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words pr-8">{model.description}</p>
                               )}
                             </button>
                           );
