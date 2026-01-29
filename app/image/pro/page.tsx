@@ -100,14 +100,15 @@ function ProImageContent() {
       }
 
       try {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('credits')
-          .eq('id', session.user.id)
-          .single();
+        const response = await fetch('/api/user/credits', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
 
-        if (userData) {
-          setCredits(userData.credits || 0);
+        if (response.ok) {
+          const data = await response.json();
+          setCredits(data.imageCredits || 0);
         }
       } catch (err) {
         console.error('获取积分失败:', err);
@@ -311,16 +312,25 @@ function ProImageContent() {
 
             <div className="flex items-center gap-4">
               <Link
+                href="/"
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="hidden sm:inline">返回首页</span>
+              </Link>
+              <Link
                 href="/image"
                 className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
                 Nano Banana
               </Link>
-              <div className="flex items-center gap-2 px-4 py-2 bg-[#F5C518] text-black rounded-lg font-semibold">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-[#F5C518] text-black rounded-lg font-semibold">
+                <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span className="font-semibold">{credits}</span>
+                <span className="text-sm md:text-base font-semibold">{credits}</span>
               </div>
             </div>
           </div>
