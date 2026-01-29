@@ -257,6 +257,14 @@ function ImageGenerationContent() {
       const data = await response.json();
 
       if (!response.ok) {
+        // 打印调试信息到控制台
+        console.error('=== 图片生成失败 ===');
+        console.error('错误信息:', data.error);
+        if (data.debug) {
+          console.error('调试信息:', data.debug);
+          console.error('完整响应:', JSON.stringify(data.debug.fullResponse, null, 2));
+          console.error('Parts 分析:', data.debug.partsAnalysis);
+        }
         throw new Error(data.error || '生成失败');
       }
 
