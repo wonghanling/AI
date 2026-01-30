@@ -114,8 +114,7 @@ export default function RechargeCreditsPage() {
             if (response.ok) {
               const data = await response.json();
               setImageCredits(data.imageCredits || 0);
-              // TODO: 视频积分需要从视频网站获取，待视频网站完成后对接
-              setVideoCredits(0); // 暂时显示为 0
+              setVideoCredits(data.videoCredits || 0);
             }
           } catch (err) {
             console.error('获取积分失败:', err);

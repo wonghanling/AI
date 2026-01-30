@@ -25,13 +25,14 @@ export async function GET(req: NextRequest) {
     // 2. 获取用户信息
     const { data: userData } = await supabaseAdmin
       .from('users')
-      .select('user_type, credits, image_credits')
+      .select('user_type, credits, image_credits, video_credits')
       .eq('id', user.id)
       .single();
 
     const userType = userData?.user_type || 'free';
     const credits = userData?.credits || 0; // 保留旧字段兼容性
     const imageCredits = userData?.image_credits || 0;
+    const videoCredits = userData?.video_credits || 0;
 
     // 3. 获取今日使用统计
     const today = new Date().toISOString().split('T')[0];
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
       credits, // 保留旧字段兼容性
       balance: credits, // 兼容前端
       imageCredits, // 图片积分
-      // videoCredits 由视频网站提供，待视频网站完成后对接
+      videoCredits, // 视频积分
       usage: {
         advanced: {
           used: advancedCount || 0,

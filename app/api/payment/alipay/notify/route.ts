@@ -81,14 +81,23 @@ export async function POST(req: NextRequest) {
 
           // 根据积分类型更新对应的积分
           if (creditType === 'video') {
-            // TODO: 视频积分充值 - 待视频网站完成后实现
-            // 需要：
-            // 1. 获取用户的 global_user_id
-            // 2. 调用视频网站 API: POST /api/credits/add
-            // 3. 传递 { global_user_id, amount, source: 'main_site_recharge' }
+            // 视频积分充值
+            const { data: userData } = await supabaseAdmin
+              .from('users')
+              .select('video_credits')
+              .eq('id', orderData.user_id)
+              .single();
 
-            console.log(`TODO: 视频积分充值 ${creditsToAdd} 积分给用户 ${orderData.user_id}`);
-            console.log('待视频网站完成后实现此功能');
+            const currentVideoCredits = userData?.video_credits || 0;
+
+            await supabaseAdmin
+              .from('users')
+              .update({
+                video_credits: currentVideoCredits + creditsToAdd,
+              })
+              .eq('id', orderData.user_id);
+
+            console.log(`User ${orderData.user_id} video_credits updated: +${creditsToAdd}`);
           } else {
             // 图片积分充值
             const { data: userData } = await supabaseAdmin
