@@ -298,7 +298,7 @@ export default function LandingPage() {
                     alt="Sora"
                     width={20}
                     height={20}
-                    className="w-5 h-5 object-contain brightness-0 invert"
+                    className="w-5 h-5 object-contain"
                   />
                 </div>
                 <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5 text-white">
@@ -331,6 +331,16 @@ export default function LandingPage() {
               </div>
               <h3 className="font-bold text-lg mb-2">AI 视频生成</h3>
               <p className="text-gray-600 text-xs leading-relaxed">Sora, Runway, Gemini 等顶级视频模型.</p>
+            </div>
+
+            <div
+              onClick={() => window.open('https://boluolab.com', '_blank')}
+              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
+                <span className="text-2xl font-bold text-white">∞</span>
+              </div>
+              <h3 className="font-bold text-lg mb-2">BoLou1971 无限画布</h3>
+              <p className="text-gray-600 text-xs leading-relaxed">创意无限, 自由绘制你的想象.</p>
             </div>
           </div>
         </div>
