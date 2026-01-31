@@ -21,7 +21,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['4K', '高质量', '音频'],
     cost: 10,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'Google最新的高级AI模型，支持视频自动配套音频生成，质量高价格低'
   },
   {
@@ -30,7 +32,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['4K', '首帧', '音频'],
     cost: 10,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3.1 4k模式，支持首帧传递，不支持尾帧，性价比最高'
   },
   {
@@ -39,7 +43,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['4K', '超高质量', 'Pro'],
     cost: 30,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3.1 4k高质量模式，质量超高，支持首尾帧和文生视频'
   },
   {
@@ -48,7 +54,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['4K', '音频', 'OpenAI'],
     cost: 9,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo_3_1 4k模式，OpenAI视频格式，性价比最高'
   },
   {
@@ -57,7 +65,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['4K', '快速', '首尾帧'],
     cost: 5,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3.1快速+4k模式，支持首尾帧和文生视频，价格低廉'
   },
   {
@@ -66,7 +76,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['4K', '首帧', 'OpenAI'],
     cost: 9,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo_3_1 4k模式，支持首帧传递，不支持尾帧'
   },
   {
@@ -75,7 +87,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['快速', '低成本', '首尾帧'],
     cost: 3,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3.1快速模式，支持首尾帧和文生视频，最低价格'
   },
   {
@@ -84,7 +98,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['标准', '音频', '首尾帧'],
     cost: 7,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3.1标准版，支持视频自动配套音频生成，支持首尾帧和文生视频'
   },
   {
@@ -93,7 +109,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['Pro', '超高质量', '音频'],
     cost: 30,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3.1高质量模式，质量超高，价格也超高，支持首尾帧和文生视频'
   },
   {
@@ -102,7 +120,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['快速', '音频', '首尾帧'],
     cost: 7,
-    features: { t2v: true, i2v: true, frames: true },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3.1快速模式，支持视频自动配套音频生成，支持首尾帧和文生视频'
   },
   {
@@ -111,7 +131,9 @@ const MODELS = [
     provider: 'Google',
     tags: ['Pro', '超高质量', '音频'],
     cost: 35,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
     desc: 'veo3高质量模式，支持视频自动配套音频生成，质量超高'
   },
 
@@ -122,7 +144,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['逆向', '720p', '10-15s'],
     cost: 3,
-    features: { t2v: true, i2v: false, frames: false },
+    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
+    duration: { fixed: [10, 15] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
     desc: 'sora-2的逆向，支持10s，15s，都是720p'
   },
   {
@@ -131,7 +155,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['逆向', '1080p', '15-25s'],
     cost: 31,
-    features: { t2v: true, i2v: false, frames: false },
+    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
+    duration: { fixed: [15, 25] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
     desc: 'sora-2-pro的逆向，支持15s和25s，15s支持1080p和720p'
   },
   {
@@ -140,7 +166,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['官方', '720p', '4s'],
     cost: 20,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { fixed: [4] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
     desc: 'Sora 2官方版，4秒720p，物理准确、逼真，支持音效'
   },
   {
@@ -149,7 +177,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['官方', '720p', '8s'],
     cost: 40,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { fixed: [8] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
     desc: 'Sora 2官方版，8秒720p，物理准确、逼真，支持音效'
   },
   {
@@ -158,7 +188,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['官方', '720p', '12s'],
     cost: 60,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { fixed: [12] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
     desc: 'Sora 2官方版，12秒720p，物理准确、逼真，支持音效'
   },
   {
@@ -167,7 +199,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['官方Pro', '720p', '10s'],
     cost: 450,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { fixed: [10] },
+    aspectRatios: ['16:9', '9:16'],
     desc: 'Sora 2 Pro官方版，10秒720p，可选择清晰度'
   },
   {
@@ -176,7 +210,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['官方Pro', '720p', '15s'],
     cost: 650,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { fixed: [15] },
+    aspectRatios: ['16:9', '9:16'],
     desc: 'Sora 2 Pro官方版，15秒720p，可选择清晰度'
   },
   {
@@ -185,7 +221,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['官方Pro', '1080p', '15s'],
     cost: 1100,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { fixed: [15] },
+    aspectRatios: ['16:9', '9:16'],
     desc: 'Sora 2 Pro官方版，15秒1080p，可选择清晰度'
   },
   {
@@ -194,7 +232,9 @@ const MODELS = [
     provider: 'OpenAI',
     tags: ['官方Pro', '1080p', '25s'],
     cost: 1800,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
+    duration: { fixed: [25] },
+    aspectRatios: ['16:9', '9:16'],
     desc: 'Sora 2 Pro官方版，25秒1080p，可选择清晰度'
   },
 
@@ -205,7 +245,9 @@ const MODELS = [
     provider: 'xAI',
     tags: ['最新', '低成本'],
     cost: 3,
-    features: { t2v: true, i2v: false, frames: false },
+    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
+    duration: { min: 2, max: 8, default: 4 },
+    aspectRatios: ['16:9', '9:16', '1:1'],
     desc: 'grok的最新视频模型'
   },
 
@@ -216,7 +258,9 @@ const MODELS = [
     provider: 'Luma AI',
     tags: ['快速', '参考图', '40s出图'],
     cost: 30,
-    features: { t2v: true, i2v: true, frames: false },
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 2, max: 8, default: 5 },
+    aspectRatios: ['16:9', '9:16', '1:1'],
     desc: 'Luma AI文生视频，支持上传2张参考图片，快速模式约40秒出视频'
   },
 
@@ -227,7 +271,9 @@ const MODELS = [
     provider: 'RunwayML',
     tags: ['Gen-3A', '图生视频', '10s'],
     cost: 25,
-    features: { t2v: false, i2v: true, frames: false },
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { fixed: [10] },
+    aspectRatios: ['16:9'],
     desc: 'RunwayML Gen-3A Turbo-10，先进的图生视频模型'
   },
   {
@@ -236,7 +282,9 @@ const MODELS = [
     provider: 'RunwayML',
     tags: ['Gen-3A', '图生视频', '5s'],
     cost: 15,
-    features: { t2v: false, i2v: true, frames: false },
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { fixed: [5] },
+    aspectRatios: ['16:9'],
     desc: 'RunwayML Gen-3A Turbo-5，先进的图生视频模型'
   },
   {
@@ -245,7 +293,9 @@ const MODELS = [
     provider: 'RunwayML',
     tags: ['Gen-4', '图生视频', '16:9'],
     cost: 25,
-    features: { t2v: false, i2v: true, frames: false },
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { fixed: [10] },
+    aspectRatios: ['16:9'],
     desc: '支持最新gen3模型，仅支持16:9画面，使用官方账号'
   },
   {
@@ -254,7 +304,9 @@ const MODELS = [
     provider: 'RunwayML',
     tags: ['Gen-4', '图生视频', '16:9'],
     cost: 15,
-    features: { t2v: false, i2v: true, frames: false },
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { fixed: [5] },
+    aspectRatios: ['16:9'],
     desc: '支持最新gen3模型，仅支持16:9画面，使用官方账号'
   }
 ];
@@ -294,11 +346,15 @@ export default function VideoPage() {
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [duration, setDuration] = useState(4);
+  const [startFrameImage, setStartFrameImage] = useState<string | null>(null);
+  const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [credits, setCredits] = useState(1240);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(true);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'favorite' | 'failed'>('all');
 
   // --- Effects ---
   useEffect(() => {
@@ -340,6 +396,52 @@ export default function VideoPage() {
   const handleOptimizePrompt = () => {
     setPrompt(prev => prev + " (Cinematic lighting, 8k resolution, highly detailed, trending on artstation, masterpiece)");
   };
+
+  // Handle image upload
+  const handleImageUpload = (type: 'start' | 'end', event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'start') {
+          setStartFrameImage(reader.result as string);
+        } else {
+          setEndFrameImage(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove uploaded image
+  const removeImage = (type: 'start' | 'end') => {
+    if (type === 'start') {
+      setStartFrameImage(null);
+    } else {
+      setEndFrameImage(null);
+    }
+  };
+
+  // Reset settings when model changes
+  useEffect(() => {
+    // Reset aspect ratio if not supported
+    if (!selectedModel.aspectRatios.includes(aspectRatio)) {
+      setAspectRatio(selectedModel.aspectRatios[0]);
+    }
+    // Reset duration
+    if (selectedModel.duration.fixed) {
+      setDuration(selectedModel.duration.fixed[0]);
+    } else if (selectedModel.duration.default) {
+      setDuration(selectedModel.duration.default);
+    }
+    // Clear images if not supported
+    if (!selectedModel.features.startFrame) {
+      setStartFrameImage(null);
+    }
+    if (!selectedModel.features.endFrame) {
+      setEndFrameImage(null);
+    }
+  }, [selectedModel]);
 
   // Filter models based on search query
   const filteredModels = MODELS.filter(model =>
@@ -554,26 +656,87 @@ export default function VideoPage() {
             <section className="space-y-3">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                 画面引导 (Image Ref)
-                {!selectedModel.features.frames && (
+                {!selectedModel.features.startFrame && !selectedModel.features.endFrame && (
                    <span className="text-[10px] text-amber-500/80 flex items-center gap-1">
                      <AlertCircle size={10} /> 当前模型不支持
                    </span>
                 )}
               </label>
 
-              <div className={`grid grid-cols-2 gap-3 ${!selectedModel.features.frames ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
+              <div className="grid grid-cols-2 gap-3">
                 {/* Start Frame */}
-                <div className="border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600 transition-all group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center z-10">
-                    <span className="text-xs text-white">点击上传</span>
-                  </div>
-                  <ImageIcon size={20} className="text-zinc-600 group-hover:text-zinc-400" />
-                  <span className="text-[10px] text-zinc-500">首帧图片</span>
+                <div className={`relative ${!selectedModel.features.startFrame ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload('start', e)}
+                    className="hidden"
+                    id="start-frame-upload"
+                    disabled={!selectedModel.features.startFrame}
+                  />
+                  <label
+                    htmlFor="start-frame-upload"
+                    className="border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600 transition-all group relative overflow-hidden"
+                  >
+                    {startFrameImage ? (
+                      <>
+                        <img src={startFrameImage} alt="Start frame" className="absolute inset-0 w-full h-full object-cover" />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeImage('start');
+                          }}
+                          className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center z-10 transition-colors"
+                        >
+                          <X size={14} className="text-white" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center z-10">
+                          <span className="text-xs text-white">点击上传</span>
+                        </div>
+                        <ImageIcon size={20} className="text-zinc-600 group-hover:text-zinc-400" />
+                        <span className="text-[10px] text-zinc-500">首帧图片</span>
+                      </>
+                    )}
+                  </label>
                 </div>
+
                 {/* End Frame */}
-                <div className="border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600 transition-all group">
-                   <ImageIcon size={20} className="text-zinc-600 group-hover:text-zinc-400" />
-                   <span className="text-[10px] text-zinc-500">尾帧图片</span>
+                <div className={`relative ${!selectedModel.features.endFrame ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload('end', e)}
+                    className="hidden"
+                    id="end-frame-upload"
+                    disabled={!selectedModel.features.endFrame}
+                  />
+                  <label
+                    htmlFor="end-frame-upload"
+                    className="border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600 transition-all group relative overflow-hidden"
+                  >
+                    {endFrameImage ? (
+                      <>
+                        <img src={endFrameImage} alt="End frame" className="absolute inset-0 w-full h-full object-cover" />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeImage('end');
+                          }}
+                          className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center z-10 transition-colors"
+                        >
+                          <X size={14} className="text-white" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon size={20} className="text-zinc-600 group-hover:text-zinc-400" />
+                        <span className="text-[10px] text-zinc-500">尾帧图片</span>
+                      </>
+                    )}
+                  </label>
                 </div>
               </div>
             </section>
@@ -586,39 +749,72 @@ export default function VideoPage() {
               <div className="space-y-2">
                 <span className="text-xs text-zinc-500">画面比例</span>
                 <div className="grid grid-cols-4 gap-2">
-                  {ASPECT_RATIOS.map((ratio) => (
-                    <button
-                      key={ratio.value}
-                      onClick={() => setAspectRatio(ratio.value)}
-                      className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
-                        aspectRatio === ratio.value
-                          ? 'bg-purple-500/10 border-purple-500/50 text-purple-400'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div className={`border border-current rounded-sm ${ratio.icon}`} />
-                      <span className="text-[10px]">{ratio.label}</span>
-                    </button>
-                  ))}
+                  {ASPECT_RATIOS.map((ratio) => {
+                    const isSupported = selectedModel.aspectRatios.includes(ratio.value);
+                    return (
+                      <button
+                        key={ratio.value}
+                        onClick={() => isSupported && setAspectRatio(ratio.value)}
+                        disabled={!isSupported}
+                        className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
+                          aspectRatio === ratio.value
+                            ? 'bg-purple-500/10 border-purple-500/50 text-purple-400'
+                            : isSupported
+                              ? 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                              : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-700 cursor-not-allowed opacity-40'
+                        }`}
+                      >
+                        <div className={`border border-current rounded-sm ${ratio.icon}`} />
+                        <span className="text-[10px]">{ratio.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Duration Slider */}
-              <div className="space-y-3">
-                <div className="flex justify-between text-xs text-zinc-500">
-                  <span>时长</span>
-                  <span className="text-zinc-300">4s</span>
+              {selectedModel.duration.fixed ? (
+                // Fixed duration options
+                <div className="space-y-2">
+                  <span className="text-xs text-zinc-500">时长（固定）</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {selectedModel.duration.fixed.map((dur) => (
+                      <button
+                        key={dur}
+                        onClick={() => setDuration(dur)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                          duration === dur
+                            ? 'bg-purple-500/10 border-purple-500/50 text-purple-400'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                        }`}
+                      >
+                        {dur}s
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="relative h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                   <div className="absolute left-0 top-0 h-full w-1/3 bg-zinc-500 rounded-full"></div>
+              ) : (
+                // Variable duration slider
+                <div className="space-y-3">
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>时长</span>
+                    <span className="text-zinc-300">{duration}s</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={selectedModel.duration.min}
+                    max={selectedModel.duration.max}
+                    step={1}
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+                    <span>{selectedModel.duration.min}s</span>
+                    <span>{selectedModel.duration.max}s</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
-                  <span>2s</span>
-                  <span>4s</span>
-                  <span>6s</span>
-                  <span>8s</span>
-                </div>
-              </div>
+              )}
             </section>
           </div>
 
@@ -725,9 +921,36 @@ export default function VideoPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
                {/* Filters */}
                <div className="flex gap-2 pb-2">
-                 <button className="text-[10px] px-2 py-1 bg-zinc-800 text-white rounded border border-zinc-700">全部</button>
-                 <button className="text-[10px] px-2 py-1 bg-zinc-900 text-zinc-500 rounded border border-zinc-800 hover:border-zinc-700">收藏</button>
-                 <button className="text-[10px] px-2 py-1 bg-zinc-900 text-zinc-500 rounded border border-zinc-800 hover:border-zinc-700">失败</button>
+                 <button
+                   onClick={() => setHistoryFilter('all')}
+                   className={`text-[10px] px-2 py-1 rounded border transition-colors ${
+                     historyFilter === 'all'
+                       ? 'bg-zinc-800 text-white border-zinc-700'
+                       : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700'
+                   }`}
+                 >
+                   全部
+                 </button>
+                 <button
+                   onClick={() => setHistoryFilter('favorite')}
+                   className={`text-[10px] px-2 py-1 rounded border transition-colors ${
+                     historyFilter === 'favorite'
+                       ? 'bg-zinc-800 text-white border-zinc-700'
+                       : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700'
+                   }`}
+                 >
+                   收藏
+                 </button>
+                 <button
+                   onClick={() => setHistoryFilter('failed')}
+                   className={`text-[10px] px-2 py-1 rounded border transition-colors ${
+                     historyFilter === 'failed'
+                       ? 'bg-zinc-800 text-white border-zinc-700'
+                       : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700'
+                   }`}
+                 >
+                   失败
+                 </button>
                </div>
 
                {/* History List */}
