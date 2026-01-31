@@ -346,7 +346,6 @@ export default function VideoPage() {
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState('16:9');
-  const [duration, setDuration] = useState(4);
   const [startFrameImage, setStartFrameImage] = useState<string | null>(null);
   const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -495,12 +494,6 @@ export default function VideoPage() {
     // Reset aspect ratio if not supported
     if (!selectedModel.aspectRatios.includes(aspectRatio)) {
       setAspectRatio(selectedModel.aspectRatios[0]);
-    }
-    // Reset duration
-    if (selectedModel.duration.fixed) {
-      setDuration(selectedModel.duration.fixed[0]);
-    } else if (selectedModel.duration.default) {
-      setDuration(selectedModel.duration.default);
     }
     // Clear images if not supported
     if (!selectedModel.features.startFrame) {
@@ -842,50 +835,6 @@ export default function VideoPage() {
                   })}
                 </div>
               </div>
-
-              {/* Duration Slider */}
-              {selectedModel.duration.fixed ? (
-                // Fixed duration options
-                <div className="space-y-2">
-                  <span className="text-xs text-zinc-500">时长（固定）</span>
-                  <div className="flex gap-2 flex-wrap">
-                    {selectedModel.duration.fixed.map((dur) => (
-                      <button
-                        key={dur}
-                        onClick={() => setDuration(dur)}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                          duration === dur
-                            ? 'bg-purple-500/10 border-purple-500/50 text-purple-400'
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
-                        }`}
-                      >
-                        {dur}s
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                // Variable duration slider
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs text-zinc-500">
-                    <span>时长</span>
-                    <span className="text-zinc-300">{duration}s</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={selectedModel.duration.min}
-                    max={selectedModel.duration.max}
-                    step={1}
-                    value={duration}
-                    onChange={(e) => setDuration(Number(e.target.value))}
-                    className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
-                    <span>{selectedModel.duration.min}s</span>
-                    <span>{selectedModel.duration.max}s</span>
-                  </div>
-                </div>
-              )}
             </section>
           </div>
 
@@ -998,9 +947,6 @@ export default function VideoPage() {
                     <div className="flex gap-2">
                       <span className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-zinc-400">
                         {aspectRatio}
-                      </span>
-                      <span className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-zinc-400">
-                        {duration}s
                       </span>
                     </div>
                   </div>
