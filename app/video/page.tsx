@@ -510,11 +510,12 @@ export default function VideoPage() {
 
   // 轮询视频生成状态
   const pollVideoStatus = async (taskId: string, recordId: string, token: string) => {
-    const maxAttempts = 120; // 最多轮询2分钟（每秒一次）
+    const maxAttempts = 300; // 增加到5分钟（每秒一次）
     let attempts = 0;
 
     const poll = async () => {
       try {
+        attempts++;
         const response = await fetch(
           `/api/video/query?taskId=${encodeURIComponent(taskId)}&recordId=${recordId}`,
           {
@@ -539,11 +540,12 @@ export default function VideoPage() {
           throw new Error(data.error || '查询失败');
         }
 
-        console.log('📊 视频状态:', {
+        console.log(`📊 视频状态 (${attempts}/${maxAttempts}):`, {
           taskId: taskId,
           status: data.status,
           progress: data.progress,
           videoUrl: data.videoUrl,
+          rawStatus: data.rawData?.status,
           rawData: data.rawData
         });
 
@@ -572,13 +574,13 @@ export default function VideoPage() {
 
         } else if (attempts < maxAttempts) {
           // 继续轮询
-          attempts++;
           setTimeout(poll, 1000); // 每秒查询一次
         } else {
           // 超时
+          console.warn('⏱️ 轮询超时，已达到最大尝试次数:', maxAttempts);
           setIsGenerating(false);
           setProgress(0);
-          setError('生成超时，请稍后查看历史记录');
+          setError(`生成超时（已轮询${maxAttempts}次），请稍后查看历史记录`);
         }
 
       } catch (err: any) {
