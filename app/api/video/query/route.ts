@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
     if (taskData.status === 'video_generation_completed' || taskData.status === 'completed') {
       status = 'completed';
       progress = 100;
-      // 从返回数据中提取视频URL
-      videoUrl = taskData.detail?.video?.url || taskData.video?.url || taskData.detail?.output?.video_url;
-      thumbnailUrl = taskData.detail?.video?.thumbnail || taskData.video?.thumbnail;
+      // 从返回数据中提取视频URL（多种可能的字段位置）
+      videoUrl = taskData.video_url || taskData.detail?.video?.url || taskData.video?.url || taskData.detail?.output?.video_url;
+      thumbnailUrl = taskData.thumbnail_url || taskData.detail?.video?.thumbnail || taskData.video?.thumbnail;
     } else if (taskData.status === 'failed' || taskData.status === 'error') {
       status = 'failed';
       progress = 0;
