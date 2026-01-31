@@ -54,7 +54,7 @@ const STYLE_CHIPS = ['赛博朋克', '电影感', '动漫风格', '微距特写'
 const Badge = ({ children, type = 'default' }: { children: React.ReactNode; type?: string }) => {
   const styles = {
     default: 'bg-zinc-800 text-zinc-400 border-zinc-700',
-    primary: 'bg-[#F5C518]/10 text-[#F5C518] border-[#F5C518]/20',
+    primary: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     success: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
     warning: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
   };
@@ -109,12 +109,12 @@ export default function VideoPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#09090B] text-zinc-300 font-sans selection:bg-[#F5C518]/30">
+    <div className="flex flex-col h-screen bg-[#09090B] text-zinc-300 font-sans selection:bg-purple-500/30">
 
       {/* 1. Top Navigation Bar */}
       <header className="h-14 border-b border-white/5 bg-[#09090B]/80 backdrop-blur-md flex items-center justify-between px-6 z-40 sticky top-0">
         <div className="flex items-center gap-3">
-          <Link href="/" className="w-8 h-8 bg-gradient-to-br from-[#F5C518] to-amber-600 rounded-lg flex items-center justify-center text-black font-bold shadow-lg shadow-[#F5C518]/20">
+          <Link href="/" className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-900 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20">
             <Video size={18} fill="currentColor" />
           </Link>
           <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
@@ -128,13 +128,13 @@ export default function VideoPage() {
           <input
             type="text"
             placeholder="搜索生成记录、提示词或模板..."
-            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-full py-1.5 pl-10 pr-4 text-sm focus:outline-none focus:border-[#F5C518]/50 focus:ring-1 focus:ring-[#F5C518]/50 transition-all text-zinc-300 placeholder:text-zinc-600"
+            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-full py-1.5 pl-10 pr-4 text-sm focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all text-zinc-300 placeholder:text-zinc-600"
           />
         </div>
 
         <div className="flex items-center gap-4">
           <button className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-full border border-zinc-700/50 transition-colors group">
-            <CreditCard size={14} className="text-[#F5C518]" />
+            <CreditCard size={14} className="text-purple-400" />
             <span className="text-sm font-medium text-white">{credits}</span>
             <span className="text-xs text-zinc-500 group-hover:text-white transition-colors">积分</span>
           </button>
@@ -159,13 +159,13 @@ export default function VideoPage() {
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">选择模型</label>
-                <span className="text-xs text-[#F5C518] cursor-pointer hover:underline">查看所有</span>
+                <span className="text-xs text-purple-400 cursor-pointer hover:underline">查看所有</span>
               </div>
               <div className="relative group">
-                <button className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl p-3 flex items-center justify-between transition-all text-left group-hover:shadow-lg group-hover:shadow-[#F5C518]/10">
+                <button className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl p-3 flex items-center justify-between transition-all text-left group-hover:shadow-lg group-hover:shadow-purple-500/10">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center border border-white/5">
-                      <Film size={20} className="text-[#F5C518]" />
+                      <Film size={20} className="text-purple-400" />
                     </div>
                     <div>
                       <div className="text-sm font-medium text-white flex items-center gap-2">
@@ -197,7 +197,7 @@ export default function VideoPage() {
                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">提示词 (Prompt)</label>
                 <button
                   onClick={handleOptimizePrompt}
-                  className="flex items-center gap-1.5 text-xs text-[#F5C518] hover:text-[#FFD700] transition-colors px-2 py-1 rounded-md hover:bg-[#F5C518]/10"
+                  className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors px-2 py-1 rounded-md hover:bg-purple-500/10"
                 >
                   <Wand2 size={12} /> 智能优化
                 </button>
@@ -208,7 +208,7 @@ export default function VideoPage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="描述您想生成的画面... 例如：Cyberpunk street in rain, neon lights reflection, cinematic shot, 8k"
-                  className="w-full min-h-[140px] bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#F5C518]/50 focus:border-[#F5C518]/50 resize-y transition-all placeholder:text-zinc-700"
+                  className="w-full min-h-[140px] bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 resize-y transition-all placeholder:text-zinc-700"
                 />
                 <div className="absolute bottom-3 right-3 text-[10px] text-zinc-600 bg-zinc-900/80 px-1.5 py-0.5 rounded">
                   {prompt.length}/2000
@@ -290,7 +290,7 @@ export default function VideoPage() {
                       onClick={() => setAspectRatio(ratio.value)}
                       className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all ${
                         aspectRatio === ratio.value
-                          ? 'bg-[#F5C518]/10 border-[#F5C518]/50 text-[#F5C518]'
+                          ? 'bg-purple-500/10 border-purple-500/50 text-purple-400'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
                       }`}
                     >
@@ -330,7 +330,7 @@ export default function VideoPage() {
                 ${isGenerating
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
                   : prompt
-                    ? 'bg-gradient-to-r from-[#F5C518] to-amber-500 text-black hover:shadow-[#F5C518]/25 hover:scale-[1.01] active:scale-[0.99] border border-[#F5C518]/20'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-900 text-white hover:shadow-purple-500/25 hover:scale-[1.01] active:scale-[0.99] border border-purple-500/20'
                     : 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed'}
               `}
             >
@@ -351,7 +351,7 @@ export default function VideoPage() {
               {/* Progress Bar Overlay */}
               {isGenerating && (
                 <div
-                  className="absolute bottom-0 left-0 h-1 bg-[#F5C518] transition-all duration-100 ease-linear"
+                  className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-100 ease-linear"
                   style={{ width: `${progress}%` }}
                 />
               )}
@@ -381,8 +381,8 @@ export default function VideoPage() {
               {isGenerating ? (
                 // Generating State
                 <div className="w-full max-w-3xl aspect-video rounded-2xl bg-zinc-900/50 border border-zinc-800 flex flex-col items-center justify-center relative overflow-hidden shadow-2xl">
-                   <div className="absolute inset-0 bg-gradient-to-tr from-[#F5C518]/5 via-transparent to-amber-500/5 animate-pulse"></div>
-                   <Loader2 size={48} className="text-[#F5C518] animate-spin mb-6" />
+                   <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 via-transparent to-blue-500/5 animate-pulse"></div>
+                   <Loader2 size={48} className="text-purple-400 animate-spin mb-6" />
                    <h3 className="text-lg font-medium text-white mb-2">正在创造影像...</h3>
                    <p className="text-zinc-500 text-sm max-w-md text-center px-4">AI 正在根据您的提示词构建三维空间与光影，预计剩余 12 秒。</p>
                    <div className="mt-8 flex gap-3">
