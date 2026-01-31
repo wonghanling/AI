@@ -292,25 +292,25 @@ export default function LandingPage() {
               onClick={() => router.push('/video')}
               className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5">
                   <Image
                     src="/sora-color.svg"
                     alt="Sora"
                     width={20}
                     height={20}
-                    className="object-contain"
+                    className="object-contain brightness-0 invert"
                   />
                 </div>
-                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5 text-white">
                   <Image
                     src="/runway.svg"
                     alt="Runway"
                     width={20}
                     height={20}
-                    className="object-contain"
+                    className="object-contain brightness-0 invert"
                   />
                 </div>
-                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5">
                   <Image
                     src="/gemini-color (1).svg"
                     alt="Gemini"
