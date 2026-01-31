@@ -196,9 +196,9 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6">
             {[
-              { name: 'GPT-4.1 mini', desc: '轻量高效, 快速响应.', icon: '/openai.svg', modelKey: 'gpt-4.1-mini' },
-              { name: 'Claude 4.5 Haiku', desc: '快速响应, 适合日常对话.', icon: '/claude-color.svg', modelKey: 'claude-haiku' },
-              { name: 'Gemini 3 Flash', desc: '高速处理, 性价比之选.', icon: '/gemini-color.svg', modelKey: 'gemini-flash' },
+              { name: 'GPT-4o Mini', desc: '轻量高效, 快速响应.', icon: '/openai.svg', modelKey: 'gpt-4.1-mini' },
+              { name: 'Grok 3 Mini', desc: '快速响应, 适合日常对话.', icon: '/grok.svg', modelKey: 'claude-haiku' },
+              { name: 'Gemini 2.5 Flash lite', desc: '高速处理, 性价比之选.', icon: '/gemini-color.svg', modelKey: 'gemini-flash' },
             ].map((model, i) => (
               <div
                 key={i}
@@ -293,39 +293,39 @@ export default function LandingPage() {
               className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5">
-                  <Image
+                  <img
                     src="/sora-color.svg"
                     alt="Sora"
                     width={20}
                     height={20}
-                    className="object-contain brightness-0 invert"
+                    className="w-5 h-5 object-contain brightness-0 invert"
                   />
                 </div>
                 <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5 text-white">
-                  <Image
+                  <img
                     src="/runway.svg"
                     alt="Runway"
                     width={20}
                     height={20}
-                    className="object-contain brightness-0 invert"
+                    className="w-5 h-5 object-contain brightness-0 invert"
                   />
                 </div>
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5">
-                  <Image
-                    src="/gemini-color (1).svg"
+                  <img
+                    src="/gemini-video.svg"
                     alt="Gemini"
                     width={20}
                     height={20}
-                    className="object-contain"
+                    className="w-5 h-5 object-contain"
                   />
                 </div>
                 <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Image
+                  <img
                     src="/grok.svg"
                     alt="Grok"
                     width={20}
                     height={20}
-                    className="object-contain"
+                    className="w-5 h-5 object-contain"
                   />
                 </div>
               </div>
