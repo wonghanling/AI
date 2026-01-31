@@ -14,29 +14,248 @@ import { useRouter } from 'next/navigation';
 // --- Mock Data & Constants ---
 
 const MODELS = [
+  // Veo 3.1 系列
   {
-    id: 'm1',
-    name: 'Sora Pro',
-    tags: ['电影感', '8K', '高保真'],
-    cost: 15,
+    id: 'veo3.1-4k',
+    name: 'Veo 3.1 4K',
+    provider: 'Google',
+    tags: ['4K', '高质量', '音频'],
+    cost: 10,
     features: { t2v: true, i2v: true, frames: true },
-    desc: '适用于需要极高写实度的电影级镜头生成。'
+    desc: 'Google最新的高级AI模型，支持视频自动配套音频生成，质量高价格低'
   },
   {
-    id: 'm2',
-    name: 'Runway Gen-3',
-    tags: ['快速', '高质量', '商用'],
-    cost: 8,
+    id: 'veo3.1-components-4k',
+    name: 'Veo 3.1 Components 4K',
+    provider: 'Google',
+    tags: ['4K', '首帧', '音频'],
+    cost: 10,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo3.1 4k模式，支持首帧传递，不支持尾帧，性价比最高'
+  },
+  {
+    id: 'veo3.1-pro-4k',
+    name: 'Veo 3.1 Pro 4K',
+    provider: 'Google',
+    tags: ['4K', '超高质量', 'Pro'],
+    cost: 30,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo3.1 4k高质量模式，质量超高，支持首尾帧和文生视频'
+  },
+  {
+    id: 'veo_3_1-4K',
+    name: 'Veo 3.1 4K (OpenAI格式)',
+    provider: 'Google',
+    tags: ['4K', '音频', 'OpenAI'],
+    cost: 9,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo_3_1 4k模式，OpenAI视频格式，性价比最高'
+  },
+  {
+    id: 'veo_3_1-fast-4K',
+    name: 'Veo 3.1 Fast 4K',
+    provider: 'Google',
+    tags: ['4K', '快速', '首尾帧'],
+    cost: 5,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo3.1快速+4k模式，支持首尾帧和文生视频，价格低廉'
+  },
+  {
+    id: 'veo_3_1-components-4K',
+    name: 'Veo 3.1 Components 4K (OpenAI)',
+    provider: 'Google',
+    tags: ['4K', '首帧', 'OpenAI'],
+    cost: 9,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo_3_1 4k模式，支持首帧传递，不支持尾帧'
+  },
+  {
+    id: 'veo_3_1-fast',
+    name: 'Veo 3.1 Fast',
+    provider: 'Google',
+    tags: ['快速', '低成本', '首尾帧'],
+    cost: 3,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo3.1快速模式，支持首尾帧和文生视频，最低价格'
+  },
+  {
+    id: 'veo3.1',
+    name: 'Veo 3.1',
+    provider: 'Google',
+    tags: ['标准', '音频', '首尾帧'],
+    cost: 7,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo3.1标准版，支持视频自动配套音频生成，支持首尾帧和文生视频'
+  },
+  {
+    id: 'veo3.1-pro',
+    name: 'Veo 3.1 Pro',
+    provider: 'Google',
+    tags: ['Pro', '超高质量', '音频'],
+    cost: 30,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo3.1高质量模式，质量超高，价格也超高，支持首尾帧和文生视频'
+  },
+  {
+    id: 'veo3.1-fast',
+    name: 'Veo 3.1 Fast (标准)',
+    provider: 'Google',
+    tags: ['快速', '音频', '首尾帧'],
+    cost: 7,
+    features: { t2v: true, i2v: true, frames: true },
+    desc: 'veo3.1快速模式，支持视频自动配套音频生成，支持首尾帧和文生视频'
+  },
+  {
+    id: 'veo3-pro',
+    name: 'Veo 3 Pro',
+    provider: 'Google',
+    tags: ['Pro', '超高质量', '音频'],
+    cost: 35,
     features: { t2v: true, i2v: true, frames: false },
-    desc: '专为商业视频优化的高速生成模型。'
+    desc: 'veo3高质量模式，支持视频自动配套音频生成，质量超高'
+  },
+
+  // Sora 系列
+  {
+    id: 'sora-2-all',
+    name: 'Sora 2 All',
+    provider: 'OpenAI',
+    tags: ['逆向', '720p', '10-15s'],
+    cost: 3,
+    features: { t2v: true, i2v: false, frames: false },
+    desc: 'sora-2的逆向，支持10s，15s，都是720p'
   },
   {
-    id: 'm3',
-    name: 'Veo 3',
-    tags: ['低成本', '快速', '实验'],
-    cost: 4,
+    id: 'sora-2-pro-all',
+    name: 'Sora 2 Pro All',
+    provider: 'OpenAI',
+    tags: ['逆向', '1080p', '15-25s'],
+    cost: 31,
     features: { t2v: true, i2v: false, frames: false },
-    desc: '用于快速验证创意，成本低廉。'
+    desc: 'sora-2-pro的逆向，支持15s和25s，15s支持1080p和720p'
+  },
+  {
+    id: 'sora-2-4s',
+    name: 'Sora 2 (4s)',
+    provider: 'OpenAI',
+    tags: ['官方', '720p', '4s'],
+    cost: 20,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Sora 2官方版，4秒720p，物理准确、逼真，支持音效'
+  },
+  {
+    id: 'sora-2-8s',
+    name: 'Sora 2 (8s)',
+    provider: 'OpenAI',
+    tags: ['官方', '720p', '8s'],
+    cost: 40,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Sora 2官方版，8秒720p，物理准确、逼真，支持音效'
+  },
+  {
+    id: 'sora-2-12s',
+    name: 'Sora 2 (12s)',
+    provider: 'OpenAI',
+    tags: ['官方', '720p', '12s'],
+    cost: 60,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Sora 2官方版，12秒720p，物理准确、逼真，支持音效'
+  },
+  {
+    id: 'sora-2-pro-10s-720p',
+    name: 'Sora 2 Pro (10s 720p)',
+    provider: 'OpenAI',
+    tags: ['官方Pro', '720p', '10s'],
+    cost: 450,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Sora 2 Pro官方版，10秒720p，可选择清晰度'
+  },
+  {
+    id: 'sora-2-pro-15s-720p',
+    name: 'Sora 2 Pro (15s 720p)',
+    provider: 'OpenAI',
+    tags: ['官方Pro', '720p', '15s'],
+    cost: 650,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Sora 2 Pro官方版，15秒720p，可选择清晰度'
+  },
+  {
+    id: 'sora-2-pro-15s-1080p',
+    name: 'Sora 2 Pro (15s 1080p)',
+    provider: 'OpenAI',
+    tags: ['官方Pro', '1080p', '15s'],
+    cost: 1100,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Sora 2 Pro官方版，15秒1080p，可选择清晰度'
+  },
+  {
+    id: 'sora-2-pro-25s-1080p',
+    name: 'Sora 2 Pro (25s 1080p)',
+    provider: 'OpenAI',
+    tags: ['官方Pro', '1080p', '25s'],
+    cost: 1800,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Sora 2 Pro官方版，25秒1080p，可选择清晰度'
+  },
+
+  // Grok 系列
+  {
+    id: 'grok-video-3',
+    name: 'Grok Video 3',
+    provider: 'xAI',
+    tags: ['最新', '低成本'],
+    cost: 3,
+    features: { t2v: true, i2v: false, frames: false },
+    desc: 'grok的最新视频模型'
+  },
+
+  // Luma 系列
+  {
+    id: 'luma_video_api',
+    name: 'Luma Video API',
+    provider: 'Luma AI',
+    tags: ['快速', '参考图', '40s出图'],
+    cost: 30,
+    features: { t2v: true, i2v: true, frames: false },
+    desc: 'Luma AI文生视频，支持上传2张参考图片，快速模式约40秒出视频'
+  },
+
+  // Runway 系列
+  {
+    id: 'runwayml-gen3a_turbo-10',
+    name: 'Runway Gen-3A Turbo (10s)',
+    provider: 'RunwayML',
+    tags: ['Gen-3A', '图生视频', '10s'],
+    cost: 25,
+    features: { t2v: false, i2v: true, frames: false },
+    desc: 'RunwayML Gen-3A Turbo-10，先进的图生视频模型'
+  },
+  {
+    id: 'runwayml-gen3a_turbo-5',
+    name: 'Runway Gen-3A Turbo (5s)',
+    provider: 'RunwayML',
+    tags: ['Gen-3A', '图生视频', '5s'],
+    cost: 15,
+    features: { t2v: false, i2v: true, frames: false },
+    desc: 'RunwayML Gen-3A Turbo-5，先进的图生视频模型'
+  },
+  {
+    id: 'runwayml-gen4_turbo-10',
+    name: 'Runway Gen-4 Turbo (10s)',
+    provider: 'RunwayML',
+    tags: ['Gen-4', '图生视频', '16:9'],
+    cost: 25,
+    features: { t2v: false, i2v: true, frames: false },
+    desc: '支持最新gen3模型，仅支持16:9画面，使用官方账号'
+  },
+  {
+    id: 'runwayml-gen4_turbo-5',
+    name: 'Runway Gen-4 Turbo (5s)',
+    provider: 'RunwayML',
+    tags: ['Gen-4', '图生视频', '16:9'],
+    cost: 15,
+    features: { t2v: false, i2v: true, frames: false },
+    desc: '支持最新gen3模型，仅支持16:9画面，使用官方账号'
   }
 ];
 
@@ -70,6 +289,8 @@ export default function VideoPage() {
 
   // --- State Management ---
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [modelSearchQuery, setModelSearchQuery] = useState('');
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -97,6 +318,18 @@ export default function VideoPage() {
     return () => clearInterval(interval);
   }, [isGenerating, selectedModel.cost]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (showModelDropdown && !target.closest('.model-dropdown-container')) {
+        setShowModelDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showModelDropdown]);
+
   // --- Handlers ---
   const handleGenerate = () => {
     if (prompt.trim().length === 0) return;
@@ -107,6 +340,22 @@ export default function VideoPage() {
   const handleOptimizePrompt = () => {
     setPrompt(prev => prev + " (Cinematic lighting, 8k resolution, highly detailed, trending on artstation, masterpiece)");
   };
+
+  // Filter models based on search query
+  const filteredModels = MODELS.filter(model =>
+    model.name.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
+    model.provider.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
+    model.tags.some(tag => tag.toLowerCase().includes(modelSearchQuery.toLowerCase()))
+  );
+
+  // Group models by provider
+  const groupedModels = filteredModels.reduce((acc, model) => {
+    if (!acc[model.provider]) {
+      acc[model.provider] = [];
+    }
+    acc[model.provider].push(model);
+    return acc;
+  }, {} as Record<string, typeof MODELS>);
 
   return (
     <div className="flex flex-col h-screen bg-[#09090B] text-zinc-300 font-sans selection:bg-purple-500/30">
@@ -156,13 +405,16 @@ export default function VideoPage() {
           <div className="p-5 space-y-8 pb-24">
 
             {/* Model Selector Section */}
-            <section className="space-y-3">
+            <section className="space-y-3 model-dropdown-container">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">选择模型</label>
                 <span className="text-xs text-purple-400 cursor-pointer hover:underline">查看所有</span>
               </div>
               <div className="relative group">
-                <button className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl p-3 flex items-center justify-between transition-all text-left group-hover:shadow-lg group-hover:shadow-purple-500/10">
+                <button
+                  onClick={() => setShowModelDropdown(!showModelDropdown)}
+                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl p-3 flex items-center justify-between transition-all text-left group-hover:shadow-lg group-hover:shadow-purple-500/10"
+                >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center border border-white/5">
                       <Film size={20} className="text-purple-400" />
@@ -173,12 +425,75 @@ export default function VideoPage() {
                         <Badge type="primary">{selectedModel.tags[0]}</Badge>
                       </div>
                       <div className="text-xs text-zinc-500 mt-0.5 truncate max-w-[180px]">
-                        {selectedModel.desc}
+                        {selectedModel.provider}
                       </div>
                     </div>
                   </div>
-                  <ChevronDown size={16} className="text-zinc-600" />
+                  <ChevronDown size={16} className={`text-zinc-600 transition-transform ${showModelDropdown ? 'rotate-180' : ''}`} />
                 </button>
+
+                {/* Model Dropdown */}
+                {showModelDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 max-h-[400px] overflow-hidden flex flex-col">
+                    {/* Search Input */}
+                    <div className="p-3 border-b border-zinc-800">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                        <input
+                          type="text"
+                          value={modelSearchQuery}
+                          onChange={(e) => setModelSearchQuery(e.target.value)}
+                          placeholder="搜索模型..."
+                          className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-purple-500/50 text-zinc-300 placeholder:text-zinc-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Model List */}
+                    <div className="overflow-y-auto custom-scrollbar">
+                      {Object.entries(groupedModels).map(([provider, models]) => (
+                        <div key={provider} className="border-b border-zinc-800/50 last:border-0">
+                          <div className="px-3 py-2 bg-zinc-800/30">
+                            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">{provider}</span>
+                          </div>
+                          {models.map((model) => (
+                            <button
+                              key={model.id}
+                              onClick={() => {
+                                setSelectedModel(model);
+                                setShowModelDropdown(false);
+                                setModelSearchQuery('');
+                              }}
+                              className={`w-full px-3 py-2.5 flex items-center justify-between hover:bg-zinc-800/50 transition-colors text-left ${
+                                selectedModel.id === model.id ? 'bg-purple-500/10' : ''
+                              }`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-medium text-white flex items-center gap-2">
+                                  {model.name}
+                                  {selectedModel.id === model.id && (
+                                    <CheckCircle2 size={12} className="text-purple-400" />
+                                  )}
+                                </div>
+                                <div className="flex gap-1.5 mt-1 flex-wrap">
+                                  {model.tags.slice(0, 2).map((tag, idx) => (
+                                    <span key={idx} className="text-[9px] px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-purple-400 font-medium ml-2">
+                                <Zap size={10} />
+                                {model.cost}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Visual Model Capability Tags */}
                 <div className="flex gap-2 mt-3 flex-wrap">
