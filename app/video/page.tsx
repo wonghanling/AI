@@ -215,19 +215,6 @@ export default function VideoPage() {
                 </div>
               </div>
 
-              {/* Style Chips */}
-              <div className="flex flex-wrap gap-2">
-                {STYLE_CHIPS.map(chip => (
-                  <button
-                    key={chip}
-                    onClick={() => setPrompt(prev => prev ? `${prev}, ${chip}` : chip)}
-                    className="px-2.5 py-1 text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-full hover:border-zinc-600 hover:text-zinc-200 transition-colors"
-                  >
-                    + {chip}
-                  </button>
-                ))}
-              </div>
-
               {/* Negative Prompt Accordion */}
               <div className="pt-2">
                 <button
