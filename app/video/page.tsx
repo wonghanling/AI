@@ -373,7 +373,7 @@ export default function VideoPage() {
     isFavorite?: boolean;
   }>>([]);
 
-  // Load video credits from localStorage on mount
+  // Load video credits from API/localStorage on mount
   useEffect(() => {
     const loadCredits = async () => {
       const supabase = getSupabaseClient();
@@ -408,6 +408,49 @@ export default function VideoPage() {
     loadCredits();
   }, []);
 
+  // Load history records from Supabase
+  useEffect(() => {
+    const loadHistory = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      try {
+        // 从Supabase加载最近25条记录（按创建时间倒序）
+        const { data, error } = await supabase
+          .from('video_generations')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(25);
+
+        if (error) throw error;
+
+        if (data) {
+          const records = data.map(record => ({
+            id: record.id,
+            prompt: record.prompt,
+            model: record.model,
+            status: record.status === 'completed' ? 'success' as const :
+                    record.status === 'failed' ? 'failed' as const :
+                    'generating' as const,
+            videoUrl: record.video_url,
+            thumbnail: record.thumbnail_url,
+            timestamp: new Date(record.created_at),
+            cost: record.cost_credits,
+            isFavorite: record.metadata?.isFavorite || false
+          }));
+          setHistoryRecords(records);
+        }
+      } catch (err) {
+        console.error('加载历史记录失败:', err);
+      }
+    };
+
+    loadHistory();
+  }, []);
+
   // Save video credits to localStorage when changed
   useEffect(() => {
     localStorage.setItem('videoCredits', videoCredits.toString());
@@ -425,19 +468,10 @@ export default function VideoPage() {
             // Mock video generation success
             const mockVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
             setGeneratedVideo(mockVideoUrl);
-            // Add to history
-            const newRecord = {
-              id: Date.now().toString(),
-              prompt: prompt,
-              model: selectedModel.name,
-              status: 'success' as const,
-              videoUrl: mockVideoUrl,
-              thumbnail: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
-              timestamp: new Date(),
-              cost: selectedModel.cost,
-              isFavorite: false
-            };
-            setHistoryRecords(prev => [newRecord, ...prev]);
+
+            // Save to Supabase
+            saveVideoRecord(mockVideoUrl);
+
             return 0;
           }
           return prev + 1.5;
@@ -446,6 +480,84 @@ export default function VideoPage() {
     }
     return () => clearInterval(interval);
   }, [isGenerating, selectedModel.cost, prompt, selectedModel.name, startFrameImage]);
+
+  // Save video generation record to Supabase
+  const saveVideoRecord = async (videoUrl: string) => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      // 如果没有Supabase，只保存到本地state
+      const newRecord = {
+        id: Date.now().toString(),
+        prompt: prompt,
+        model: selectedModel.name,
+        status: 'success' as const,
+        videoUrl: videoUrl,
+        thumbnail: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
+        timestamp: new Date(),
+        cost: selectedModel.cost,
+        isFavorite: false
+      };
+      setHistoryRecords(prev => [newRecord, ...prev]);
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    try {
+      // 插入到Supabase
+      const { data, error } = await supabase
+        .from('video_generations')
+        .insert({
+          prompt: prompt,
+          model: selectedModel.name,
+          duration: duration || 5,
+          resolution: '1080p',
+          aspect_ratio: aspectRatio,
+          video_url: videoUrl,
+          thumbnail_url: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
+          status: 'completed',
+          cost_credits: selectedModel.cost,
+          progress: 100,
+          metadata: { isFavorite: false }
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // 添加到本地state
+        const newRecord = {
+          id: data.id,
+          prompt: data.prompt,
+          model: data.model,
+          status: 'success' as const,
+          videoUrl: data.video_url,
+          thumbnail: data.thumbnail_url,
+          timestamp: new Date(data.created_at),
+          cost: data.cost_credits,
+          isFavorite: data.metadata?.isFavorite || false
+        };
+        setHistoryRecords(prev => [newRecord, ...prev.slice(0, 24)]); // 保持最多25条
+      }
+    } catch (err) {
+      console.error('保存视频记录失败:', err);
+      // 即使保存失败，也添加到本地state
+      const newRecord = {
+        id: Date.now().toString(),
+        prompt: prompt,
+        model: selectedModel.name,
+        status: 'success' as const,
+        videoUrl: videoUrl,
+        thumbnail: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
+        timestamp: new Date(),
+        cost: selectedModel.cost,
+        isFavorite: false
+      };
+      setHistoryRecords(prev => [newRecord, ...prev]);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -480,15 +592,54 @@ export default function VideoPage() {
   };
 
   // Toggle favorite
-  const toggleFavorite = (id: string) => {
-    setHistoryRecords(prev => prev.map(record =>
-      record.id === id ? { ...record, isFavorite: !record.isFavorite } : record
+  const toggleFavorite = async (id: string) => {
+    const record = historyRecords.find(r => r.id === id);
+    if (!record) return;
+
+    const newFavoriteState = !record.isFavorite;
+
+    // 更新本地state
+    setHistoryRecords(prev => prev.map(r =>
+      r.id === id ? { ...r, isFavorite: newFavoriteState } : r
     ));
+
+    // 更新Supabase
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('video_generations')
+          .update({
+            metadata: { isFavorite: newFavoriteState }
+          })
+          .eq('id', id);
+
+        if (error) throw error;
+      } catch (err) {
+        console.error('更新收藏状态失败:', err);
+      }
+    }
   };
 
   // Delete history record
-  const deleteRecord = (id: string) => {
+  const deleteRecord = async (id: string) => {
+    // 删除本地state
     setHistoryRecords(prev => prev.filter(record => record.id !== id));
+
+    // 删除Supabase记录
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('video_generations')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+      } catch (err) {
+        console.error('删除记录失败:', err);
+      }
+    }
   };
 
   // Download video
