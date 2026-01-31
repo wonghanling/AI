@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return NextResponse.json({ error: 'Supabase 未配置' }, { status: 500 });
-    }
+    // 使用 service role key 绕过 RLS 限制
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // 获取用户会话
     const authHeader = request.headers.get('Authorization');
@@ -44,8 +45,28 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (userDataError) {
-      return NextResponse.json({ error: '获取用户信息失败' }, { status: 500 });
+    if (userDataError || !userData) {
+      // 如果用户不存在，自动创建
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          id: user.id,
+          email: user.email,
+          user_type: 'free',
+          credits: 0,
+          image_credits: 0,
+          video_credits: 0
+        })
+        .select('video_credits')
+        .single();
+
+      if (createError || !newUser) {
+        console.error('创建用户记录失败:', createError);
+        return NextResponse.json({ error: '获取用户信息失败' }, { status: 500 });
+      }
+
+      // 新用户没有积分，直接返回错误
+      return NextResponse.json({ error: '视频积分不足' }, { status: 400 });
     }
 
     // 检查积分是否足够
