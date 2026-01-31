@@ -280,6 +280,60 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+
+        {/* 视频模型 */}
+        <div>
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-gray-700">视频模型 · 按次付费</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Video Models · Pay per use</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6">
+            <div
+              onClick={() => router.push('/video')}
+              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Image
+                    src="/sora-color.svg"
+                    alt="Sora"
+                    width={20}
+                    height={20}
+                    className="object-contain"
+                  />
+                </div>
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Image
+                    src="/runway.svg"
+                    alt="Runway"
+                    width={20}
+                    height={20}
+                    className="object-contain"
+                  />
+                </div>
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Image
+                    src="/gemini-color (1).svg"
+                    alt="Gemini"
+                    width={20}
+                    height={20}
+                    className="object-contain"
+                  />
+                </div>
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Image
+                    src="/grok.svg"
+                    alt="Grok"
+                    width={20}
+                    height={20}
+                    className="object-contain"
+                  />
+                </div>
+              </div>
+              <h3 className="font-bold text-lg mb-2">AI 视频生成</h3>
+              <p className="text-gray-600 text-xs leading-relaxed">Sora, Runway, Gemini 等顶级视频模型.</p>
+            </div>
+          </div>
+        </div>
         </div>
       </section>
 
