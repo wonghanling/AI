@@ -346,6 +346,7 @@ export default function VideoPage() {
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [duration, setDuration] = useState<number | null>(null);
   const [startFrameImage, setStartFrameImage] = useState<string | null>(null);
   const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -495,6 +496,12 @@ export default function VideoPage() {
     if (!selectedModel.aspectRatios.includes(aspectRatio)) {
       setAspectRatio(selectedModel.aspectRatios[0]);
     }
+    // Reset duration
+    if (selectedModel.duration.fixed && selectedModel.duration.fixed.length > 0) {
+      setDuration(selectedModel.duration.fixed[0]);
+    } else {
+      setDuration(null);
+    }
     // Clear images if not supported
     if (!selectedModel.features.startFrame) {
       setStartFrameImage(null);
@@ -502,7 +509,7 @@ export default function VideoPage() {
     if (!selectedModel.features.endFrame) {
       setEndFrameImage(null);
     }
-  }, [selectedModel]);
+  }, [selectedModel, aspectRatio]);
 
   // Filter models based on search query
   const filteredModels = MODELS.filter(model =>
@@ -835,6 +842,28 @@ export default function VideoPage() {
                   })}
                 </div>
               </div>
+
+              {/* Duration Selection - Only for models with multiple duration options */}
+              {selectedModel.duration.fixed && selectedModel.duration.fixed.length > 1 && (
+                <div className="space-y-2">
+                  <span className="text-xs text-zinc-500">时长选择</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {selectedModel.duration.fixed.map((dur) => (
+                      <button
+                        key={dur}
+                        onClick={() => setDuration(dur)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                          duration === dur
+                            ? 'bg-purple-500/10 border-purple-500/50 text-purple-400'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                        }`}
+                      >
+                        {dur}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           </div>
 
@@ -948,6 +977,11 @@ export default function VideoPage() {
                       <span className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-zinc-400">
                         {aspectRatio}
                       </span>
+                      {duration && (
+                        <span className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-zinc-400">
+                          {duration}s
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
