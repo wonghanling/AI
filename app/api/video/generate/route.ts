@@ -116,10 +116,10 @@ export async function POST(request: NextRequest) {
 
     // 调用云雾API创建视频任务
     const apiUrl = model.includes('runway')
-      ? 'https://api.allapi.store/runwayml/v1/image_to_video'
+      ? 'https://allapi.store/runwayml/v1/image_to_video'
       : model.includes('luma')
-      ? 'https://api.allapi.store/luma/generations'
-      : 'https://api.allapi.store/v1/video/create';
+      ? 'https://allapi.store/luma/generations'
+      : 'https://allapi.store/v1/video/create';
 
     const apiResponse = await fetch(apiUrl, {
       method: 'POST',
