@@ -355,6 +355,7 @@ export default function VideoPage() {
   const [videoCredits, setVideoCredits] = useState(0); // 视频积分（独立）
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(true);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [error, setError] = useState('');
   const [historyFilter, setHistoryFilter] = useState<'all' | 'favorite' | 'failed'>('all');
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -410,44 +411,6 @@ export default function VideoPage() {
 
   // Load history records from Supabase
   useEffect(() => {
-    const loadHistory = async () => {
-      const supabase = getSupabaseClient();
-      if (!supabase) return;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      try {
-        // 从Supabase加载最近25条记录（按创建时间倒序）
-        const { data, error } = await supabase
-          .from('video_generations')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(25);
-
-        if (error) throw error;
-
-        if (data) {
-          const records = data.map(record => ({
-            id: record.id,
-            prompt: record.prompt,
-            model: record.model,
-            status: record.status === 'completed' ? 'success' as const :
-                    record.status === 'failed' ? 'failed' as const :
-                    'generating' as const,
-            videoUrl: record.video_url,
-            thumbnail: record.thumbnail_url,
-            timestamp: new Date(record.created_at),
-            cost: record.cost_credits,
-            isFavorite: record.metadata?.isFavorite || false
-          }));
-          setHistoryRecords(records);
-        }
-      } catch (err) {
-        console.error('加载历史记录失败:', err);
-      }
-    };
-
     loadHistory();
   }, []);
 
@@ -455,109 +418,6 @@ export default function VideoPage() {
   useEffect(() => {
     localStorage.setItem('videoCredits', videoCredits.toString());
   }, [videoCredits]);
-
-  // --- Effects ---
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isGenerating) {
-      interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            setIsGenerating(false);
-            setVideoCredits(c => c - selectedModel.cost);
-            // Mock video generation success
-            const mockVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-            setGeneratedVideo(mockVideoUrl);
-
-            // Save to Supabase
-            saveVideoRecord(mockVideoUrl);
-
-            return 0;
-          }
-          return prev + 1.5;
-        });
-      }, 100);
-    }
-    return () => clearInterval(interval);
-  }, [isGenerating, selectedModel.cost, prompt, selectedModel.name, startFrameImage]);
-
-  // Save video generation record to Supabase
-  const saveVideoRecord = async (videoUrl: string) => {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      // 如果没有Supabase，只保存到本地state
-      const newRecord = {
-        id: Date.now().toString(),
-        prompt: prompt,
-        model: selectedModel.name,
-        status: 'success' as const,
-        videoUrl: videoUrl,
-        thumbnail: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
-        timestamp: new Date(),
-        cost: selectedModel.cost,
-        isFavorite: false
-      };
-      setHistoryRecords(prev => [newRecord, ...prev]);
-      return;
-    }
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    try {
-      // 插入到Supabase
-      const { data, error } = await supabase
-        .from('video_generations')
-        .insert({
-          prompt: prompt,
-          model: selectedModel.name,
-          duration: duration || 5,
-          resolution: '1080p',
-          aspect_ratio: aspectRatio,
-          video_url: videoUrl,
-          thumbnail_url: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
-          status: 'completed',
-          cost_credits: selectedModel.cost,
-          progress: 100,
-          metadata: { isFavorite: false }
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        // 添加到本地state
-        const newRecord = {
-          id: data.id,
-          prompt: data.prompt,
-          model: data.model,
-          status: 'success' as const,
-          videoUrl: data.video_url,
-          thumbnail: data.thumbnail_url,
-          timestamp: new Date(data.created_at),
-          cost: data.cost_credits,
-          isFavorite: data.metadata?.isFavorite || false
-        };
-        setHistoryRecords(prev => [newRecord, ...prev.slice(0, 24)]); // 保持最多25条
-      }
-    } catch (err) {
-      console.error('保存视频记录失败:', err);
-      // 即使保存失败，也添加到本地state
-      const newRecord = {
-        id: Date.now().toString(),
-        prompt: prompt,
-        model: selectedModel.name,
-        status: 'success' as const,
-        videoUrl: videoUrl,
-        thumbnail: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
-        timestamp: new Date(),
-        cost: selectedModel.cost,
-        isFavorite: false
-      };
-      setHistoryRecords(prev => [newRecord, ...prev]);
-    }
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -572,14 +432,172 @@ export default function VideoPage() {
   }, [showModelDropdown]);
 
   // --- Handlers ---
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (prompt.trim().length === 0) return;
     if (videoCredits < selectedModel.cost) {
       setShowRechargeModal(true);
       return;
     }
+
     setIsGenerating(true);
     setProgress(0);
+    setError('');
+
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setError('请先登录');
+        setIsGenerating(false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('登录已过期，请重新登录');
+        setIsGenerating(false);
+        return;
+      }
+
+      // 调用视频生成API
+      const response = await fetch('/api/video/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          model: selectedModel.id,
+          aspectRatio: aspectRatio,
+          duration: duration,
+          startFrameImage: startFrameImage,
+          endFrameImage: endFrameImage,
+          negativePrompt: negativePrompt,
+          cost: selectedModel.cost
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '生成失败');
+      }
+
+      // 更新积分
+      setVideoCredits(data.remainingCredits);
+
+      // 开始轮询任务状态
+      pollVideoStatus(data.taskId, data.recordId, session.access_token);
+
+    } catch (err: any) {
+      console.error('生成视频失败:', err);
+      setError(err.message || '生成失败，请重试');
+      setIsGenerating(false);
+      setProgress(0);
+    }
+  };
+
+  // 轮询视频生成状态
+  const pollVideoStatus = async (taskId: string, recordId: string, token: string) => {
+    const maxAttempts = 120; // 最多轮询2分钟（每秒一次）
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        const response = await fetch(
+          `/api/video/query?taskId=${encodeURIComponent(taskId)}&recordId=${recordId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || '查询失败');
+        }
+
+        // 更新进度
+        setProgress(data.progress);
+
+        if (data.status === 'completed' && data.videoUrl) {
+          // 生成完成
+          setIsGenerating(false);
+          setProgress(100);
+          setGeneratedVideo(data.videoUrl);
+
+          // 重新加载历史记录
+          loadHistory();
+
+        } else if (data.status === 'failed') {
+          // 生成失败
+          setIsGenerating(false);
+          setProgress(0);
+          setError('视频生成失败，积分已退回');
+
+          // 重新加载历史记录
+          loadHistory();
+
+        } else if (attempts < maxAttempts) {
+          // 继续轮询
+          attempts++;
+          setTimeout(poll, 1000); // 每秒查询一次
+        } else {
+          // 超时
+          setIsGenerating(false);
+          setProgress(0);
+          setError('生成超时，请稍后查看历史记录');
+        }
+
+      } catch (err: any) {
+        console.error('查询视频状态失败:', err);
+        setIsGenerating(false);
+        setProgress(0);
+        setError(err.message || '查询失败');
+      }
+    };
+
+    poll();
+  };
+
+  // 加载历史记录
+  const loadHistory = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('video_generations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(25);
+
+      if (error) throw error;
+
+      if (data) {
+        const records = data.map(record => ({
+          id: record.id,
+          prompt: record.prompt,
+          model: record.model,
+          status: record.status === 'completed' ? 'success' as const :
+                  record.status === 'failed' ? 'failed' as const :
+                  'generating' as const,
+          videoUrl: record.video_url,
+          thumbnail: record.thumbnail_url,
+          timestamp: new Date(record.created_at),
+          cost: record.cost_credits,
+          isFavorite: record.metadata?.isFavorite || false
+        }));
+        setHistoryRecords(records);
+      }
+    } catch (err) {
+      console.error('加载历史记录失败:', err);
+    }
   };
 
   const handleOptimizePrompt = () => {
@@ -788,6 +806,13 @@ export default function VideoPage() {
           </div>
 
           <div className="p-5 space-y-8 pb-24">
+
+            {/* 错误提示 */}
+            {error && (
+              <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
             {/* Model Selector Section */}
             <section className="space-y-3 model-dropdown-container">
