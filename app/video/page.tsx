@@ -372,6 +372,19 @@ export default function VideoPage() {
     isFavorite?: boolean;
   }>>([]);
 
+  // Load video credits from localStorage on mount
+  useEffect(() => {
+    const savedCredits = localStorage.getItem('videoCredits');
+    if (savedCredits) {
+      setVideoCredits(parseInt(savedCredits, 10));
+    }
+  }, []);
+
+  // Save video credits to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('videoCredits', videoCredits.toString());
+  }, [videoCredits]);
+
   // --- Effects ---
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -433,10 +446,9 @@ export default function VideoPage() {
     setPrompt(prev => prev + " (Cinematic lighting, 8k resolution, highly detailed, trending on artstation, masterpiece)");
   };
 
-  // Handle recharge
-  const handleRecharge = (amount: number) => {
-    setVideoCredits(prev => prev + amount);
-    setShowRechargeModal(false);
+  // Handle recharge - redirect to recharge page
+  const handleRecharge = () => {
+    router.push('/credits/recharge');
   };
 
   // Toggle favorite
@@ -553,7 +565,7 @@ export default function VideoPage() {
 
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setShowRechargeModal(true)}
+            onClick={() => router.push('/credits/recharge')}
             className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-full border border-zinc-700/50 transition-colors group"
           >
             <CreditCard size={14} className="text-purple-400" />
@@ -575,6 +587,27 @@ export default function VideoPage() {
 
         {/* 2. Left Panel: Controls & Inputs */}
         <aside className="w-[360px] flex flex-col border-r border-white/5 bg-[#0B0C10] overflow-y-auto custom-scrollbar">
+          {/* 切换按钮 - 图片/视频 */}
+          <div className="p-5 pb-3 border-b border-white/5">
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/image"
+                className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300 rounded-lg font-medium text-xs transition-colors border border-zinc-800"
+              >
+                <ImageIcon size={16} />
+                <span>图片生成</span>
+                <ChevronDown size={12} className="rotate-90" />
+              </Link>
+              <button
+                className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 bg-gradient-to-br from-purple-500/20 to-blue-900/20 text-purple-400 rounded-lg font-medium text-xs border border-purple-500/30"
+              >
+                <Video size={16} />
+                <span>视频生成</span>
+                <CheckCircle2 size={12} />
+              </button>
+            </div>
+          </div>
+
           <div className="p-5 space-y-8 pb-24">
 
             {/* Model Selector Section */}
@@ -1221,30 +1254,38 @@ export default function VideoPage() {
              <div className="space-y-6">
                 <div className="text-center">
                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CreditCard size={24} className="text-white" />
+                      <AlertCircle size={24} className="text-white" />
                    </div>
-                   <h3 className="text-lg font-semibold text-white">充值视频积分</h3>
+                   <h3 className="text-lg font-semibold text-white">视频积分不足</h3>
                    <p className="text-sm text-zinc-500 mt-2">
                       当前视频积分: <span className="text-purple-400 font-medium">{videoCredits}</span>
                    </p>
-                   <p className="text-xs text-amber-500/80 mt-1">
-                      视频积分独立使用，不可用于图片生成
+                   <p className="text-sm text-zinc-500 mt-1">
+                      生成此视频需要: <span className="text-red-400 font-medium">{selectedModel.cost}</span> 积分
                    </p>
                 </div>
 
                 {/* Recharge Options */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {[
-                    { amount: 100, price: 10, bonus: 0 },
-                    { amount: 500, price: 45, bonus: 50 },
-                    { amount: 1000, price: 80, bonus: 200 },
-                    { amount: 5000, price: 350, bonus: 1500 }
+                    { amount: 100, price: 10, bonus: 0, popular: false },
+                    { amount: 500, price: 45, bonus: 50, popular: true },
+                    { amount: 1000, price: 80, bonus: 200, popular: false }
                   ].map((option) => (
                     <button
                       key={option.amount}
-                      onClick={() => handleRecharge(option.amount + option.bonus)}
-                      className="relative bg-zinc-900 border border-zinc-800 hover:border-purple-500/50 rounded-xl p-4 text-left transition-all group hover:shadow-lg hover:shadow-purple-500/10"
+                      onClick={handleRecharge}
+                      className={`relative bg-zinc-900 border rounded-xl p-4 text-left transition-all group hover:shadow-lg ${
+                        option.popular
+                          ? 'border-purple-500/50 hover:border-purple-500 hover:shadow-purple-500/20'
+                          : 'border-zinc-800 hover:border-purple-500/50 hover:shadow-purple-500/10'
+                      }`}
                     >
+                      {option.popular && (
+                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-[9px] font-bold rounded-full whitespace-nowrap">
+                          推荐
+                        </span>
+                      )}
                       {option.bonus > 0 && (
                         <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold rounded-full">
                           送{option.bonus}
@@ -1258,15 +1299,23 @@ export default function VideoPage() {
                       </div>
                       {option.bonus > 0 && (
                         <div className="text-[10px] text-purple-400 mt-1">
-                          额外赠送 {option.bonus} 积分
+                          +{option.bonus} 赠送
                         </div>
                       )}
                     </button>
                   ))}
                 </div>
 
-                <div className="text-center text-xs text-zinc-600">
-                  <p>充值后视频积分永久有效，仅可用于视频生成服务</p>
+                <div className="text-center">
+                  <p className="text-xs text-zinc-600 mb-3">
+                    视频积分独立使用，不可用于图片生成
+                  </p>
+                  <button
+                    onClick={handleRecharge}
+                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-900 text-white font-medium text-sm rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                  >
+                    前往充值页面
+                  </button>
                 </div>
              </div>
           </div>
