@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 // --- Mock Data & Constants ---
 
@@ -374,10 +375,37 @@ export default function VideoPage() {
 
   // Load video credits from localStorage on mount
   useEffect(() => {
-    const savedCredits = localStorage.getItem('videoCredits');
-    if (savedCredits) {
-      setVideoCredits(parseInt(savedCredits, 10));
-    }
+    const loadCredits = async () => {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        // 如果有Supabase，从API获取积分
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          try {
+            const response = await fetch('/api/user/credits', {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`
+              }
+            });
+            if (response.ok) {
+              const data = await response.json();
+              setVideoCredits(data.videoCredits || 0);
+              return;
+            }
+          } catch (err) {
+            console.error('获取积分失败:', err);
+          }
+        }
+      }
+
+      // 如果API获取失败，从localStorage读取
+      const savedCredits = localStorage.getItem('videoCredits');
+      if (savedCredits) {
+        setVideoCredits(parseInt(savedCredits, 10));
+      }
+    };
+
+    loadCredits();
   }, []);
 
   // Save video credits to localStorage when changed
