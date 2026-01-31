@@ -480,8 +480,18 @@ export default function VideoPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        // 详细错误日志
+        console.error('❌ 视频生成API错误:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          details: data.details,
+          fullResponse: data
+        });
         throw new Error(data.error || '生成失败');
       }
+
+      console.log('✅ 视频生成请求成功:', data);
 
       // 更新积分
       setVideoCredits(data.remainingCredits);
@@ -490,8 +500,9 @@ export default function VideoPage() {
       pollVideoStatus(data.taskId, data.recordId, session.access_token);
 
     } catch (err: any) {
-      console.error('生成视频失败:', err);
-      setError(err.message || '生成失败，请重试');
+      console.error('❌ 生成视频失败:', err);
+      const errorMsg = err.message || '生成失败，请重试';
+      setError(`${errorMsg} (详细信息请查看控制台)`);
       setIsGenerating(false);
       setProgress(0);
     }
@@ -516,14 +527,32 @@ export default function VideoPage() {
         const data = await response.json();
 
         if (!response.ok) {
+          console.error('❌ 查询视频状态API错误:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: data.error,
+            details: data.details,
+            taskId: taskId,
+            recordId: recordId,
+            fullResponse: data
+          });
           throw new Error(data.error || '查询失败');
         }
+
+        console.log('📊 视频状态:', {
+          taskId: taskId,
+          status: data.status,
+          progress: data.progress,
+          videoUrl: data.videoUrl,
+          rawData: data.rawData
+        });
 
         // 更新进度
         setProgress(data.progress);
 
         if (data.status === 'completed' && data.videoUrl) {
           // 生成完成
+          console.log('✅ 视频生成完成:', data.videoUrl);
           setIsGenerating(false);
           setProgress(100);
           setGeneratedVideo(data.videoUrl);
@@ -533,9 +562,10 @@ export default function VideoPage() {
 
         } else if (data.status === 'failed') {
           // 生成失败
+          console.error('❌ 视频生成失败:', data);
           setIsGenerating(false);
           setProgress(0);
-          setError('视频生成失败，积分已退回');
+          setError('视频生成失败，积分已退回 (详细信息请查看控制台)');
 
           // 重新加载历史记录
           loadHistory();
@@ -552,10 +582,16 @@ export default function VideoPage() {
         }
 
       } catch (err: any) {
-        console.error('查询视频状态失败:', err);
+        console.error('❌ 查询视频状态失败:', {
+          error: err,
+          message: err.message,
+          stack: err.stack,
+          taskId: taskId,
+          recordId: recordId
+        });
         setIsGenerating(false);
         setProgress(0);
-        setError(err.message || '查询失败');
+        setError(`${err.message || '查询失败'} (详细信息请查看控制台)`);
       }
     };
 
