@@ -351,10 +351,26 @@ export default function VideoPage() {
   const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [credits, setCredits] = useState(1240);
+  const [videoCredits, setVideoCredits] = useState(0); // 视频积分（独立）
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(true);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'favorite' | 'failed'>('all');
+  const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+
+  // History records
+  const [historyRecords, setHistoryRecords] = useState<Array<{
+    id: string;
+    prompt: string;
+    model: string;
+    status: 'success' | 'failed' | 'generating';
+    videoUrl?: string;
+    thumbnail?: string;
+    timestamp: Date;
+    cost: number;
+    isFavorite?: boolean;
+  }>>([]);
 
   // --- Effects ---
   useEffect(() => {
@@ -364,7 +380,23 @@ export default function VideoPage() {
         setProgress((prev) => {
           if (prev >= 100) {
             setIsGenerating(false);
-            setCredits(c => c - selectedModel.cost);
+            setVideoCredits(c => c - selectedModel.cost);
+            // Mock video generation success
+            const mockVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+            setGeneratedVideo(mockVideoUrl);
+            // Add to history
+            const newRecord = {
+              id: Date.now().toString(),
+              prompt: prompt,
+              model: selectedModel.name,
+              status: 'success' as const,
+              videoUrl: mockVideoUrl,
+              thumbnail: startFrameImage || 'https://via.placeholder.com/320x180/1a1a1a/666666?text=Video',
+              timestamp: new Date(),
+              cost: selectedModel.cost,
+              isFavorite: false
+            };
+            setHistoryRecords(prev => [newRecord, ...prev]);
             return 0;
           }
           return prev + 1.5;
@@ -372,7 +404,7 @@ export default function VideoPage() {
       }, 100);
     }
     return () => clearInterval(interval);
-  }, [isGenerating, selectedModel.cost]);
+  }, [isGenerating, selectedModel.cost, prompt, selectedModel.name, startFrameImage]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -389,12 +421,48 @@ export default function VideoPage() {
   // --- Handlers ---
   const handleGenerate = () => {
     if (prompt.trim().length === 0) return;
+    if (videoCredits < selectedModel.cost) {
+      setShowRechargeModal(true);
+      return;
+    }
     setIsGenerating(true);
     setProgress(0);
   };
 
   const handleOptimizePrompt = () => {
     setPrompt(prev => prev + " (Cinematic lighting, 8k resolution, highly detailed, trending on artstation, masterpiece)");
+  };
+
+  // Handle recharge
+  const handleRecharge = (amount: number) => {
+    setVideoCredits(prev => prev + amount);
+    setShowRechargeModal(false);
+  };
+
+  // Toggle favorite
+  const toggleFavorite = (id: string) => {
+    setHistoryRecords(prev => prev.map(record =>
+      record.id === id ? { ...record, isFavorite: !record.isFavorite } : record
+    ));
+  };
+
+  // Delete history record
+  const deleteRecord = (id: string) => {
+    setHistoryRecords(prev => prev.filter(record => record.id !== id));
+  };
+
+  // Download video
+  const downloadVideo = (videoUrl: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = videoUrl;
+    a.download = filename;
+    a.click();
+  };
+
+  // Load video to preview
+  const loadVideoToPreview = (record: typeof historyRecords[0]) => {
+    setGeneratedVideo(record.videoUrl || null);
+    setPrompt(record.prompt);
   };
 
   // Handle image upload
@@ -484,10 +552,13 @@ export default function VideoPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-full border border-zinc-700/50 transition-colors group">
+          <button
+            onClick={() => setShowRechargeModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-full border border-zinc-700/50 transition-colors group"
+          >
             <CreditCard size={14} className="text-purple-400" />
-            <span className="text-sm font-medium text-white">{credits}</span>
-            <span className="text-xs text-zinc-500 group-hover:text-white transition-colors">积分</span>
+            <span className="text-sm font-medium text-white">{videoCredits}</span>
+            <span className="text-xs text-zinc-500 group-hover:text-white transition-colors">视频积分</span>
           </button>
           <button className="p-2 hover:bg-zinc-800 rounded-full relative text-zinc-400 hover:text-white transition-colors">
             <Bell size={18} />
@@ -867,6 +938,19 @@ export default function VideoPage() {
                 </span>
              </div>
              <div className="flex items-center gap-3">
+                {generatedVideo && (
+                  <>
+                    <button
+                      onClick={() => downloadVideo(generatedVideo, `video-${Date.now()}.mp4`)}
+                      className="p-1.5 text-zinc-500 hover:text-white transition-colors hover:bg-zinc-800 rounded"
+                    >
+                      <Download size={16} />
+                    </button>
+                    <button className="p-1.5 text-zinc-500 hover:text-white transition-colors hover:bg-zinc-800 rounded">
+                      <Share2 size={16} />
+                    </button>
+                  </>
+                )}
                 <button className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors">
                   <Maximize2 size={16} />
                 </button>
@@ -882,17 +966,50 @@ export default function VideoPage() {
                    <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 via-transparent to-blue-500/5 animate-pulse"></div>
                    <Loader2 size={48} className="text-purple-400 animate-spin mb-6" />
                    <h3 className="text-lg font-medium text-white mb-2">正在创造影像...</h3>
-                   <p className="text-zinc-500 text-sm max-w-md text-center px-4">AI 正在根据您的提示词构建三维空间与光影，预计剩余 12 秒。</p>
+                   <p className="text-zinc-500 text-sm max-w-md text-center px-4">AI 正在根据您的提示词构建三维空间与光影，预计剩余 {Math.ceil((100 - progress) / 1.5 * 0.1)} 秒。</p>
                    <div className="mt-8 flex gap-3">
                       <span className="px-3 py-1 bg-zinc-800 rounded-full text-xs text-zinc-400 border border-zinc-700">排队顺位: #2</span>
                       <span className="px-3 py-1 bg-zinc-800 rounded-full text-xs text-zinc-400 border border-zinc-700">模型: {selectedModel.name}</span>
                    </div>
                 </div>
+              ) : generatedVideo ? (
+                // Video Preview with Gradient Border
+                <div className="w-full max-w-3xl aspect-video rounded-2xl relative overflow-hidden shadow-2xl">
+                  {/* Gradient Border */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-blue-600 to-blue-900 p-[2px] rounded-2xl">
+                    <div className="w-full h-full bg-[#09090B] rounded-2xl overflow-hidden">
+                      <video
+                        src={generatedVideo}
+                        controls
+                        autoPlay
+                        loop
+                        className="w-full h-full object-cover"
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Video Info Overlay */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between pointer-events-none">
+                    <div className="bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg">
+                      <p className="text-xs text-zinc-300 line-clamp-2 max-w-md">{prompt}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-zinc-400">
+                        {aspectRatio}
+                      </span>
+                      <span className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-[10px] text-zinc-400">
+                        {duration}s
+                      </span>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 // Empty State
                 <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto border border-zinc-800 rotate-12 shadow-2xl">
-                    <Film size={32} className="text-zinc-600" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-500/10 to-blue-900/10 rounded-2xl flex items-center justify-center mx-auto border border-purple-500/20 rotate-12 shadow-2xl">
+                    <Film size={32} className="text-purple-400" />
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-white">开始您的创作</h2>
@@ -955,11 +1072,119 @@ export default function VideoPage() {
 
                {/* History List */}
                <div className="space-y-3">
-                 {/* Empty State */}
-                 <div className="text-center py-12">
-                   <History size={32} className="text-zinc-700 mx-auto mb-3" />
-                   <p className="text-xs text-zinc-600">暂无生成记录</p>
-                 </div>
+                 {historyRecords.filter(record => {
+                   if (historyFilter === 'favorite') return record.isFavorite;
+                   if (historyFilter === 'failed') return record.status === 'failed';
+                   return true;
+                 }).length === 0 ? (
+                   // Empty State
+                   <div className="text-center py-12">
+                     <History size={32} className="text-zinc-700 mx-auto mb-3" />
+                     <p className="text-xs text-zinc-600">
+                       {historyFilter === 'all' ? '暂无生成记录' :
+                        historyFilter === 'favorite' ? '暂无收藏记录' : '暂无失败记录'}
+                     </p>
+                   </div>
+                 ) : (
+                   historyRecords.filter(record => {
+                     if (historyFilter === 'favorite') return record.isFavorite;
+                     if (historyFilter === 'failed') return record.status === 'failed';
+                     return true;
+                   }).map((record) => (
+                     <div
+                       key={record.id}
+                       className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-all group"
+                     >
+                       {/* Thumbnail */}
+                       <div
+                         className="relative aspect-video bg-zinc-800 cursor-pointer"
+                         onClick={() => loadVideoToPreview(record)}
+                       >
+                         {record.thumbnail && (
+                           <img
+                             src={record.thumbnail}
+                             alt="Video thumbnail"
+                             className="w-full h-full object-cover"
+                           />
+                         )}
+                         {record.status === 'success' && (
+                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <Play size={32} className="text-white" fill="white" />
+                           </div>
+                         )}
+                         {record.status === 'failed' && (
+                           <div className="absolute inset-0 bg-red-500/10 flex items-center justify-center">
+                             <AlertCircle size={24} className="text-red-500" />
+                           </div>
+                         )}
+                         {record.status === 'generating' && (
+                           <div className="absolute inset-0 bg-purple-500/10 flex items-center justify-center">
+                             <Loader2 size={24} className="text-purple-400 animate-spin" />
+                           </div>
+                         )}
+                         {/* Status Badge */}
+                         <div className="absolute top-2 right-2">
+                           {record.status === 'success' && (
+                             <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] rounded-full border border-emerald-500/30">
+                               成功
+                             </span>
+                           )}
+                           {record.status === 'failed' && (
+                             <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-[9px] rounded-full border border-red-500/30">
+                               失败
+                             </span>
+                           )}
+                           {record.status === 'generating' && (
+                             <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-[9px] rounded-full border border-purple-500/30">
+                               生成中
+                             </span>
+                           )}
+                         </div>
+                       </div>
+
+                       {/* Info */}
+                       <div className="p-3 space-y-2">
+                         <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
+                           {record.prompt}
+                         </p>
+                         <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                           <span>{record.model}</span>
+                           <span>{new Date(record.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                         </div>
+
+                         {/* Actions */}
+                         <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+                           <button
+                             onClick={() => toggleFavorite(record.id)}
+                             className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[10px] transition-colors ${
+                               record.isFavorite
+                                 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                 : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                             }`}
+                           >
+                             <Sparkles size={12} fill={record.isFavorite ? 'currentColor' : 'none'} />
+                             {record.isFavorite ? '已收藏' : '收藏'}
+                           </button>
+                           {record.status === 'success' && record.videoUrl && (
+                             <button
+                               onClick={() => downloadVideo(record.videoUrl!, `video-${record.id}.mp4`)}
+                               className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[10px] bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                             >
+                               <Download size={12} />
+                               下载
+                             </button>
+                           )}
+                           <button
+                             onClick={() => deleteRecord(record.id)}
+                             className="px-2 py-1.5 rounded text-[10px] bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
+                           >
+                             <X size={12} />
+                           </button>
+                         </div>
+                       </div>
+                     </div>
+                   ))
+                 )}
                </div>
             </div>
           )}
@@ -997,6 +1222,72 @@ export default function VideoPage() {
                 >
                    我知道了
                 </button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Recharge Modal */}
+      {showRechargeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-[480px] bg-[#09090B] border border-zinc-800 rounded-2xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
+             <button
+               onClick={() => setShowRechargeModal(false)}
+               className="absolute top-4 right-4 text-zinc-500 hover:text-white"
+             >
+               <X size={18} />
+             </button>
+
+             <div className="space-y-6">
+                <div className="text-center">
+                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CreditCard size={24} className="text-white" />
+                   </div>
+                   <h3 className="text-lg font-semibold text-white">充值视频积分</h3>
+                   <p className="text-sm text-zinc-500 mt-2">
+                      当前视频积分: <span className="text-purple-400 font-medium">{videoCredits}</span>
+                   </p>
+                   <p className="text-xs text-amber-500/80 mt-1">
+                      视频积分独立使用，不可用于图片生成
+                   </p>
+                </div>
+
+                {/* Recharge Options */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { amount: 100, price: 10, bonus: 0 },
+                    { amount: 500, price: 45, bonus: 50 },
+                    { amount: 1000, price: 80, bonus: 200 },
+                    { amount: 5000, price: 350, bonus: 1500 }
+                  ].map((option) => (
+                    <button
+                      key={option.amount}
+                      onClick={() => handleRecharge(option.amount + option.bonus)}
+                      className="relative bg-zinc-900 border border-zinc-800 hover:border-purple-500/50 rounded-xl p-4 text-left transition-all group hover:shadow-lg hover:shadow-purple-500/10"
+                    >
+                      {option.bonus > 0 && (
+                        <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold rounded-full">
+                          送{option.bonus}
+                        </span>
+                      )}
+                      <div className="text-2xl font-bold text-white mb-1">
+                        {option.amount + option.bonus}
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        ¥{option.price}
+                      </div>
+                      {option.bonus > 0 && (
+                        <div className="text-[10px] text-purple-400 mt-1">
+                          额外赠送 {option.bonus} 积分
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-center text-xs text-zinc-600">
+                  <p>充值后视频积分永久有效，仅可用于视频生成服务</p>
+                </div>
              </div>
           </div>
         </div>
