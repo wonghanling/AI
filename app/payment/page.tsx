@@ -71,7 +71,7 @@ function PaymentContent() {
       nameEn: 'Professional Plan',
       price: 115,
       features: [
-        { text: '无限访问高级模型（每月 1,600 次保证）', hasTooltip: true, tooltip: '每月保证至少1,600次高级模型调用，超出部分根据使用情况提供' },
+        { text: '无限访问高级模型', hasTooltip: true, tooltip: '每月保证至少1,600次高级模型调用，超出部分根据使用情况提供' },
         { text: '无限访问普通模型', hasTooltip: false },
         { text: '高级 UI 和图像生成', hasTooltip: false },
         { text: '优先客服支持', hasTooltip: false },

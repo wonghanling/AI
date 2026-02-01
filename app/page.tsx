@@ -46,13 +46,16 @@ export default function LandingPage() {
   }, []);
 
   const handleSubscribe = (plan: 'free' | 'pro') => {
-    if (user) {
-      // 已登录，跳转到支付页面
-      router.push(`/payment?plan=${plan}`);
-    } else {
-      // 未登录，跳转到注册页面
-      router.push('/auth/register');
-    }
+    // 使用 requestAnimationFrame 确保立即响应
+    requestAnimationFrame(() => {
+      if (user) {
+        // 已登录，跳转到支付页面
+        router.push(`/payment?plan=${plan}`);
+      } else {
+        // 未登录，跳转到注册页面
+        router.push('/auth/register');
+      }
+    });
   };
 
   const handleLogout = async () => {
@@ -356,7 +359,10 @@ export default function LandingPage() {
               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
                 <span className="text-2xl font-bold text-black">∞</span>
               </div>
-              <h3 className="font-bold text-lg mb-2">BoLou1971 无限画布</h3>
+              <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                BoLou1971 无限画布
+                <span className="text-xs font-normal text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">开发中</span>
+              </h3>
               <p className="text-gray-600 text-xs leading-relaxed">创意无限, 自由绘制你的想象.</p>
             </div>
           </div>
