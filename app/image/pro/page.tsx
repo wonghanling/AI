@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
+import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 
 // 模型配置
 const MODELS = {
@@ -99,6 +101,13 @@ function ProImageContent() {
         return;
       }
 
+      // 先从缓存加载积分（立即显示）
+      const cached = getCachedCredits();
+      if (cached) {
+        setCredits(cached.imageCredits);
+      }
+
+      // 然后从API获取最新积分（后台更新）
       try {
         const response = await fetch('/api/user/credits', {
           headers: {
@@ -108,7 +117,13 @@ function ProImageContent() {
 
         if (response.ok) {
           const data = await response.json();
-          setCredits(data.imageCredits || 0);
+          const newImageCredits = data.imageCredits || 0;
+          const newVideoCredits = data.videoCredits || 0;
+
+          setCredits(newImageCredits);
+
+          // 更新缓存
+          setCachedCredits(newImageCredits, newVideoCredits);
         }
       } catch (err) {
         console.error('获取积分失败:', err);
@@ -117,6 +132,14 @@ function ProImageContent() {
     };
 
     fetchCredits();
+
+    // 启动会话管理器
+    startSessionManager();
+
+    // 清理函数
+    return () => {
+      stopSessionManager();
+    };
   }, []);
 
   // 获取历史图片记录
