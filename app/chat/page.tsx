@@ -7,6 +7,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MODEL_MAP, ModelKey } from '@/lib/model-config';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import { getCachedUser, setCachedUser } from '@/lib/user-cache';
+import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -138,13 +140,14 @@ function ChatPageContent() {
       const supabase = getSupabaseClient();
       if (!supabase) return;
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
+      // 先从缓存加载用户信息（立即显示）
+      const cached = getCachedUser();
+      if (cached && cached.user) {
+        setUserId(cached.user.id);
 
         // 从 localStorage 恢复对话历史（使用用户 ID 作为 key）
-        const savedConversations = localStorage.getItem(`conversations_${user.id}`);
-        const savedCurrentId = localStorage.getItem(`currentConversationId_${user.id}`);
+        const savedConversations = localStorage.getItem(`conversations_${cached.user.id}`);
+        const savedCurrentId = localStorage.getItem(`currentConversationId_${cached.user.id}`);
 
         if (savedConversations) {
           try {
@@ -163,10 +166,48 @@ function ChatPageContent() {
           }
         }
       }
+
+      // 然后从API获取最新用户信息（后台更新）
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        setCachedUser(user);
+
+        // 如果缓存中没有用户信息，现在才加载对话历史
+        if (!cached || !cached.user) {
+          const savedConversations = localStorage.getItem(`conversations_${user.id}`);
+          const savedCurrentId = localStorage.getItem(`currentConversationId_${user.id}`);
+
+          if (savedConversations) {
+            try {
+              const parsed = JSON.parse(savedConversations);
+              setConversations(parsed);
+
+              if (savedCurrentId && parsed.find((c: Conversation) => c.id === savedCurrentId)) {
+                setCurrentConversationId(savedCurrentId);
+                const currentConv = parsed.find((c: Conversation) => c.id === savedCurrentId);
+                if (currentConv) {
+                  setMessages(currentConv.messages);
+                }
+              }
+            } catch (e) {
+              console.error('恢复对话历史失败:', e);
+            }
+          }
+        }
+      }
     };
 
     fetchQuota();
     initUser();
+
+    // 启动会话管理器
+    startSessionManager();
+
+    // 清理函数
+    return () => {
+      stopSessionManager();
+    };
   }, [fetchQuota]);
 
   // 保存对话历史到 localStorage（使用用户 ID）

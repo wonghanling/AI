@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import { getCachedUser, setCachedUser } from '@/lib/user-cache';
+import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -29,6 +31,14 @@ function OrdersContent() {
 
   useEffect(() => {
     checkUser();
+
+    // 启动会话管理器
+    startSessionManager();
+
+    // 清理函数
+    return () => {
+      stopSessionManager();
+    };
   }, []);
 
   const checkUser = async () => {
@@ -38,6 +48,14 @@ function OrdersContent() {
       return;
     }
 
+    // 先从缓存加载用户信息（立即显示）
+    const cached = getCachedUser();
+    if (cached && cached.user) {
+      setUser(cached.user);
+      fetchOrders(cached.user.id);
+    }
+
+    // 然后从API获取最新用户信息（后台更新）
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/auth/login');
@@ -45,7 +63,12 @@ function OrdersContent() {
     }
 
     setUser(user);
-    fetchOrders(user.id);
+    setCachedUser(user);
+
+    // 如果缓存中没有用户信息，现在才加载订单
+    if (!cached || !cached.user) {
+      fetchOrders(user.id);
+    }
   };
 
   const fetchOrders = async (userId: string) => {
