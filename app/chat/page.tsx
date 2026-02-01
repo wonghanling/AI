@@ -8,7 +8,6 @@ import remarkGfm from 'remark-gfm';
 import { MODEL_MAP, ModelKey } from '@/lib/model-config';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { getCachedUser, setCachedUser } from '@/lib/user-cache';
-import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -200,27 +199,27 @@ function ChatPageContent() {
 
     fetchQuota();
     initUser();
-
-    // 启动会话管理器
-    startSessionManager();
-
-    // 清理函数
-    return () => {
-      stopSessionManager();
-    };
   }, [fetchQuota]);
 
-  // 保存对话历史到 localStorage（使用用户 ID）
+  // 保存对话历史到 localStorage（使用用户 ID）（使用防抖）
   useEffect(() => {
     if (conversations.length > 0 && userId) {
-      localStorage.setItem(`conversations_${userId}`, JSON.stringify(conversations));
+      const timer = setTimeout(() => {
+        localStorage.setItem(`conversations_${userId}`, JSON.stringify(conversations));
+      }, 1000); // 1秒防抖
+
+      return () => clearTimeout(timer);
     }
   }, [conversations, userId]);
 
-  // 保存当前对话 ID（使用用户 ID）
+  // 保存当前对话 ID（使用用户 ID）（使用防抖）
   useEffect(() => {
     if (currentConversationId && userId) {
-      localStorage.setItem(`currentConversationId_${userId}`, currentConversationId);
+      const timer = setTimeout(() => {
+        localStorage.setItem(`currentConversationId_${userId}`, currentConversationId);
+      }, 500); // 500ms防抖
+
+      return () => clearTimeout(timer);
     }
   }, [currentConversationId, userId]);
 

@@ -6,18 +6,35 @@ const ACTIVITY_CHECK_INTERVAL = 30 * 1000; // 30秒检查一次活动
 let refreshTimer: NodeJS.Timeout | null = null;
 let activityTimer: NodeJS.Timeout | null = null;
 let lastActivity = Date.now();
+let isRunning = false; // 防止重复启动
 
-// 记录用户活动
+// 记录用户活动（使用节流）
+let activityThrottle: NodeJS.Timeout | null = null;
 export function recordActivity() {
+  if (activityThrottle) return;
+
   lastActivity = Date.now();
+
+  // 节流：1秒内只记录一次
+  activityThrottle = setTimeout(() => {
+    activityThrottle = null;
+  }, 1000);
 }
 
 // 启动会话管理器
 export function startSessionManager() {
   if (typeof window === 'undefined') return;
 
-  // 监听用户活动
-  const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+  // 防止重复启动
+  if (isRunning) {
+    console.log('⚠️ 会话管理器已在运行');
+    return;
+  }
+
+  isRunning = true;
+
+  // 只监听关键事件，移除 scroll
+  const events = ['mousedown', 'keydown', 'touchstart'];
   events.forEach(event => {
     window.addEventListener(event, recordActivity, { passive: true });
   });
@@ -52,6 +69,8 @@ export function startSessionManager() {
 
 // 停止会话管理器
 export function stopSessionManager() {
+  if (!isRunning) return;
+
   if (refreshTimer) {
     clearInterval(refreshTimer);
     refreshTimer = null;
@@ -60,12 +79,17 @@ export function stopSessionManager() {
     clearInterval(activityTimer);
     activityTimer = null;
   }
+  if (activityThrottle) {
+    clearTimeout(activityThrottle);
+    activityThrottle = null;
+  }
 
-  const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+  const events = ['mousedown', 'keydown', 'touchstart'];
   events.forEach(event => {
     window.removeEventListener(event, recordActivity);
   });
 
+  isRunning = false;
   console.log('✅ 会话管理器已停止');
 }
 

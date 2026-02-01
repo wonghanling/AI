@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
-import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 
 // 模型配置
 const MODELS = {
@@ -65,14 +64,6 @@ function ImageGenerationContent() {
     };
 
     checkAuth();
-
-    // 启动会话管理器
-    startSessionManager();
-
-    // 清理函数
-    return () => {
-      stopSessionManager();
-    };
   }, [router]);
 
   // 当切换模型时，重置分辨率为该模型的第一个可用分辨率

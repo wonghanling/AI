@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import Image from 'next/image';
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 
 function PaymentContent() {
@@ -15,6 +15,7 @@ function PaymentContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,9 +41,9 @@ function PaymentContent() {
       nameEn: 'Free Plan',
       price: 0,
       features: [
-        '高级模型每天 3 次',
-        '普通模型每天 10 次',
-        '基础功能访问',
+        { text: '高级模型每天 3 次', hasTooltip: false },
+        { text: '普通模型每天 10 次', hasTooltip: false },
+        { text: '基础功能访问', hasTooltip: false },
       ]
     },
     pro: {
@@ -50,10 +51,10 @@ function PaymentContent() {
       nameEn: 'Professional Plan',
       price: 115,
       features: [
-        '无限访问高级模型（每月 1,600 次保证）',
-        '无限访问普通模型',
-        '高级 UI 和图像生成',
-        '优先客服支持',
+        { text: '无限访问高级模型（每月 1,600 次保证）', hasTooltip: true, tooltip: '每月保证至少1,600次高级模型调用，超出部分根据使用情况提供' },
+        { text: '无限访问普通模型', hasTooltip: false },
+        { text: '高级 UI 和图像生成', hasTooltip: false },
+        { text: '优先客服支持', hasTooltip: false },
       ]
     }
   };
@@ -67,60 +68,63 @@ function PaymentContent() {
       return;
     }
 
+    // 立即显示加载状态，提升响应速度
     setLoading(true);
     setError('');
 
-    try {
-      // 获取认证 token
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        throw new Error('请先登录');
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('登录已过期，请重新登录');
-      }
-
-      // 调用支付宝支付 API
-      const response = await fetch('/api/payment/alipay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          plan: 'subscription', // 符合数据库约束：'subscription' 或 'credits'
-          amount: currentPlan.price,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || '创建支付订单失败');
-      }
-
-      // 直接在当前页面渲染支付宝表单并自动提交
-      if (data.paymentForm) {
-        // 创建一个临时的 div 来渲染表单
-        const div = document.createElement('div');
-        div.innerHTML = data.paymentForm;
-        document.body.appendChild(div);
-
-        // 自动提交表单
-        const form = div.querySelector('form');
-        if (form) {
-          form.submit();
+    // 使用 setTimeout 确保 UI 立即更新
+    setTimeout(async () => {
+      try {
+        // 获取认证 token
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error('请先登录');
         }
-      } else {
-        throw new Error('未获取到支付表单');
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('登录已过期，请重新登录');
+        }
+
+        // 调用支付宝支付 API
+        const response = await fetch('/api/payment/alipay', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            plan: 'subscription', // 符合数据库约束：'subscription' 或 'credits'
+            amount: currentPlan.price,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || '创建支付订单失败');
+        }
+
+        // 直接在当前页面渲染支付宝表单并自动提交
+        if (data.paymentForm) {
+          // 创建一个临时的 div 来渲染表单
+          const div = document.createElement('div');
+          div.innerHTML = data.paymentForm;
+          document.body.appendChild(div);
+
+          // 自动提交表单
+          const form = div.querySelector('form');
+          if (form) {
+            form.submit();
+          }
+        } else {
+          throw new Error('未获取到支付表单');
+        }
+      } catch (err: any) {
+        setError(err.message || '支付失败，请重试');
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || '支付失败，请重试');
-    } finally {
-      setLoading(false);
-    }
+    }, 0);
   };
 
   return (
@@ -176,7 +180,21 @@ function PaymentContent() {
                     <div className="w-5 h-5 rounded-full bg-[#F5C518] flex items-center justify-center shrink-0 mt-0.5">
                       <Check size={14} className="text-black" />
                     </div>
-                    <span className="text-gray-700">{feature}</span>
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="text-gray-700">{typeof feature === 'string' ? feature : feature.text}</span>
+                      {typeof feature === 'object' && feature.hasTooltip && (
+                        <div className="relative group">
+                          <Info
+                            size={16}
+                            className="text-gray-400 hover:text-gray-600 cursor-help transition-colors"
+                          />
+                          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                            {feature.tooltip}
+                            <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

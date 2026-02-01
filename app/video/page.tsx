@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
-import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 
 // --- Mock Data & Constants ---
 
@@ -393,14 +392,6 @@ export default function VideoPage() {
     };
 
     checkAuth();
-
-    // 启动会话管理器
-    startSessionManager();
-
-    // 清理函数
-    return () => {
-      stopSessionManager();
-    };
   }, [router]);
 
   // Load video credits from API/localStorage on mount
@@ -455,9 +446,13 @@ export default function VideoPage() {
     loadHistory();
   }, []);
 
-  // Save video credits to localStorage when changed
+  // Save video credits to localStorage when changed (使用防抖)
   useEffect(() => {
-    localStorage.setItem('videoCredits', videoCredits.toString());
+    const timer = setTimeout(() => {
+      localStorage.setItem('videoCredits', videoCredits.toString());
+    }, 500); // 500ms 防抖
+
+    return () => clearTimeout(timer);
   }, [videoCredits]);
 
   // Close dropdown when clicking outside

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { getCachedUser, setCachedUser } from '@/lib/user-cache';
-import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -31,14 +30,6 @@ function OrdersContent() {
 
   useEffect(() => {
     checkUser();
-
-    // 启动会话管理器
-    startSessionManager();
-
-    // 清理函数
-    return () => {
-      stopSessionManager();
-    };
   }, []);
 
   const checkUser = async () => {

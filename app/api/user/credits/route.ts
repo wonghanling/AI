@@ -23,11 +23,49 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. 获取用户信息
-    const { data: userData } = await supabaseAdmin
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('user_type, credits, image_credits, video_credits')
       .eq('id', user.id)
       .single();
+
+    // 如果用户不存在，自动创建
+    if (userError || !userData) {
+      const { data: newUser, error: createError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          id: user.id,
+          email: user.email,
+          user_type: 'free',
+          credits: 0,
+          image_credits: 0,
+          video_credits: 0
+        })
+        .select('user_type, credits, image_credits, video_credits')
+        .single();
+
+      if (createError) {
+        console.error('创建用户记录失败:', createError);
+        return NextResponse.json({ error: '创建用户记录失败' }, { status: 500 });
+      }
+
+      const userType = newUser?.user_type || 'free';
+      const credits = newUser?.credits || 0;
+      const imageCredits = newUser?.image_credits || 0;
+      const videoCredits = newUser?.video_credits || 0;
+
+      return NextResponse.json({
+        userType,
+        credits,
+        balance: credits,
+        imageCredits,
+        videoCredits,
+        usage: {
+          advanced: { used: 0, remaining: 3, limit: 3 },
+          basic: { used: 0, remaining: 10, limit: 10 }
+        }
+      });
+    }
 
     const userType = userData?.user_type || 'free';
     const credits = userData?.credits || 0; // 保留旧字段兼容性

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
-import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 
 // 模型配置
 const MODELS = {
@@ -132,14 +131,6 @@ function ProImageContent() {
     };
 
     fetchCredits();
-
-    // 启动会话管理器
-    startSessionManager();
-
-    // 清理函数
-    return () => {
-      stopSessionManager();
-    };
   }, []);
 
   // 获取历史图片记录
