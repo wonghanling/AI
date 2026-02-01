@@ -374,6 +374,25 @@ export default function VideoPage() {
     isFavorite?: boolean;
   }>>([]);
 
+  // 检查登录状态
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        router.push('/login');
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
   // Load video credits from API/localStorage on mount
   useEffect(() => {
     const loadCredits = async () => {

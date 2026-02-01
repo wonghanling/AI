@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
 // 模型配置
@@ -38,12 +39,32 @@ const IMAGE_COUNTS = [
 ];
 
 function ImageGenerationContent() {
+  const router = useRouter();
   const [selectedModel, setSelectedModel] = useState<'nano-banana' | 'nano-banana-pro'>('nano-banana-pro');
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [resolution, setResolution] = useState('1K'); // Nano Banana 默认 1K（固定）
   const [imageCount, setImageCount] = useState(1);
   const [isPending, startTransition] = useTransition();
+
+  // 检查登录状态
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        router.push('/login');
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   // 当切换模型时，重置分辨率为该模型的第一个可用分辨率
   useEffect(() => {

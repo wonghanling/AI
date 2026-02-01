@@ -64,10 +64,11 @@ export async function GET(request: NextRequest) {
 
     // 映射状态
     let status = 'processing';
-    let progress = 50;
+    let progress = 0;
     let videoUrl = null;
     let thumbnailUrl = null;
 
+    // 根据任务状态设置进度（确保进度递增）
     if (taskData.status === 'video_generation_completed' || taskData.status === 'completed') {
       status = 'completed';
       progress = 100;
@@ -110,10 +111,15 @@ export async function GET(request: NextRequest) {
       console.error('❌ 视频生成失败:', taskData.detail?.error || taskData.error || '未知错误');
     } else if (taskData.status === 'video_generating' || taskData.status === 'processing') {
       status = 'processing';
-      progress = 75;
+      progress = 60;
     } else if (taskData.status === 'pending' || taskData.status === 'image_downloading') {
       status = 'pending';
-      progress = 25;
+      progress = 20;
+    } else {
+      // 未知状态，保持processing
+      status = 'processing';
+      progress = 40;
+      console.warn('⚠️ 未知的任务状态:', taskData.status);
     }
 
     // 更新Supabase记录
