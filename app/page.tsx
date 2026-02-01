@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -27,6 +28,14 @@ export default function LandingPage() {
     };
 
     checkUser();
+
+    // 启动会话管理器
+    startSessionManager();
+
+    // 清理函数
+    return () => {
+      stopSessionManager();
+    };
   }, []);
 
   const handleSubscribe = (plan: 'free' | 'pro') => {
