@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useTransition, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
 
 // 模型配置
 const MODELS = {
@@ -45,7 +46,6 @@ function ImageGenerationContent() {
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [resolution, setResolution] = useState('1K'); // Nano Banana 默认 1K（固定）
   const [imageCount, setImageCount] = useState(1);
-  const [isPending, startTransition] = useTransition();
 
   // 检查登录状态
   useEffect(() => {
@@ -138,6 +138,13 @@ function ImageGenerationContent() {
         return;
       }
 
+      // 先从缓存加载积分（立即显示）
+      const cached = getCachedCredits();
+      if (cached) {
+        setCredits(cached.imageCredits);
+      }
+
+      // 然后从API获取最新积分（后台更新）
       try {
         const response = await fetch('/api/user/credits', {
           headers: {
@@ -147,7 +154,13 @@ function ImageGenerationContent() {
 
         if (response.ok) {
           const data = await response.json();
-          setCredits(data.imageCredits || 0);
+          const newImageCredits = data.imageCredits || 0;
+          const newVideoCredits = data.videoCredits || 0;
+
+          setCredits(newImageCredits);
+
+          // 更新缓存
+          setCachedCredits(newImageCredits, newVideoCredits);
         }
       } catch (err) {
         console.error('获取积分失败:', err);
@@ -252,7 +265,7 @@ function ImageGenerationContent() {
           size: `${resolution} ${aspectRatio}`
         }));
 
-        setGeneratedImages([...newImages, ...generatedImages]);
+        setGeneratedImages(prev => [...newImages, ...prev]);
         setCredits(credits - totalCredits);
         setCooldownSeconds(IMAGE_COUNTS.find(c => c.value === imageCount)?.cooldown || 10);
         setLoading(false);
@@ -306,7 +319,7 @@ function ImageGenerationContent() {
         size: `${resolution} ${aspectRatio}`
       }));
 
-      setGeneratedImages([...newImages, ...generatedImages]);
+      setGeneratedImages(prev => [...newImages, ...prev]);
       setCredits(data.remainingBalance);
       setCooldownSeconds(IMAGE_COUNTS.find(c => c.value === imageCount)?.cooldown || 10);
 
@@ -316,7 +329,7 @@ function ImageGenerationContent() {
     } finally {
       setLoading(false);
     }
-  }, [prompt, cooldownSeconds, calculateTotalCredits, credits, selectedModel, aspectRatio, resolution, imageCount, uploadedImage, generatedImages]);
+  }, [prompt, cooldownSeconds, calculateTotalCredits, credits, selectedModel, aspectRatio, resolution, imageCount, uploadedImage]);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -391,8 +404,7 @@ function ImageGenerationContent() {
             </Link>
 
             <button
-              onClick={() => startTransition(() => setSelectedModel('nano-banana'))}
-              disabled={isPending}
+              onClick={() => setSelectedModel('nano-banana')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                 selectedModel === 'nano-banana'
                   ? 'bg-[#F5C518] text-black font-semibold'
@@ -406,8 +418,7 @@ function ImageGenerationContent() {
             </button>
 
             <button
-              onClick={() => startTransition(() => setSelectedModel('nano-banana-pro'))}
-              disabled={isPending}
+              onClick={() => setSelectedModel('nano-banana-pro')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                 selectedModel === 'nano-banana-pro'
                   ? 'bg-[#F5C518] text-black font-semibold'

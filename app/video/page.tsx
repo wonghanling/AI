@@ -11,6 +11,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
 
 // --- Mock Data & Constants ---
 
@@ -398,7 +399,13 @@ export default function VideoPage() {
     const loadCredits = async () => {
       const supabase = getSupabaseClient();
       if (supabase) {
-        // 如果有Supabase，从API获取积分
+        // 先从缓存加载积分（立即显示）
+        const cached = getCachedCredits();
+        if (cached) {
+          setVideoCredits(cached.videoCredits);
+        }
+
+        // 然后从API获取最新积分（后台更新）
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           try {
@@ -409,7 +416,13 @@ export default function VideoPage() {
             });
             if (response.ok) {
               const data = await response.json();
-              setVideoCredits(data.videoCredits || 0);
+              const newImageCredits = data.imageCredits || 0;
+              const newVideoCredits = data.videoCredits || 0;
+
+              setVideoCredits(newVideoCredits);
+
+              // 更新缓存
+              setCachedCredits(newImageCredits, newVideoCredits);
               return;
             }
           } catch (err) {

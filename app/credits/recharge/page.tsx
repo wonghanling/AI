@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
 import Link from 'next/link';
 import { ArrowLeft, Zap, Check, Loader2, Image as ImageIcon, Video } from 'lucide-react';
 
@@ -102,7 +103,14 @@ export default function RechargeCreditsPage() {
       if (user) {
         setUserEmail(user.email || '');
 
-        // 获取当前积分
+        // 先从缓存加载积分（立即显示）
+        const cached = getCachedCredits();
+        if (cached) {
+          setImageCredits(cached.imageCredits);
+          setVideoCredits(cached.videoCredits);
+        }
+
+        // 然后从API获取最新积分（后台更新）
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           try {
@@ -113,8 +121,14 @@ export default function RechargeCreditsPage() {
             });
             if (response.ok) {
               const data = await response.json();
-              setImageCredits(data.imageCredits || 0);
-              setVideoCredits(data.videoCredits || 0);
+              const newImageCredits = data.imageCredits || 0;
+              const newVideoCredits = data.videoCredits || 0;
+
+              setImageCredits(newImageCredits);
+              setVideoCredits(newVideoCredits);
+
+              // 更新缓存
+              setCachedCredits(newImageCredits, newVideoCredits);
             }
           } catch (err) {
             console.error('获取积分失败:', err);
