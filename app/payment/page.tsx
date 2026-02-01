@@ -92,59 +92,54 @@ function PaymentContent() {
     setLoading(true);
     setError('');
 
-    // 使用 setTimeout 确保 UI 立即更新
-    setTimeout(async () => {
-      try {
-        // 获取认证 token
-        const supabase = getSupabaseClient();
-        if (!supabase) {
-          throw new Error('请先登录');
-        }
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          throw new Error('登录已过期，请重新登录');
-        }
-
-        // 调用支付宝支付 API
-        const response = await fetch('/api/payment/alipay', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            plan: 'subscription', // 符合数据库约束：'subscription' 或 'credits'
-            amount: currentPlan.price,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || '创建支付订单失败');
-        }
-
-        // 直接在当前页面渲染支付宝表单并自动提交
-        if (data.paymentForm) {
-          // 创建一个临时的 div 来渲染表单
-          const div = document.createElement('div');
-          div.innerHTML = data.paymentForm;
-          document.body.appendChild(div);
-
-          // 自动提交表单
-          const form = div.querySelector('form');
-          if (form) {
-            form.submit();
-          }
-        } else {
-          throw new Error('未获取到支付表单');
-        }
-      } catch (err: any) {
-        setError(err.message || '支付失败，请重试');
-        setLoading(false);
+    try {
+      // 获取认证 token
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        throw new Error('请先登录');
       }
-    }, 0);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('登录已过期，请重新登录');
+      }
+
+      // 调用支付宝支付 API
+      const response = await fetch('/api/payment/alipay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          plan: 'subscription',
+          amount: currentPlan.price,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '创建支付订单失败');
+      }
+
+      // 直接在当前页面渲染支付宝表单并自动提交
+      if (data.paymentForm) {
+        const div = document.createElement('div');
+        div.innerHTML = data.paymentForm;
+        document.body.appendChild(div);
+
+        const form = div.querySelector('form');
+        if (form) {
+          form.submit();
+        }
+      } else {
+        throw new Error('未获取到支付表单');
+      }
+    } catch (err: any) {
+      setError(err.message || '支付失败，请重试');
+      setLoading(false);
+    }
   };
 
   return (
