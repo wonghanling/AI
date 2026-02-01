@@ -17,6 +17,13 @@ function PaymentContent() {
   const [userEmail, setUserEmail] = useState('');
   const [showTooltip, setShowTooltip] = useState(false);
 
+  // 定义功能项类型
+  type Feature = {
+    text: string;
+    hasTooltip: boolean;
+    tooltip?: string;
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = getSupabaseClient();
@@ -35,7 +42,20 @@ function PaymentContent() {
     checkAuth();
   }, [router]);
 
-  const planDetails = {
+  const planDetails: {
+    free: {
+      name: string;
+      nameEn: string;
+      price: number;
+      features: Feature[];
+    };
+    pro: {
+      name: string;
+      nameEn: string;
+      price: number;
+      features: Feature[];
+    };
+  } = {
     free: {
       name: '免费版',
       nameEn: 'Free Plan',
@@ -181,8 +201,8 @@ function PaymentContent() {
                       <Check size={14} className="text-black" />
                     </div>
                     <div className="flex items-center gap-2 flex-1">
-                      <span className="text-gray-700">{typeof feature === 'string' ? feature : feature.text}</span>
-                      {typeof feature === 'object' && feature.hasTooltip && (
+                      <span className="text-gray-700">{feature.text}</span>
+                      {feature.hasTooltip && feature.tooltip && (
                         <div className="relative group">
                           <Info
                             size={16}
