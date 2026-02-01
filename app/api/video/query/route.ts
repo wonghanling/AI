@@ -59,6 +59,9 @@ export async function GET(request: NextRequest) {
 
     const taskData = await apiResponse.json();
 
+    // 详细日志：打印完整的API响应
+    console.log('📦 云雾API完整响应:', JSON.stringify(taskData, null, 2));
+
     // 映射状态
     let status = 'processing';
     let progress = 50;
@@ -68,12 +71,43 @@ export async function GET(request: NextRequest) {
     if (taskData.status === 'video_generation_completed' || taskData.status === 'completed') {
       status = 'completed';
       progress = 100;
+
       // 从返回数据中提取视频URL（多种可能的字段位置）
-      videoUrl = taskData.video_url || taskData.detail?.video?.url || taskData.video?.url || taskData.detail?.output?.video_url;
-      thumbnailUrl = taskData.thumbnail_url || taskData.detail?.video?.thumbnail || taskData.video?.thumbnail;
+      videoUrl = taskData.video_url ||
+                 taskData.detail?.video?.url ||
+                 taskData.video?.url ||
+                 taskData.detail?.output?.video_url ||
+                 taskData.data?.video_url ||
+                 taskData.data?.url ||
+                 taskData.url;
+
+      thumbnailUrl = taskData.thumbnail_url ||
+                     taskData.detail?.video?.thumbnail ||
+                     taskData.video?.thumbnail ||
+                     taskData.data?.thumbnail_url;
+
+      // 详细日志：视频URL提取结果
+      console.log('🎬 视频URL提取结果:', {
+        videoUrl: videoUrl,
+        thumbnailUrl: thumbnailUrl,
+        possibleFields: {
+          'taskData.video_url': taskData.video_url,
+          'taskData.detail?.video?.url': taskData.detail?.video?.url,
+          'taskData.video?.url': taskData.video?.url,
+          'taskData.detail?.output?.video_url': taskData.detail?.output?.video_url,
+          'taskData.data?.video_url': taskData.data?.video_url,
+          'taskData.data?.url': taskData.data?.url,
+          'taskData.url': taskData.url
+        }
+      });
+
+      if (!videoUrl) {
+        console.warn('⚠️ 警告：任务已完成但未找到视频URL，完整响应:', taskData);
+      }
     } else if (taskData.status === 'failed' || taskData.status === 'error') {
       status = 'failed';
       progress = 0;
+      console.error('❌ 视频生成失败:', taskData.detail?.error || taskData.error || '未知错误');
     } else if (taskData.status === 'video_generating' || taskData.status === 'processing') {
       status = 'processing';
       progress = 75;

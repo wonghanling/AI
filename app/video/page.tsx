@@ -1227,7 +1227,47 @@ export default function VideoPage() {
                 </div>
               ) : generatedVideo ? (
                 // Video Preview with Gradient Border
-                <div className="w-full max-w-3xl aspect-video rounded-2xl relative overflow-hidden shadow-2xl">
+                <div className="w-full max-w-3xl space-y-4">
+                  {/* 调试信息 */}
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 text-xs">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-zinc-400">视频URL:</span>
+                      <code className="text-purple-400 flex-1 truncate">{generatedVideo}</code>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedVideo);
+                          alert('已复制到剪贴板');
+                        }}
+                        className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300"
+                      >
+                        复制
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={generatedVideo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 rounded text-blue-400 border border-blue-500/30"
+                      >
+                        在新标签页打开
+                      </a>
+                      <button
+                        onClick={() => {
+                          const video = document.querySelector('video');
+                          if (video) {
+                            video.load();
+                            console.log('🔄 重新加载视频');
+                          }
+                        }}
+                        className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300"
+                      >
+                        重新加载
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="w-full aspect-video rounded-2xl relative overflow-hidden shadow-2xl">
                   {/* Gradient Border */}
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-blue-600 to-blue-900 p-[2px] rounded-2xl">
                     <div className="w-full h-full bg-[#09090B] rounded-2xl overflow-hidden">
@@ -1239,6 +1279,21 @@ export default function VideoPage() {
                         className="w-full h-full object-cover"
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
+                        onError={(e) => {
+                          console.error('❌ 视频播放错误:', {
+                            videoUrl: generatedVideo,
+                            error: e,
+                            errorCode: (e.target as HTMLVideoElement).error?.code,
+                            errorMessage: (e.target as HTMLVideoElement).error?.message
+                          });
+                          setError('视频加载失败，请检查视频URL是否有效');
+                        }}
+                        onLoadedMetadata={() => {
+                          console.log('✅ 视频元数据加载成功:', generatedVideo);
+                        }}
+                        onCanPlay={() => {
+                          console.log('✅ 视频可以播放:', generatedVideo);
+                        }}
                       />
                     </div>
                   </div>
@@ -1259,6 +1314,7 @@ export default function VideoPage() {
                       )}
                     </div>
                   </div>
+                </div>
                 </div>
               ) : (
                 // Empty State
