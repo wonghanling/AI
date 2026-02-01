@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronRight, Shield, Zap, RefreshCw, CreditCard, Globe, Share2, Info, Check } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { startSessionManager, stopSessionManager } from '@/lib/session-manager';
+import { getCachedUser, setCachedUser, clearCachedUser } from '@/lib/user-cache';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -22,9 +23,24 @@ export default function LandingPage() {
         return;
       }
 
+      // 先从缓存加载用户信息（立即显示）
+      const cached = getCachedUser();
+      if (cached) {
+        setUser(cached.user);
+        setLoading(false);
+      }
+
+      // 然后从API获取最新用户信息（后台更新）
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       setLoading(false);
+
+      // 更新缓存
+      if (user) {
+        setCachedUser(user);
+      } else {
+        clearCachedUser();
+      }
     };
 
     checkUser();
@@ -53,6 +69,7 @@ export default function LandingPage() {
     if (supabase) {
       await supabase.auth.signOut();
       setUser(null);
+      clearCachedUser(); // 清除用户缓存
       router.refresh();
     }
   };
