@@ -612,7 +612,7 @@ function ImageGenerationContent() {
             <button
               onClick={handleGenerate}
               disabled={loading || !prompt.trim() || cooldownSeconds > 0 || credits < calculateTotalCredits}
-              className="w-full bg-[#F5C518] hover:bg-[#E6B800] text-black font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-[#F5C518] hover:bg-[#E6B800] text-black font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

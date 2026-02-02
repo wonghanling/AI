@@ -203,7 +203,7 @@ function PaymentContent() {
                             size={16}
                             className="text-gray-400 hover:text-gray-600 cursor-help transition-colors"
                           />
-                          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 pointer-events-none group-hover:pointer-events-auto">
                             {feature.tooltip}
                             <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-gray-900"></div>
                           </div>
@@ -226,7 +226,7 @@ function PaymentContent() {
             <button
               onClick={handlePayment}
               disabled={loading}
-              className="w-full bg-[#F5C518] hover:bg-[#E6B800] text-black py-4 rounded-full font-bold text-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-[#F5C518] hover:bg-[#E6B800] text-black py-4 rounded-full font-bold text-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

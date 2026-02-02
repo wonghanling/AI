@@ -271,7 +271,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleSendCode}
                   disabled={sendingCode || countdown > 0}
-                  className="h-[56px] px-6 rounded-2xl border border-[#D2D2D7] bg-white text-[#1D1D1F] font-medium text-sm hover:bg-[#FBFBFC] hover:border-[#F5C518] transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  className="h-[56px] px-6 rounded-2xl border border-[#D2D2D7] bg-white text-[#1D1D1F] font-medium text-sm hover:bg-[#FBFBFC] hover:border-[#F5C518] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none whitespace-nowrap"
                 >
                   {sendingCode ? '发送中...' : countdown > 0 ? `${countdown}s` : codeSent ? '重新发送' : '发送验证码'}
                 </button>
