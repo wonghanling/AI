@@ -518,7 +518,7 @@ function ChatPageContent() {
               </button>
               <button
                 onClick={(e) => deleteConversation(conv.id, e)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-700 rounded transition-opacity"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-700 rounded transition-opacity pointer-events-none group-hover:pointer-events-auto"
                 title="删除对话"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -959,7 +959,7 @@ function ChatPageContent() {
                 <button
                   onClick={sendMessage}
                   disabled={loading || !input.trim()}
-                  className="absolute right-2 bottom-2 p-2 md:p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors touch-manipulation"
+                  className="absolute right-2 bottom-2 p-2 md:p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:pointer-events-none transition-colors touch-manipulation"
                 >
                   {loading ? (
                     <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
