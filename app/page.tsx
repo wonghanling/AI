@@ -191,8 +191,9 @@ export default function LandingPage() {
               <div
                 key={i}
                 onClick={() => router.push(`/chat?model=${model.modelKey}`)}
-                className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
-                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
+                className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
+                style={{ transform: 'translateZ(0)' }}>
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:brightness-110 transition-all overflow-hidden">
                   <Image
                     src={model.icon}
                     alt={model.name}
@@ -230,8 +231,9 @@ export default function LandingPage() {
               <div
                 key={i}
                 onClick={() => router.push(`/chat?model=${model.modelKey}`)}
-                className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
-                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
+                className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
+                style={{ transform: 'translateZ(0)' }}>
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:brightness-110 transition-all overflow-hidden">
                   <Image
                     src={model.icon}
                     alt={model.name}
@@ -256,8 +258,9 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6">
             <div
               onClick={() => router.push('/image')}
-              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
-              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
+              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
+              style={{ transform: 'translateZ(0)' }}>
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:brightness-110 transition-all overflow-hidden">
                 <Image
                   src="/banana-svgrepo-com.svg"
                   alt="Nano Banana Pro"
@@ -272,9 +275,10 @@ export default function LandingPage() {
 
             <div
               onClick={() => router.push('/image/pro')}
-              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
+              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
+              style={{ transform: 'translateZ(0)' }}>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:brightness-110 transition-all">
                   <Image
                     src="/midjourney.svg"
                     alt="Midjourney"
@@ -283,7 +287,7 @@ export default function LandingPage() {
                     className="object-contain"
                   />
                 </div>
-                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:brightness-110 transition-all">
                   <Image
                     src="/stability-color.svg"
                     alt="Stability AI"
@@ -292,7 +296,7 @@ export default function LandingPage() {
                     className="object-contain"
                   />
                 </div>
-                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:brightness-110 transition-all">
                   <Image
                     src="/flux.svg"
                     alt="Flux"
@@ -317,9 +321,10 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 lg:gap-6">
             <div
               onClick={() => router.push('/video')}
-              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
+              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
+              style={{ transform: 'translateZ(0)' }}>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center group-hover:brightness-110 transition-all p-1.5">
                   <img
                     src="/sora-color.svg"
                     alt="Sora"
@@ -328,7 +333,7 @@ export default function LandingPage() {
                     className="w-5 h-5 object-contain"
                   />
                 </div>
-                <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5 text-white">
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center group-hover:brightness-110 transition-all p-1.5 text-white">
                   <img
                     src="/runway.svg"
                     alt="Runway"
@@ -337,7 +342,7 @@ export default function LandingPage() {
                     className="w-5 h-5 object-contain brightness-0 invert"
                   />
                 </div>
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform p-1.5">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg flex items-center justify-center group-hover:brightness-110 transition-all p-1.5">
                   <img
                     src="/gemini-video.svg"
                     alt="Gemini"
@@ -346,7 +351,7 @@ export default function LandingPage() {
                     className="w-5 h-5 object-contain"
                   />
                 </div>
-                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center group-hover:brightness-110 transition-all">
                   <img
                     src="/grok.svg"
                     alt="Grok"
@@ -362,8 +367,9 @@ export default function LandingPage() {
 
             <div
               onClick={() => window.open('https://boluolab.com', '_blank')}
-              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-all duration-300 group cursor-pointer">
-              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden">
+              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
+              style={{ transform: 'translateZ(0)' }}>
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:brightness-110 transition-all overflow-hidden">
                 <span className="text-2xl font-bold text-black">∞</span>
               </div>
               <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
@@ -616,7 +622,7 @@ export default function LandingPage() {
                     <div className="font-medium">无限访问高级模型</div>
                     <div className="group relative">
                       <Info size={14} className="text-gray-400 cursor-help" />
-                      <div className="absolute left-0 top-6 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                      <div className="absolute left-0 top-6 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
                         <p className="text-xs text-gray-600 leading-relaxed mb-2">
                           确保每月 1,600 次无限制高级查询. 超过 1600 次后, 为防止滥用, 请求频率可能受限.
                         </p>
@@ -652,7 +658,7 @@ export default function LandingPage() {
                     <div className="font-medium">无限访问普通模型</div>
                     <div className="group relative">
                       <Info size={14} className="text-gray-400 cursor-help" />
-                      <div className="absolute left-0 top-6 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                      <div className="absolute left-0 top-6 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
                         <p className="text-xs text-gray-600 leading-relaxed mb-2">
                           确保每月 1,600 次无限制高级查询. 超过 1600 次后, 为防止滥用, 请求频率可能受限.
                         </p>
