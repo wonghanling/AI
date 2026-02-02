@@ -362,6 +362,9 @@ export default function VideoPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showRechargeModal, setShowRechargeModal] = useState(false);
 
+  // 用于存储轮询清理函数
+  const [pollCleanup, setPollCleanup] = useState<(() => void) | null>(null);
+
   // History records
   const [historyRecords, setHistoryRecords] = useState<Array<{
     id: string;
@@ -532,8 +535,14 @@ export default function VideoPage() {
       // 更新积分
       setVideoCredits(data.remainingCredits);
 
-      // 开始轮询任务状态
-      pollVideoStatus(data.taskId, data.recordId, session.access_token);
+      // 清理之前的轮询（如果有）
+      if (pollCleanup) {
+        pollCleanup();
+      }
+
+      // 开始轮询任务状态，并保存清理函数
+      const cleanup = pollVideoStatus(data.taskId, data.recordId, session.access_token);
+      setPollCleanup(() => cleanup);
 
     } catch (err: any) {
       console.error('❌ 生成视频失败:', err);
@@ -548,8 +557,12 @@ export default function VideoPage() {
   const pollVideoStatus = async (taskId: string, recordId: string, token: string) => {
     const maxAttempts = 300; // 增加到5分钟（每秒一次）
     let attempts = 0;
+    let timeoutId: NodeJS.Timeout | null = null;
+    let isCancelled = false;
 
     const poll = async () => {
+      if (isCancelled) return; // 如果已取消，停止轮询
+
       try {
         attempts++;
         const response = await fetch(
@@ -608,9 +621,9 @@ export default function VideoPage() {
           // 重新加载历史记录
           loadHistory();
 
-        } else if (attempts < maxAttempts) {
+        } else if (attempts < maxAttempts && !isCancelled) {
           // 继续轮询
-          setTimeout(poll, 1000); // 每秒查询一次
+          timeoutId = setTimeout(poll, 1000); // 每秒查询一次
         } else {
           // 超时
           console.warn('⏱️ 轮询超时，已达到最大尝试次数:', maxAttempts);
@@ -634,6 +647,14 @@ export default function VideoPage() {
     };
 
     poll();
+
+    // 返回清理函数
+    return () => {
+      isCancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   };
 
   // 加载历史记录
@@ -793,6 +814,16 @@ export default function VideoPage() {
       setEndFrameImage(null);
     }
   }, [selectedModel, aspectRatio]);
+
+  // 组件卸载时清理轮询
+  useEffect(() => {
+    return () => {
+      if (pollCleanup) {
+        console.log('🧹 清理视频轮询定时器');
+        pollCleanup();
+      }
+    };
+  }, [pollCleanup]);
 
   // Filter models based on search query
   const filteredModels = MODELS.filter(model =>
