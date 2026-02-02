@@ -1058,7 +1058,7 @@ export default function VideoPage() {
                   />
                   <label
                     htmlFor="start-frame-upload"
-                    className="border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600 transition-all group relative overflow-hidden"
+                    className={`border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 transition-all group relative overflow-hidden ${!selectedModel.features.startFrame ? '' : 'cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600'}`}
                   >
                     {startFrameImage ? (
                       <>
@@ -1097,7 +1097,7 @@ export default function VideoPage() {
                   />
                   <label
                     htmlFor="end-frame-upload"
-                    className="border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600 transition-all group relative overflow-hidden"
+                    className={`border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 transition-all group relative overflow-hidden ${!selectedModel.features.endFrame ? '' : 'cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600'}`}
                   >
                     {endFrameImage ? (
                       <>
@@ -1184,12 +1184,12 @@ export default function VideoPage() {
               onClick={handleGenerate}
               disabled={isGenerating || !prompt}
               className={`
-                w-full relative overflow-hidden rounded-xl py-4 font-semibold text-sm tracking-wide transition-all shadow-xl
+                w-full relative overflow-hidden rounded-xl py-4 font-semibold text-sm tracking-wide transition-colors shadow-xl
                 ${isGenerating
-                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700 pointer-events-none'
                   : prompt
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-900 text-white hover:shadow-purple-500/25 hover:scale-[1.01] active:scale-[0.99] border border-purple-500/20'
-                    : 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed'}
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-900 text-white hover:shadow-purple-500/25 active:scale-[0.98] border border-purple-500/20'
+                    : 'bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed pointer-events-none'}
               `}
             >
               {isGenerating ? (
