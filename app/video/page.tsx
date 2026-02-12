@@ -1617,6 +1617,16 @@ export default function VideoPage() {
 
           {showHistoryDrawer && (
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+               {/* 提醒横幅 */}
+               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
+                 <AlertCircle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                 <div className="flex-1">
+                   <p className="text-[11px] text-amber-300 leading-relaxed">
+                     历史记录仅保留最近 25 条，请及时下载保存重要视频
+                   </p>
+                 </div>
+               </div>
+
                {/* Filters */}
                <div className="flex gap-2 pb-2">
                  <button
