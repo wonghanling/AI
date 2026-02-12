@@ -1097,7 +1097,10 @@ export default function VideoPage() {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            removeImage('start');
+                            // 使用 requestAnimationFrame 确保立即响应
+                            requestAnimationFrame(() => {
+                              removeImage('start');
+                            });
                           }}
                           className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center z-10 transition-colors"
                         >
@@ -1136,7 +1139,10 @@ export default function VideoPage() {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            removeImage('end');
+                            // 使用 requestAnimationFrame 确保立即响应
+                            requestAnimationFrame(() => {
+                              removeImage('end');
+                            });
                           }}
                           className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center z-10 transition-colors"
                         >
@@ -1575,8 +1581,13 @@ export default function VideoPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-[400px] bg-[#09090B] border border-zinc-800 rounded-2xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
              <button
-               onClick={() => setShowErrorModal(false)}
-               className="absolute top-4 right-4 text-zinc-500 hover:text-white"
+               onClick={() => {
+                 // 使用 requestAnimationFrame 确保立即响应
+                 requestAnimationFrame(() => {
+                   setShowErrorModal(false);
+                 });
+               }}
+               className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
              >
                <X size={18} />
              </button>
@@ -1595,7 +1606,12 @@ export default function VideoPage() {
                    <p className="text-xs text-zinc-400 font-mono">Error Code: POLICY_VIOLATION_NSFW</p>
                 </div>
                 <button
-                   onClick={() => setShowErrorModal(false)}
+                   onClick={() => {
+                     // 使用 requestAnimationFrame 确保立即响应
+                     requestAnimationFrame(() => {
+                       setShowErrorModal(false);
+                     });
+                   }}
                    className="w-full py-2 bg-white text-black font-medium text-sm rounded-lg hover:bg-zinc-200 transition-colors"
                 >
                    我知道了
