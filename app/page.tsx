@@ -30,8 +30,9 @@ export default function LandingPage() {
         setLoading(false);
       }
 
-      // 然后从API获取最新用户信息（后台更新）
-      const { data: { user } } = await supabase.auth.getUser();
+      // 使用 getSession() 读取本地 session，避免网络请求
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user || null;
       setUser(user);
       setLoading(false);
 
