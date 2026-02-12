@@ -696,13 +696,59 @@ function ImageGenerationContent() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {generatedImages.map((image) => (
-                  <div key={image.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                  <div key={image.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow group">
                     <div className="relative w-full h-64 bg-gray-100">
                       <img
                         src={image.url}
                         alt={image.prompt}
                         className="w-full h-full object-cover"
                       />
+                      {/* 删除按钮 - 鼠标悬停时显示 */}
+                      <button
+                        onClick={async () => {
+                          if (!confirm('确定要删除这张图片吗？')) return;
+
+                          const supabase = getSupabaseClient();
+                          if (!supabase) return;
+
+                          try {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session) {
+                              alert('未登录，无法删除');
+                              return;
+                            }
+
+                            // 先从本地移除（立即反馈）
+                            setGeneratedImages(prev => prev.filter(img => img.id !== image.id));
+
+                            // 调用删除 API
+                            const response = await fetch(`/api/image/delete?id=${image.id}`, {
+                              method: 'DELETE',
+                              headers: {
+                                'Authorization': `Bearer ${session.access_token}`
+                              }
+                            });
+
+                            if (!response.ok) {
+                              const data = await response.json();
+                              throw new Error(data.error || '删除失败');
+                            }
+
+                            console.log('✅ 图片删除成功:', image.id);
+                          } catch (err: any) {
+                            console.error('❌ 删除图片失败:', err);
+                            alert(`删除失败: ${err.message}`);
+                            // 重新加载历史记录
+                            window.location.reload();
+                          }
+                        }}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        title="删除图片"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
                     <div className="p-3">
                       <p className="text-xs text-gray-600 mb-2 line-clamp-2">{image.prompt}</p>
