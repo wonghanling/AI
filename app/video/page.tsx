@@ -449,6 +449,73 @@ export default function VideoPage() {
     loadHistory();
   }, []);
 
+  // Supabase Realtime 订阅：实时监听视频生成状态变化
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    let channel: any = null;
+
+    const setupRealtimeSubscription = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 订阅当前用户的 video_generations 表变化
+      channel = supabase
+        .channel('video_generations_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'video_generations',
+            filter: `user_id=eq.${session.user.id}`
+          },
+          (payload: any) => {
+            console.log('🔔 Realtime 更新:', payload);
+
+            const record = payload.new;
+
+            // 更新进度
+            if (record.progress !== undefined) {
+              setProgress(record.progress);
+            }
+
+            // 如果视频完成
+            if (record.status === 'completed' && record.video_url) {
+              console.log('✅ Realtime: 视频生成完成');
+              setIsGenerating(false);
+              setProgress(100);
+              setGeneratedVideo(record.video_url);
+              loadHistory();
+            }
+
+            // 如果生成失败
+            if (record.status === 'failed') {
+              console.log('❌ Realtime: 视频生成失败');
+              setIsGenerating(false);
+              setProgress(0);
+              setError('视频生成失败，积分已扣除（API 已消耗资源）');
+              loadHistory();
+            }
+          }
+        )
+        .subscribe();
+
+      console.log('🔌 Realtime 订阅已启动');
+    };
+
+    setupRealtimeSubscription();
+
+    // 清理订阅
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+        console.log('🔌 Realtime 订阅已清理');
+      }
+    };
+  }, []);
+
   // Save video credits to localStorage when changed (使用防抖)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -553,12 +620,20 @@ export default function VideoPage() {
     }
   };
 
-  // 轮询视频生成状态
+  // 轮询视频生成状态（使用指数退避策略减少请求）
   const pollVideoStatus = async (taskId: string, recordId: string) => {
-    const maxAttempts = 300; // 增加到5分钟（每秒一次）
+    const maxAttempts = 100; // 最多轮询100次（约15-20分钟）
     let attempts = 0;
     let timeoutId: NodeJS.Timeout | null = null;
     let isCancelled = false;
+
+    // 指数退避策略：减少请求次数，避免过度轮询
+    const getPollingInterval = (attempt: number): number => {
+      if (attempt <= 10) return 2000;      // 前10次：每2秒（快速响应）
+      if (attempt <= 30) return 5000;      // 10-30次：每5秒
+      if (attempt <= 60) return 10000;     // 30-60次：每10秒
+      return 15000;                        // 60次以上：每15秒
+    };
 
     const poll = async () => {
       if (isCancelled) return; // 如果已取消，停止轮询
@@ -601,16 +676,16 @@ export default function VideoPage() {
           throw new Error(data.error || '查询失败');
         }
 
-        console.log(`📊 视频状态 (${attempts}/${maxAttempts}):`, {
+        const interval = getPollingInterval(attempts);
+        console.log(`📊 视频状态 (${attempts}/${maxAttempts}, 下次${interval/1000}秒):`, {
           taskId: taskId,
           status: data.status,
           progress: data.progress,
           videoUrl: data.videoUrl,
-          rawStatus: data.rawData?.status,
-          rawData: data.rawData
+          rawStatus: data.rawData?.status
         });
 
-        // 更新进度
+        // 更新进度（Realtime 也会更新，但轮询作为备份）
         setProgress(data.progress);
 
         if (data.status === 'completed' && data.videoUrl) {
@@ -634,8 +709,8 @@ export default function VideoPage() {
           loadHistory();
 
         } else if (attempts < maxAttempts && !isCancelled) {
-          // 继续轮询
-          timeoutId = setTimeout(poll, 1000); // 每秒查询一次
+          // 继续轮询，使用指数退避间隔
+          timeoutId = setTimeout(poll, interval);
         } else {
           // 超时
           console.warn('⏱️ 轮询超时，已达到最大尝试次数:', maxAttempts);
