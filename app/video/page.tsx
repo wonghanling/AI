@@ -623,6 +623,7 @@ export default function VideoPage() {
   // 轮询视频生成状态（使用指数退避策略减少请求）
   const pollVideoStatus = async (taskId: string, recordId: string) => {
     const maxAttempts = 100; // 最多轮询100次（约15-20分钟）
+    const maxRetries = 3; // 每次请求最多重试3次
     let attempts = 0;
     let timeoutId: NodeJS.Timeout | null = null;
     let isCancelled = false;
@@ -633,6 +634,31 @@ export default function VideoPage() {
       if (attempt <= 30) return 5000;      // 10-30次：每5秒
       if (attempt <= 60) return 10000;     // 30-60次：每10秒
       return 15000;                        // 60次以上：每15秒
+    };
+
+    // 带重试的 fetch 请求
+    const fetchWithRetry = async (url: string, options: RequestInit, retries = maxRetries): Promise<Response> => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal: AbortSignal.timeout(10000) // 10秒超时
+          });
+          return response;
+        } catch (err: any) {
+          const isLastRetry = i === retries - 1;
+
+          // 如果是网络错误且不是最后一次重试，等待后重试
+          if (!isLastRetry && (err.name === 'AbortError' || err.message.includes('fetch'))) {
+            console.warn(`⚠️ 请求失败，${i + 1}/${retries} 次重试中...`, err.message);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // 递增等待时间
+            continue;
+          }
+
+          throw err;
+        }
+      }
+      throw new Error('请求失败');
     };
 
     const poll = async () => {
@@ -647,16 +673,28 @@ export default function VideoPage() {
           throw new Error('Supabase 客户端未初始化');
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          throw new Error('登录已过期，请重新登录');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        // 如果 session 获取失败，尝试刷新
+        if (sessionError || !session) {
+          console.warn('⚠️ Session 获取失败，尝试刷新...');
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+
+          if (refreshError || !refreshedSession) {
+            throw new Error('登录已过期，请刷新页面重新登录');
+          }
         }
 
-        const response = await fetch(
+        const currentSession = session || (await supabase.auth.getSession()).data.session;
+        if (!currentSession) {
+          throw new Error('无法获取登录状态，请刷新页面');
+        }
+
+        const response = await fetchWithRetry(
           `/api/video/query?taskId=${encodeURIComponent(taskId)}&recordId=${recordId}`,
           {
             headers: {
-              'Authorization': `Bearer ${session.access_token}`
+              'Authorization': `Bearer ${currentSession.access_token}`
             }
           }
         );
@@ -664,6 +702,11 @@ export default function VideoPage() {
         const data = await response.json();
 
         if (!response.ok) {
+          // 401 错误特殊处理
+          if (response.status === 401) {
+            throw new Error('登录已过期，请刷新页面重新登录');
+          }
+
           console.error('❌ 查询视频状态API错误:', {
             status: response.status,
             statusText: response.statusText,
@@ -727,9 +770,16 @@ export default function VideoPage() {
           taskId: taskId,
           recordId: recordId
         });
+
+        // 网络错误特殊提示
+        const isNetworkError = err.message.includes('fetch') || err.name === 'AbortError' || err.message.includes('网络');
+        const errorMessage = isNetworkError
+          ? '网络连接不稳定，请检查网络后刷新页面'
+          : err.message || '查询失败';
+
         setIsGenerating(false);
         setProgress(0);
-        setError(`${err.message || '查询失败'} (详细信息请查看控制台)`);
+        setError(errorMessage);
       }
     };
 
