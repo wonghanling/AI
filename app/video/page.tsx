@@ -541,7 +541,7 @@ export default function VideoPage() {
       }
 
       // 开始轮询任务状态，并保存清理函数
-      const cleanup = pollVideoStatus(data.taskId, data.recordId, session.access_token);
+      const cleanup = pollVideoStatus(data.taskId, data.recordId);
       setPollCleanup(() => cleanup);
 
     } catch (err: any) {
@@ -554,7 +554,7 @@ export default function VideoPage() {
   };
 
   // 轮询视频生成状态
-  const pollVideoStatus = async (taskId: string, recordId: string, token: string) => {
+  const pollVideoStatus = async (taskId: string, recordId: string) => {
     const maxAttempts = 300; // 增加到5分钟（每秒一次）
     let attempts = 0;
     let timeoutId: NodeJS.Timeout | null = null;
@@ -565,11 +565,23 @@ export default function VideoPage() {
 
       try {
         attempts++;
+
+        // 每次轮询都重新获取 token，避免 token 过期导致轮询失败
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error('Supabase 客户端未初始化');
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('登录已过期，请重新登录');
+        }
+
         const response = await fetch(
           `/api/video/query?taskId=${encodeURIComponent(taskId)}&recordId=${recordId}`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${session.access_token}`
             }
           }
         );
@@ -616,7 +628,7 @@ export default function VideoPage() {
           console.error('❌ 视频生成失败:', data);
           setIsGenerating(false);
           setProgress(0);
-          setError('视频生成失败，积分已退回 (详细信息请查看控制台)');
+          setError('视频生成失败，积分已扣除（API 已消耗资源）');
 
           // 重新加载历史记录
           loadHistory();
