@@ -812,19 +812,52 @@ export default function VideoPage() {
       if (error) throw error;
 
       if (data) {
-        const records = data.map(record => ({
-          id: record.id,
-          prompt: record.prompt,
-          model: record.model,
-          status: record.status === 'completed' ? 'success' as const :
-                  record.status === 'failed' ? 'failed' as const :
-                  'generating' as const,
-          videoUrl: record.video_url,
-          thumbnail: record.thumbnail_url,
-          timestamp: new Date(record.created_at),
-          cost: record.cost_credits,
-          isFavorite: record.metadata?.isFavorite || false
-        }));
+        const now = new Date();
+
+        const records = data.map(record => {
+          // 检查"生成中"状态是否超时（超过20分钟视为失败）
+          const isGenerating = record.status === 'processing' || record.status === 'pending';
+          const createdAt = new Date(record.created_at);
+          const minutesElapsed = (now.getTime() - createdAt.getTime()) / 1000 / 60;
+
+          let status: 'success' | 'failed' | 'generating';
+
+          if (record.status === 'completed') {
+            status = 'success';
+          } else if (record.status === 'failed') {
+            status = 'failed';
+          } else if (isGenerating && minutesElapsed > 20) {
+            // 超时的生成中记录标记为失败
+            status = 'failed';
+            // 异步更新数据库状态
+            supabase
+              .from('video_generations')
+              .update({ status: 'failed' })
+              .eq('id', record.id)
+              .then(({ error }) => {
+                if (error) {
+                  console.error('更新超时记录失败:', error);
+                } else {
+                  console.log(`⏱️ 记录 ${record.id} 已超时（${Math.round(minutesElapsed)}分钟），标记为失败`);
+                }
+              });
+          } else {
+            status = 'generating';
+          }
+
+          return {
+            id: record.id,
+            prompt: record.prompt,
+            model: record.model,
+            status,
+            videoUrl: record.video_url,
+            thumbnail: record.thumbnail_url,
+            timestamp: createdAt,
+            cost: record.cost_credits,
+            isFavorite: record.metadata?.isFavorite || false
+          };
+        });
+
         setHistoryRecords(records);
       }
     } catch (err) {
@@ -873,21 +906,48 @@ export default function VideoPage() {
 
   // Delete history record
   const deleteRecord = async (id: string) => {
-    // 删除本地state
+    // 确认删除
+    if (!confirm('确定要删除这条记录吗？')) {
+      return;
+    }
+
+    // 保存原始记录，以便删除失败时恢复
+    const originalRecords = [...historyRecords];
+
+    // 先删除本地state（立即反馈）
     setHistoryRecords(prev => prev.filter(record => record.id !== id));
 
     // 删除Supabase记录
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('未登录，无法删除记录');
+        }
+
         const { error } = await supabase
           .from('video_generations')
           .delete()
           .eq('id', id);
 
-        if (error) throw error;
-      } catch (err) {
-        console.error('删除记录失败:', err);
+        if (error) {
+          console.error('❌ 删除记录失败:', {
+            error,
+            id,
+            code: error.code,
+            message: error.message,
+            details: error.details
+          });
+          throw error;
+        }
+
+        console.log('✅ 记录删除成功:', id);
+      } catch (err: any) {
+        console.error('❌ 删除记录失败:', err);
+        // 恢复本地state
+        setHistoryRecords(originalRecords);
+        alert(`删除失败: ${err.message || '未知错误'}`);
       }
     }
   };
