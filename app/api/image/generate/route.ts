@@ -14,7 +14,7 @@ const YUNWU_API_KEY = process.env.YUNWU_API_KEY!;
 // 图片模型配置
 const IMAGE_MODELS: Record<string, { yunwuModel: string; cost: number }> = {
   'nano-banana': {
-    yunwuModel: 'gemini-2.5-flash-image',
+    yunwuModel: 'gemini-3.1-flash-image-preview',
     cost: 0.005, // 5 积分
   },
   'nano-banana-pro': {
