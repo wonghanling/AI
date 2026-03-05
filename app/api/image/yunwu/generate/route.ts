@@ -33,17 +33,17 @@ const IMAGE_MODELS: Record<string, {
   'flux.1.1-pro': {
     yunwuModel: 'flux.1.1-pro',
     cost: 10,
-    apiType: 'chat',
+    apiType: 'image-generation',
   },
   'flux-pro': {
     yunwuModel: 'flux-pro',
     cost: 6,
-    apiType: 'chat',
+    apiType: 'image-generation',
   },
   'flux-schnell': {
     yunwuModel: 'flux-schnell',
     cost: 3,
-    apiType: 'chat',
+    apiType: 'image-generation',
   },
   'doubao-seedream-4-5-251128': {
     yunwuModel: 'doubao-seedream-4-5-251128',

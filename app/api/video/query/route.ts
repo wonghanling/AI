@@ -151,12 +151,18 @@ export async function GET(request: NextRequest) {
       console.error('更新视频记录失败:', updateError);
     }
 
+    // 如果视频已完成，返回代理URL而不是直接URL
+    const proxyVideoUrl = (status === 'completed' && videoUrl)
+      ? `/api/video/proxy?taskId=${encodeURIComponent(taskId)}`
+      : null;
+
     return NextResponse.json({
       success: true,
       taskId: taskId,
       status: status,
       progress: progress,
-      videoUrl: videoUrl,
+      videoUrl: proxyVideoUrl, // 使用代理URL
+      originalVideoUrl: videoUrl, // 保留原始URL用于调试
       thumbnailUrl: thumbnailUrl,
       rawData: taskData
     });
