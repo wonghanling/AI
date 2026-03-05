@@ -423,18 +423,14 @@ function ChatPageContent() {
     'gpt-5.1-thinking-all',
     'gemini-3-pro-preview',
     'gemini-3-flash-preview',
-    'gemini-2.5-flash-all',
     'gemini-2.5-pro-all',
     'claude-3-5-haiku-20241022',
-    'claude-3-sonnet-all',
     'grok-4.1',
     'grok-4',
     'gpt-5.1-chat',
   ], []);
   // 普通模型列表 - 免费用户每天10次
   const basicModels: ModelKey[] = useMemo(() => [
-    'grok-3-mini',
-    'gemini-2.5-flash-lite-preview-06-17',
     'gpt-4o-mini',
   ], []);
 
