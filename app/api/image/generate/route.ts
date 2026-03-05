@@ -149,16 +149,14 @@ export async function POST(req: NextRequest) {
 
           const requestBody = {
             contents: [{
-              role: 'user',  // 关键：必须包含 role
+              role: 'user',
               parts: parts
             }],
             generationConfig: {
-              responseModalities: ['TEXT', 'IMAGE'],  // 关键：同时包含 TEXT 和 IMAGE
+              responseModalities: ['TEXT', 'IMAGE'],
               imageConfig: {
-                aspectRatio: aspectRatio,  // 添加宽高比
-                // 如果 API 支持，也可以直接指定尺寸
-                // width: imageSize.width,
-                // height: imageSize.height,
+                aspectRatio: aspectRatio,
+                resolution: resolution === '4K' ? '4K' : resolution === '2K' ? '2K' : '1K',
               }
             }
           };
