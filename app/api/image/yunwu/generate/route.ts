@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
 );
 
 // 云雾 API 配置
-const YUNWU_BASE_URL = 'https://allapi.store';
+const YUNWU_BASE_URL = 'https://api.n1n.ai';
 const YUNWU_API_KEY = process.env.YUNWU_API_KEY!;
 
 // 模型配置

@@ -103,6 +103,8 @@ export async function POST(request: NextRequest) {
     } else if (model.includes('veo')) {
       // Veo 模型参数
       videoRequest.aspect_ratio = aspectRatio || '16:9';
+      videoRequest.duration = duration || 5;
+      videoRequest.resolution = '1080p';
       videoRequest.enable_upsample = true;
       videoRequest.enhance_prompt = true;
     } else if (model.includes('runway')) {
@@ -116,10 +118,10 @@ export async function POST(request: NextRequest) {
 
     // 调用云雾API创建视频任务
     const apiUrl = model.includes('runway')
-      ? 'https://allapi.store/runwayml/v1/image_to_video'
+      ? 'https://api.n1n.ai/runwayml/v1/image_to_video'
       : model.includes('luma')
-      ? 'https://allapi.store/luma/generations'
-      : 'https://allapi.store/v1/video/create';
+      ? 'https://api.n1n.ai/luma/generations'
+      : 'https://api.n1n.ai/v1/video/create';
 
     const apiResponse = await fetch(apiUrl, {
       method: 'POST',
@@ -190,9 +192,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('视频生成错误:', error);
+    console.error('错误堆栈:', error.stack);
     return NextResponse.json({
       error: '服务器错误',
-      details: error.message
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 });
   }
 }

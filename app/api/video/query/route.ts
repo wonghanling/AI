@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 查询云雾API任务状态
-    const apiUrl = `https://allapi.store/v1/video/query?id=${encodeURIComponent(taskId)}`;
+    const apiUrl = `https://api.n1n.ai/v1/video/query?id=${encodeURIComponent(taskId)}`;
 
     const apiResponse = await fetch(apiUrl, {
       method: 'GET',

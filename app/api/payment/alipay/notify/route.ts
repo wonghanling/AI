@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
           await supabaseAdmin
             .from('users')
             .update({
-              user_type: 'pro',
+              user_type: 'premium',
               subscription_end: subscriptionEnd.toISOString(),
             })
             .eq('id', orderData.user_id);
