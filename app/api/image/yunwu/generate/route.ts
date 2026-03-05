@@ -163,12 +163,12 @@ export async function POST(req: NextRequest) {
           const taskId = data.result;
           console.log('任务 ID:', taskId);
 
-          // 轮询获取结果（最多等待 60 秒）
+          // 轮询获取结果（最多等待 180 秒）
           let attempts = 0;
-          const maxAttempts = 30; // 30 次 * 2 秒 = 60 秒
+          const maxAttempts = 60; // 60 次 * 3 秒 = 180 秒
 
           while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 等待 2 秒
+            await new Promise(resolve => setTimeout(resolve, 3000)); // 等待 3 秒
 
             const statusResponse = await fetch(`${YUNWU_BASE_URL}/mj/task/${taskId}/fetch`, {
               headers: {
