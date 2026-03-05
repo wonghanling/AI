@@ -133,22 +133,6 @@ export const MODEL_MAP = {
 
 export type ModelKey = keyof typeof MODEL_MAP;
 
-// 降级策略：高级模型 -> 普通模型
-export const FALLBACK_MAP: Record<string, ModelKey> = {
-  'gpt-5.2': 'gpt-4o-mini',
-  'gpt-5.1-2025-11-13': 'gpt-4o-mini',
-  'gpt-5.1-thinking-all': 'gpt-4o-mini',
-  'gpt-5.1-chat': 'gpt-4o-mini',
-  'gemini-3-pro-preview': 'gemini-2.5-flash-lite-preview-06-17',
-  'gemini-3-flash-preview': 'gemini-2.5-flash-lite-preview-06-17',
-  'gemini-2.5-flash-all': 'gemini-2.5-flash-lite-preview-06-17',
-  'gemini-2.5-pro-all': 'gemini-2.5-flash-lite-preview-06-17',
-  'claude-3-5-haiku-20241022': 'grok-3-mini',
-  'claude-3-sonnet-all': 'grok-3-mini',
-  'grok-4.1': 'grok-3-mini',
-  'grok-4': 'grok-3-mini',
-};
-
 // 配额限制
 export const QUOTA_LIMITS = {
   free: {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { MODEL_MAP, ModelKey, FALLBACK_MAP, BANNED_GROUPS } from '@/lib/model-config';
+import { MODEL_MAP, ModelKey, BANNED_GROUPS } from '@/lib/model-config';
 
 // 初始化 Supabase 客户端（使用 service role key 以绕过 RLS）
 const supabaseAdmin = createClient(
@@ -156,62 +156,7 @@ export async function POST(req: NextRequest) {
           throw new Error(`云雾 API 错误: ${response.status} - ${errorText}`);
         }
       } catch (error: any) {
-        // 降级重试
-        const fallbackKey = FALLBACK_MAP[model_key];
-        if (fallbackKey) {
-          const fallbackConfig = MODEL_MAP[fallbackKey];
-          usedModelKey = fallbackKey; // 更新为降级后的模型 key
-          usedModel = fallbackConfig.yunwuModel;
-
-          // 处理消息格式（降级时也需要支持图片）
-          const formattedMessages = messages.map((msg: any) => {
-            if (msg.imageUrl && msg.role === 'user') {
-              const base64Match = msg.imageUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/);
-              if (base64Match) {
-                return {
-                  role: msg.role,
-                  content: [
-                    {
-                      type: 'image_url',
-                      image_url: {
-                        url: msg.imageUrl
-                      }
-                    },
-                    {
-                      type: 'text',
-                      text: msg.content
-                    }
-                  ]
-                };
-              }
-            }
-            return {
-              role: msg.role,
-              content: msg.content
-            };
-          });
-
-          response = await fetch(`${YUNWU_BASE_URL}/v1/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${YUNWU_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: fallbackConfig.yunwuModel,
-              messages: formattedMessages,
-              stream: stream,
-              max_tokens: fallbackConfig.maxTokens,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`云雾 API 降级调用错误: ${response.status} - ${errorText}`);
-          }
-        } else {
-          throw error;
-        }
+        throw error;
       }
 
       // 记录使用统计
