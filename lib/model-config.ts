@@ -67,16 +67,6 @@ export const MODEL_MAP = {
     // 使用限时特价分组价格（非常便宜）
     costPer1kTokens: { prompt: 0.0003, completion: 0.0018 },
   },
-  'gemini-2.5-flash-all': {
-    yunwuModel: 'gemini-2.5-flash-all',
-    displayName: 'Gemini 2.5 Flash All',
-    description: '多模态版本的 gemini 模型，支持文件、视频、图片等分析，支持画图，支持实时联网',
-    tier: 'advanced',
-    maxTokens: 8192,
-    capabilities: ['internet', 'multimodal', 'dialogue'] as ModelCapability[],
-    // 使用逆向分组价格
-    costPer1kTokens: { prompt: 0.00042, completion: 0.00336 },
-  },
   'gemini-2.5-pro-all': {
     yunwuModel: 'gemini-2.5-pro-all',
     displayName: 'Gemini 2.5 Pro All',
@@ -96,16 +86,6 @@ export const MODEL_MAP = {
     capabilities: ['dialogue'] as ModelCapability[],
     // 使用default分组价格
     costPer1kTokens: { prompt: 0.0008, completion: 0.004 },
-  },
-  'claude-3-sonnet-all': {
-    yunwuModel: 'claude-3-sonnet-all',
-    displayName: 'Claude 3 Sonnet All',
-    description: 'Claude Sonnet 3 是由 anthropic 提供的人工智能模型',
-    tier: 'advanced',
-    maxTokens: 4096,
-    capabilities: ['dialogue', 'vision'] as ModelCapability[],
-    // 使用default分组价格
-    costPer1kTokens: { prompt: 0.003, completion: 0.0045 },
   },
   'grok-4.1': {
     yunwuModel: 'grok-4.1',
@@ -139,26 +119,6 @@ export const MODEL_MAP = {
   },
 
   // 普通模型 - 免费用户每天10次
-  'grok-3-mini': {
-    yunwuModel: 'grok-3-mini',
-    displayName: 'Grok 3 Mini',
-    description: 'Grok 3 mini，高性价比推理能力，能够进行数秒到数分钟的思考，纠正错误，探索替代方案',
-    tier: 'basic',
-    maxTokens: 4096,
-    capabilities: ['dialogue'] as ModelCapability[],
-    // 使用限时特价分组价格
-    costPer1kTokens: { prompt: 0.00018, completion: 0.000301 },
-  },
-  'gemini-2.5-flash-lite-preview-06-17': {
-    yunwuModel: 'gemini-2.5-flash-lite-preview-06-17',
-    displayName: 'Gemini 2.5 Flash Lite',
-    description: 'Gemini 2.5 Flash Lite Preview 由 google-vertex 提供，可控制是否启用思考',
-    tier: 'basic',
-    maxTokens: 8192,
-    capabilities: ['dialogue', 'vision'] as ModelCapability[],
-    // 使用限时特价分组价格
-    costPer1kTokens: { prompt: 0.00006, completion: 0.00024 },
-  },
   'gpt-4o-mini': {
     yunwuModel: 'gpt-4o-mini',
     displayName: 'GPT-4o Mini',
