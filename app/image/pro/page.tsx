@@ -304,60 +304,93 @@ function ProImageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50">
-      {/* 顶部导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <Link href="/chat" className="text-xl font-bold text-gray-900">
-                Boluolab AI
-              </Link>
-              <span className="hidden sm:inline text-sm text-gray-500">专业图片生成</span>
-            </div>
+    <div className="flex h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 overflow-hidden">
+      {/* 移动端遮罩层 */}
+      {showSidebar && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
 
-            <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="hidden sm:inline">返回首页</span>
-              </Link>
-              <Link
-                href="/chat"
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                聊天
-              </Link>
-              <Link
-                href="/image"
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Nano Banana
-              </Link>
-              <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-[#F5C518] text-black rounded-lg font-semibold">
-                <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span className="text-sm md:text-base font-semibold">{credits}</span>
-              </div>
+      {/* 左侧边栏 */}
+      <aside className={`
+        fixed lg:relative
+        w-48 bg-white border-r border-gray-200 flex flex-col
+        h-full z-50
+        transform transition-transform duration-300 ease-in-out
+        ${showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="p-4 border-b border-gray-200">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center font-bold text-black text-lg">
+              B
             </div>
+            <span className="font-semibold">Boluolab</span>
+          </Link>
+        </div>
+
+        <nav className="flex-1 p-3">
+          <div className="space-y-1">
+            <Link href="/chat" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-gray-700">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              聊天
+            </Link>
+
+            <Link href="/image" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-gray-700">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Nano Banana
+            </Link>
+
+            <Link href="/video" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-gray-700">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              视频生成
+            </Link>
+          </div>
+        </nav>
+
+        <div className="p-4 border-t border-gray-200">
+          <div className="bg-[#F5C518] text-black rounded-lg p-3 text-center">
+            <div className="text-xs mb-1 font-semibold">剩余积分</div>
+            <div className="text-2xl font-bold">{credits}</div>
+            <Link href="/credits/recharge" className="mt-2 text-xs underline hover:no-underline inline-block font-semibold">
+              充值
+            </Link>
           </div>
         </div>
-      </nav>
+      </aside>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* 主内容区 */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* 顶部栏 */}
+        <header className="h-14 border-b border-gray-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="text-lg font-bold text-gray-900">专业图片生成</h1>
+          </div>
+          <div className="lg:hidden flex items-center gap-2 px-3 py-1.5 bg-[#F5C518] text-black rounded-lg font-semibold text-sm">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            {credits}
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧：模型选择和参数 */}
           <div className="lg:col-span-1">

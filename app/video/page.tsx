@@ -1091,7 +1091,7 @@ export default function VideoPage() {
         <aside className="w-[360px] flex flex-col border-r border-white/5 bg-[#0B0C10] overflow-y-auto custom-scrollbar">
           {/* 切换按钮 - 图片/视频 */}
           <div className="p-5 pb-3 border-b border-white/5">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 mb-2">
               <Link
                 href="/image"
                 className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300 rounded-lg font-medium text-xs transition-colors border border-zinc-800"
@@ -1107,6 +1107,28 @@ export default function VideoPage() {
                 <span>视频生成</span>
                 <CheckCircle2 size={12} />
               </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/chat"
+                className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300 rounded-lg font-medium text-xs transition-colors border border-zinc-800"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>聊天</span>
+                <ChevronDown size={12} className="rotate-90" />
+              </Link>
+              <Link
+                href="/image/pro"
+                className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300 rounded-lg font-medium text-xs transition-colors border border-zinc-800"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span>图片专业版</span>
+                <ChevronDown size={12} className="rotate-90" />
+              </Link>
             </div>
           </div>
 

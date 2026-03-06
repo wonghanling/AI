@@ -537,6 +537,24 @@ function ChatPageContent() {
             <span className="text-sm">图片生成</span>
           </Link>
           <Link
+            href="/image/pro"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+            <span className="text-sm">图片专业版</span>
+          </Link>
+          <Link
+            href="/video"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span className="text-sm">视频生成</span>
+          </Link>
+          <Link
             href="/dashboard"
             className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition-colors"
           >
