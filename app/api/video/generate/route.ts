@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const {
       prompt,
       model,
-      mode = 't2v', // 't2v' | 'i2v' | 'r2v'
+      mode: rawMode,
       aspectRatio = '16:9',
       duration,
       startFrameImage,
@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
       generateAudio = false,
       negativePrompt,
     } = body;
+
+    // 自动判断模式：前端没传 mode 时根据参数推断
+    const mode = rawMode || (videoUrls?.length ? 'r2v' : startFrameImage ? 'i2v' : 't2v');
 
     if (!prompt || !model) return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
 
