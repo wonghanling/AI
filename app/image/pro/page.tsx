@@ -705,7 +705,6 @@ function ProImageContent() {
                 </div>
               </div>
             ) : null}
-            </div>
           </div>
         </div>
       </div>
