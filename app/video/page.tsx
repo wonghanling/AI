@@ -16,302 +16,67 @@ import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
 // --- Mock Data & Constants ---
 
 const MODELS = [
-  // Veo 3.1 系列
-  {
-    id: 'veo3.1-4k',
-    name: 'Veo 3.1 4K',
-    provider: 'Google',
-    tags: ['4K', '高质量', '音频'],
-    cost: 10,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'Google最新的高级AI模型，支持视频自动配套音频生成，质量高价格低'
-  },
-  {
-    id: 'veo3.1-components-4k',
-    name: 'Veo 3.1 Components 4K',
-    provider: 'Google',
-    tags: ['4K', '首帧', '音频'],
-    cost: 10,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3.1 4k模式，支持首帧传递，不支持尾帧，性价比最高'
-  },
-  {
-    id: 'veo3.1-pro-4k',
-    name: 'Veo 3.1 Pro 4K',
-    provider: 'Google',
-    tags: ['4K', '超高质量', 'Pro'],
-    cost: 30,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3.1 4k高质量模式，质量超高，支持首尾帧和文生视频'
-  },
-  {
-    id: 'veo_3_1-4K',
-    name: 'Veo 3.1 4K (OpenAI格式)',
-    provider: 'Google',
-    tags: ['4K', '音频', 'OpenAI'],
-    cost: 9,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo_3_1 4k模式，OpenAI视频格式，性价比最高'
-  },
-  {
-    id: 'veo_3_1-fast-4K',
-    name: 'Veo 3.1 Fast 4K',
-    provider: 'Google',
-    tags: ['4K', '快速', '首尾帧'],
-    cost: 5,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3.1快速+4k模式，支持首尾帧和文生视频，价格低廉'
-  },
-  {
-    id: 'veo_3_1-components-4K',
-    name: 'Veo 3.1 Components 4K (OpenAI)',
-    provider: 'Google',
-    tags: ['4K', '首帧', 'OpenAI'],
-    cost: 9,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo_3_1 4k模式，支持首帧传递，不支持尾帧'
-  },
-  {
-    id: 'veo_3_1-fast',
-    name: 'Veo 3.1 Fast',
-    provider: 'Google',
-    tags: ['快速', '低成本', '首尾帧'],
-    cost: 3,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3.1快速模式，支持首尾帧和文生视频，最低价格'
-  },
   {
     id: 'veo3.1',
     name: 'Veo 3.1',
     provider: 'Google',
-    tags: ['标准', '音频', '首尾帧'],
-    cost: 7,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3.1标准版，支持视频自动配套音频生成，支持首尾帧和文生视频'
-  },
-  {
-    id: 'veo3.1-pro',
-    name: 'Veo 3.1 Pro',
-    provider: 'Google',
-    tags: ['Pro', '超高质量', '音频'],
-    cost: 30,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3.1高质量模式，质量超高，价格也超高，支持首尾帧和文生视频'
-  },
-  {
-    id: 'veo3.1-fast',
-    name: 'Veo 3.1 Fast (标准)',
-    provider: 'Google',
-    tags: ['快速', '音频', '首尾帧'],
-    cost: 7,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3.1快速模式，支持视频自动配套音频生成，支持首尾帧和文生视频'
-  },
-  {
-    id: 'veo3-pro',
-    name: 'Veo 3 Pro',
-    provider: 'Google',
-    tags: ['Pro', '超高质量', '音频'],
-    cost: 35,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1', '2.4:1'],
-    desc: 'veo3高质量模式，支持视频自动配套音频生成，质量超高'
-  },
-
-  // Sora 系列
-  {
-    id: 'sora-2-all',
-    name: 'Sora 2 All',
-    provider: 'OpenAI',
-    tags: ['逆向', '720p', '10-15s'],
-    cost: 3,
-    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
-    duration: { fixed: [10, 15] },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    desc: 'sora-2的逆向，支持10s，15s，都是720p'
-  },
-  {
-    id: 'sora-2-pro-all',
-    name: 'Sora 2 Pro All',
-    provider: 'OpenAI',
-    tags: ['逆向', '1080p', '15-25s'],
-    cost: 31,
-    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
-    duration: { fixed: [15, 25] },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    desc: 'sora-2-pro的逆向，支持15s和25s，15s支持1080p和720p'
-  },
-  {
-    id: 'sora-2-4s',
-    name: 'Sora 2 (4s)',
-    provider: 'OpenAI',
-    tags: ['官方', '720p', '4s'],
-    cost: 20,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { fixed: [4] },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    desc: 'Sora 2官方版，4秒720p，物理准确、逼真，支持音效'
-  },
-  {
-    id: 'sora-2-8s',
-    name: 'Sora 2 (8s)',
-    provider: 'OpenAI',
-    tags: ['官方', '720p', '8s'],
-    cost: 40,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { fixed: [8] },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    desc: 'Sora 2官方版，8秒720p，物理准确、逼真，支持音效'
-  },
-  {
-    id: 'sora-2-12s',
-    name: 'Sora 2 (12s)',
-    provider: 'OpenAI',
-    tags: ['官方', '720p', '12s'],
-    cost: 60,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { fixed: [12] },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    desc: 'Sora 2官方版，12秒720p，物理准确、逼真，支持音效'
-  },
-  {
-    id: 'sora-2-pro-10s-720p',
-    name: 'Sora 2 Pro (10s 720p)',
-    provider: 'OpenAI',
-    tags: ['官方Pro', '720p', '10s'],
-    cost: 450,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { fixed: [10] },
-    aspectRatios: ['16:9', '9:16'],
-    desc: 'Sora 2 Pro官方版，10秒720p，可选择清晰度'
-  },
-  {
-    id: 'sora-2-pro-15s-720p',
-    name: 'Sora 2 Pro (15s 720p)',
-    provider: 'OpenAI',
-    tags: ['官方Pro', '720p', '15s'],
-    cost: 650,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { fixed: [15] },
-    aspectRatios: ['16:9', '9:16'],
-    desc: 'Sora 2 Pro官方版，15秒720p，可选择清晰度'
-  },
-  {
-    id: 'sora-2-pro-15s-1080p',
-    name: 'Sora 2 Pro (15s 1080p)',
-    provider: 'OpenAI',
-    tags: ['官方Pro', '1080p', '15s'],
-    cost: 1100,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { fixed: [15] },
-    aspectRatios: ['16:9', '9:16'],
-    desc: 'Sora 2 Pro官方版，15秒1080p，可选择清晰度'
-  },
-  {
-    id: 'sora-2-pro-25s-1080p',
-    name: 'Sora 2 Pro (25s 1080p)',
-    provider: 'OpenAI',
-    tags: ['官方Pro', '1080p', '25s'],
-    cost: 1800,
-    features: { t2v: true, i2v: true, startFrame: false, endFrame: false },
-    duration: { fixed: [25] },
-    aspectRatios: ['16:9', '9:16'],
-    desc: 'Sora 2 Pro官方版，25秒1080p，可选择清晰度'
-  },
-
-  // Grok 系列
-  {
-    id: 'grok-video-3',
-    name: 'Grok Video 3',
-    provider: 'xAI',
-    tags: ['最新', '低成本'],
-    cost: 3,
-    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
-    duration: { min: 2, max: 8, default: 4 },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    desc: 'grok的最新视频模型'
-  },
-
-  // Luma 系列
-  {
-    id: 'luma_video_api',
-    name: 'Luma Video API',
-    provider: 'Luma AI',
-    tags: ['快速', '参考图', '40s出图'],
-    cost: 30,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 2, max: 8, default: 5 },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    desc: 'Luma AI文生视频，支持上传2张参考图片，快速模式约40秒出视频'
-  },
-
-  // Runway 系列
-  {
-    id: 'runwayml-gen3a_turbo-10',
-    name: 'Runway Gen-3A Turbo (10s)',
-    provider: 'RunwayML',
-    tags: ['Gen-3A', '图生视频', '10s'],
-    cost: 25,
-    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
-    duration: { fixed: [10] },
-    aspectRatios: ['16:9'],
-    desc: 'RunwayML Gen-3A Turbo-10，先进的图生视频模型'
-  },
-  {
-    id: 'runwayml-gen3a_turbo-5',
-    name: 'Runway Gen-3A Turbo (5s)',
-    provider: 'RunwayML',
-    tags: ['Gen-3A', '图生视频', '5s'],
+    tags: ['4K', '音频'],
     cost: 15,
-    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
-    duration: { fixed: [5] },
-    aspectRatios: ['16:9'],
-    desc: 'RunwayML Gen-3A Turbo-5，先进的图生视频模型'
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
+    duration: { min: 4, max: 8, default: 4, options: [4, 6, 8] },
+    aspectRatios: ['16:9', '9:16'],
+    supportsAudio: true,
+    desc: 'Google 最新模型，4K 超清，支持音频生成'
   },
   {
-    id: 'runwayml-gen4_turbo-10',
-    name: 'Runway Gen-4 Turbo (10s)',
-    provider: 'RunwayML',
-    tags: ['Gen-4', '图生视频', '16:9'],
-    cost: 25,
-    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
-    duration: { fixed: [10] },
-    aspectRatios: ['16:9'],
-    desc: '支持最新gen3模型，仅支持16:9画面，使用官方账号'
+    id: 'wan2.5',
+    name: 'Wan 2.5',
+    provider: 'Wan',
+    tags: ['1080p', '快速'],
+    cost: 8,
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
+    duration: { min: 5, max: 10, default: 5, options: [5, 10] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
+    supportsAudio: false,
+    desc: 'Wan 最新预览版，支持文生视频和图生视频'
   },
   {
-    id: 'runwayml-gen4_turbo-5',
-    name: 'Runway Gen-4 Turbo (5s)',
-    provider: 'RunwayML',
-    tags: ['Gen-4', '图生视频', '16:9'],
-    cost: 15,
-    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
-    duration: { fixed: [5] },
-    aspectRatios: ['16:9'],
-    desc: '支持最新gen3模型，仅支持16:9画面，使用官方账号'
-  }
-];
+    id: 'wan2.6-r2v',
+    name: 'Wan 2.6 R2V',
+    provider: 'Wan',
+    tags: ['参考视频', '一致性'],
+    cost: 10,
+    features: { t2v: false, i2v: false, startFrame: false, endFrame: false, r2v: true },
+    duration: { min: 5, max: 10, default: 5, options: [5, 10] },
+    aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4'],
+    supportsAudio: false,
+    desc: '输入参考视频保持人物/物体一致性，适合多镜头场景'
+  },
+  {
+    id: 'kling2.5-turbo',
+    name: 'Kling 2.5 Turbo',
+    provider: 'Kling',
+    tags: ['1080p', '首尾帧'],
+    cost: 10,
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    duration: { min: 5, max: 10, default: 5, options: [5, 10] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
+    supportsAudio: false,
+    desc: 'Kling 最新 Turbo 版，支持首尾帧控制'
+  },
+  {
+    id: 'ovi',
+    name: 'Ovi',
+    provider: 'Ovi',
+    tags: ['音频', '创意'],
+    cost: 8,
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
+    duration: { min: 5, max: 5, default: 5, options: [5] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
+    supportsAudio: true,
+    desc: '支持视频和音频同步生成，创意内容首选'
+  },
+]
 
 const ASPECT_RATIOS = [
   { label: '16:9', value: '16:9', icon: 'w-8 h-5' },

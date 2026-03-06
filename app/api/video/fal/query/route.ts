@@ -2,38 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import * as fal from '@fal-ai/client';
 
-const supabase = createClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 fal.config({ credentials: process.env.FAL_KEY });
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
+    const authHeader = req.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: '未授权' }, { status: 401 });
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) return NextResponse.json({ error: '用户认证失败' }, { status: 401 });
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) return NextResponse.json({ error: '无效的认证令牌' }, { status: 401 });
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(req.url);
     const taskId = searchParams.get('taskId');
     const recordId = searchParams.get('recordId');
+    const endpoint = searchParams.get('endpoint');
 
-    if (!taskId || !recordId) return NextResponse.json({ error: '缺少任务ID' }, { status: 400 });
-
-    // 从数据库获取 endpoint
-    const { data: record } = await supabase
-      .from('video_generations')
-      .select('metadata')
-      .eq('id', recordId)
-      .eq('user_id', user.id)
-      .single();
-
-    const endpoint = record?.metadata?.endpoint;
-    if (!endpoint) return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
+    if (!taskId || !recordId || !endpoint) {
+      return NextResponse.json({ error: '缺少参数' }, { status: 400 });
+    }
 
     // 查询 fal.ai 任务状态
     const statusResult = await fal.queue.status(endpoint, {
@@ -41,19 +33,28 @@ export async function GET(request: NextRequest) {
       logs: false,
     });
 
-    console.log('fal.ai 状态:', statusResult.status);
+    console.log('fal.ai 任务状态:', statusResult.status);
 
     let status = 'processing';
     let progress = 30;
-    let videoUrl: string | null = null;
+    let videoUrl = null;
 
     if (statusResult.status === 'COMPLETED') {
+      // 获取结果
       const result = await fal.queue.result(endpoint, { requestId: taskId });
+      console.log('fal.ai 结果:', JSON.stringify(result, null, 2));
+
+      // 提取视频 URL（不同模型返回格式可能不同）
       const data = result.data as any;
       videoUrl = data?.video?.url || data?.video_url || data?.url || null;
-      status = videoUrl ? 'completed' : 'failed';
-      progress = videoUrl ? 100 : 0;
-      console.log('视频URL:', videoUrl);
+
+      if (videoUrl) {
+        status = 'completed';
+        progress = 100;
+      } else {
+        console.warn('任务完成但未找到视频URL:', data);
+        status = 'failed';
+      }
     } else if (statusResult.status === 'FAILED') {
       status = 'failed';
       progress = 0;
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       progress = 50;
     }
 
-    // 更新数据库
+    // 更新数据库记录
     const updateData: any = { status, progress };
     if (videoUrl) {
       updateData.video_url = videoUrl;
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       updateData.error_message = '生成失败';
     }
 
-    await supabase
+    await supabaseAdmin
       .from('video_generations')
       .update(updateData)
       .eq('id', recordId)
