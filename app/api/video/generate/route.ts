@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import * as fal from '@fal-ai/client';
+import { fal } from '@fal-ai/client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-fal.config({ credentials: process.env.FAL_KEY });
+// 配置 fal.ai
+fal.config({
+  credentials: process.env.FAL_KEY!,
+});
 
 // 模型配置
 const MODEL_CONFIG: Record<string, {
