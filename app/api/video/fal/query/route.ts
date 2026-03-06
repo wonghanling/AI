@@ -42,11 +42,9 @@ export async function GET(req: NextRequest) {
     let videoUrl = null;
 
     if (statusResult.status === 'COMPLETED') {
-      // 获取结果
       const result = await fal.queue.result(endpoint, { requestId: taskId });
       console.log('fal.ai 结果:', JSON.stringify(result, null, 2));
 
-      // 提取视频 URL（不同模型返回格式可能不同）
       const data = result.data as any;
       videoUrl = data?.video?.url || data?.video_url || data?.url || null;
 
@@ -57,15 +55,16 @@ export async function GET(req: NextRequest) {
         console.warn('任务完成但未找到视频URL:', data);
         status = 'failed';
       }
-    } else if (statusResult.status === 'FAILED') {
-      status = 'failed';
-      progress = 0;
     } else if (statusResult.status === 'IN_QUEUE') {
       status = 'pending';
       progress = 10;
     } else if (statusResult.status === 'IN_PROGRESS') {
       status = 'processing';
       progress = 50;
+    } else {
+      // 其他未知状态视为失败
+      status = 'failed';
+      progress = 0;
     }
 
     // 更新数据库记录

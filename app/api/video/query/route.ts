@@ -56,15 +56,15 @@ export async function GET(request: NextRequest) {
       status = videoUrl ? 'completed' : 'failed';
       progress = videoUrl ? 100 : 0;
       console.log('视频URL:', videoUrl);
-    } else if (statusResult.status === 'FAILED') {
-      status = 'failed';
-      progress = 0;
     } else if (statusResult.status === 'IN_QUEUE') {
       status = 'pending';
       progress = 10;
     } else if (statusResult.status === 'IN_PROGRESS') {
       status = 'processing';
       progress = 50;
+    } else {
+      status = 'failed';
+      progress = 0;
     }
 
     // 更新数据库
