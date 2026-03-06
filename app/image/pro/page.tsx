@@ -396,26 +396,26 @@ function ProImageContent() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden sticky top-24">
               {/* 模型选择 */}
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-bold mb-4">选择模型</h2>
-                <div className="space-y-2">
+              <div className="p-4 border-b border-gray-200">
+                <h2 className="text-base font-bold mb-3">选择模型</h2>
+                <div className="space-y-1.5">
                   {(Object.keys(MODELS) as ModelKey[]).map((modelKey) => {
                     const model = MODELS[modelKey];
                     return (
                       <button
                         key={modelKey}
                         onClick={() => setSelectedModel(modelKey)}
-                        className={`w-full text-left p-3 rounded-lg transition-all ${
+                        className={`w-full text-left p-2.5 rounded-lg transition-all ${
                           selectedModel === modelKey
                             ? 'bg-[#F5C518] text-black shadow-md'
                             : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
                         }`}
                       >
-                        <div className="font-semibold">{model.displayName}</div>
-                        <div className={`text-xs mt-1 ${selectedModel === modelKey ? 'text-black/70' : 'text-gray-500'}`}>
+                        <div className="font-semibold text-sm">{model.displayName}</div>
+                        <div className={`text-xs mt-0.5 ${selectedModel === modelKey ? 'text-black/70' : 'text-gray-500'}`}>
                           {model.description}
                         </div>
-                        <div className={`text-sm mt-1 font-medium ${selectedModel === modelKey ? 'text-black' : 'text-gray-600'}`}>
+                        <div className={`text-xs mt-0.5 font-medium ${selectedModel === modelKey ? 'text-black' : 'text-gray-600'}`}>
                           {model.credits} 积分/张
                         </div>
                       </button>
@@ -425,16 +425,16 @@ function ProImageContent() {
               </div>
 
               {/* 参数设置 */}
-              <div className="p-6 space-y-4">
+              <div className="p-4 space-y-3">
                 {/* 宽高比 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     宽高比
                   </label>
                   <select
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F5C518] focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F5C518] focus:border-transparent"
                   >
                     {currentModel.aspectRatios.map((ratio) => (
                       <option key={ratio} value={ratio}>
@@ -446,7 +446,7 @@ function ProImageContent() {
 
                 {/* 生成数量 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     生成数量
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -454,7 +454,7 @@ function ProImageContent() {
                       <button
                         key={count.value}
                         onClick={() => setImageCount(count.value)}
-                        className={`py-2 rounded-lg font-medium transition-all ${
+                        className={`py-1.5 rounded-lg font-medium text-sm transition-all ${
                           imageCount === count.value
                             ? 'bg-[#F5C518] text-black'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -467,10 +467,10 @@ function ProImageContent() {
                 </div>
 
                 {/* 积分消耗提示 */}
-                <div className="bg-gray-50 rounded-lg p-3 text-sm border border-gray-200">
+                <div className="bg-gray-50 rounded-lg p-2.5 text-sm border border-gray-200">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">本次消耗</span>
-                    <span className="text-gray-900 font-bold text-lg">
+                    <span className="text-gray-600 text-xs">本次消耗</span>
+                    <span className="text-gray-900 font-bold text-base">
                       {calculateTotalCredits()} 积分
                     </span>
                   </div>
