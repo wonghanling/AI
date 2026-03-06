@@ -130,34 +130,44 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
 
     // 保存记录
+    const insertData = {
+      user_id: user.id,
+      prompt,
+      model,
+      duration: parseInt(String(duration)) || 5,
+      aspect_ratio: aspectRatio,
+      input_image_url: startFrameImage || null,
+      status: 'pending',
+      task_id: request_id,
+      progress: 0,
+    };
+    console.log('插入数据:', JSON.stringify(insertData));
+
     const { data: videoRecord, error: recordError } = await supabase
       .from('video_generations')
-      .insert({
-        user_id: user.id,
-        prompt,
-        model,
-        duration: parseInt(String(duration)) || 5,
-        aspect_ratio: aspectRatio,
-        input_image_url: startFrameImage,
-        status: 'pending',
-        cost_credits: modelConfig.cost,
-        task_id: request_id,
-        progress: 0,
-        metadata: { mode, endpoint, endFrameImage, videoUrls },
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (recordError) {
-      console.error('创建视频记录失败:', recordError);
+      console.error('创建视频记录失败:', JSON.stringify(recordError));
+    } else {
+      console.log('记录创建成功, id:', videoRecord?.id);
     }
 
-    console.log('视频记录:', videoRecord?.id, '任务ID:', request_id);
+    // 单独更新 metadata（避免字段类型问题）
+    if (videoRecord?.id) {
+      await supabase
+        .from('video_generations')
+        .update({ metadata: { mode, endpoint, endFrameImage, videoUrls } })
+        .eq('id', videoRecord.id);
+    }
 
     return NextResponse.json({
       success: true,
       taskId: request_id,
-      recordId: videoRecord?.id,
+      endpoint: endpoint,
+      recordId: videoRecord?.id || null,
       status: 'pending',
       remainingCredits: videoCredits - modelConfig.cost,
     });
