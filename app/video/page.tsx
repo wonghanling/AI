@@ -351,14 +351,8 @@ export default function VideoPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        // 详细错误日志
-        console.error('❌ 视频生成API错误:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: data.error,
-          details: data.details,
-          fullResponse: data
-        });
+        console.error('VIDEO_ERROR_STATUS:', response.status);
+        console.error('VIDEO_ERROR_BODY:', JSON.stringify(data));
         throw new Error(data.error || '生成失败');
       }
 
