@@ -708,6 +708,8 @@ function ProImageContent() {
           </div>
         </div>
       </div>
+      </div>
+      </div>
     </div>
   );
 }
