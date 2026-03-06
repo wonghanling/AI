@@ -187,7 +187,13 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('视频生成错误:', error);
-    return NextResponse.json({ error: error.message || '服务器错误' }, { status: 500 });
+    return NextResponse.json({
+      error: error.message || '服务器错误',
+      debug: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+      }
+    }, { status: 500 });
   }
 }
