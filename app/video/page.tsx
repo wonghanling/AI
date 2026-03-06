@@ -23,7 +23,7 @@ const MODELS = [
     tags: ['4K', '音频'],
     cost: 15,
     features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 4, max: 8, default: 4, options: [4, 6, 8] },
+    duration: { min: 4, max: 8, default: 4, fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     supportsAudio: true,
     desc: 'Google 最新模型，4K 超清，支持音频生成'
@@ -35,7 +35,7 @@ const MODELS = [
     tags: ['1080p', '快速'],
     cost: 8,
     features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 5, max: 10, default: 5, options: [5, 10] },
+    duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
     aspectRatios: ['16:9', '9:16', '1:1'],
     supportsAudio: false,
     desc: 'Wan 最新预览版，支持文生视频和图生视频'
@@ -47,7 +47,7 @@ const MODELS = [
     tags: ['参考视频', '一致性'],
     cost: 10,
     features: { t2v: false, i2v: false, startFrame: false, endFrame: false, r2v: true },
-    duration: { min: 5, max: 10, default: 5, options: [5, 10] },
+    duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
     aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4'],
     supportsAudio: false,
     desc: '输入参考视频保持人物/物体一致性，适合多镜头场景'
@@ -59,7 +59,7 @@ const MODELS = [
     tags: ['1080p', '首尾帧'],
     cost: 10,
     features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 5, max: 10, default: 5, options: [5, 10] },
+    duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
     aspectRatios: ['16:9', '9:16', '1:1'],
     supportsAudio: false,
     desc: 'Kling 最新 Turbo 版，支持首尾帧控制'
@@ -71,7 +71,7 @@ const MODELS = [
     tags: ['音频', '创意'],
     cost: 8,
     features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 5, max: 5, default: 5, options: [5] },
+    duration: { min: 5, max: 5, default: 5, fixed: [5] },
     aspectRatios: ['16:9', '9:16', '1:1'],
     supportsAudio: true,
     desc: '支持视频和音频同步生成，创意内容首选'
