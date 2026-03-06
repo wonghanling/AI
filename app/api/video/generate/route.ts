@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
 
     // 保存记录
-    const { data: videoRecord } = await supabase
+    const { data: videoRecord, error: recordError } = await supabase
       .from('video_generations')
       .insert({
         user_id: user.id,
@@ -147,6 +147,12 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single();
+
+    if (recordError) {
+      console.error('创建视频记录失败:', recordError);
+    }
+
+    console.log('视频记录:', videoRecord?.id, '任务ID:', request_id);
 
     return NextResponse.json({
       success: true,

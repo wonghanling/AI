@@ -24,18 +24,35 @@ export async function GET(request: NextRequest) {
     const taskId = searchParams.get('taskId');
     const recordId = searchParams.get('recordId');
 
-    if (!taskId || !recordId) return NextResponse.json({ error: '缺少任务ID' }, { status: 400 });
+    if (!taskId) return NextResponse.json({ error: '缺少任务ID' }, { status: 400 });
 
-    // 从数据库获取 endpoint
-    const { data: record } = await supabase
-      .from('video_generations')
-      .select('metadata')
-      .eq('id', recordId)
-      .eq('user_id', user.id)
-      .single();
+    let endpoint = '';
 
-    const endpoint = record?.metadata?.endpoint;
-    if (!endpoint) return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
+    // 如果有 recordId，从数据库获取 endpoint
+    if (recordId && recordId !== 'undefined') {
+      const { data: record } = await supabase
+        .from('video_generations')
+        .select('metadata')
+        .eq('id', recordId)
+        .eq('user_id', user.id)
+        .single();
+      endpoint = record?.metadata?.endpoint || '';
+    }
+
+    // 如果没有 endpoint，尝试用 taskId 查
+    if (!endpoint) {
+      const { data: record } = await supabase
+        .from('video_generations')
+        .select('metadata')
+        .eq('task_id', taskId)
+        .eq('user_id', user.id)
+        .single();
+      endpoint = record?.metadata?.endpoint || '';
+    }
+
+    if (!endpoint) {
+      return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
+    }
 
     // 查询 fal.ai 任务状态
     const statusResult = await fal.queue.status(endpoint, {
