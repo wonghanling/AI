@@ -121,7 +121,22 @@ export async function POST(request: NextRequest) {
     }
 
     // 提交任务到 fal.ai
-    const { request_id } = await fal.queue.submit(endpoint, { input });
+    let request_id: string;
+    try {
+      const result = await fal.queue.submit(endpoint, { input });
+      request_id = result.request_id;
+    } catch (falError: any) {
+      return NextResponse.json({
+        error: 'fal.ai 提交失败',
+        debug: {
+          message: falError.message,
+          status: falError.status,
+          body: falError.body,
+          endpoint,
+          input,
+        }
+      }, { status: 500 });
+    }
 
     // 扣除积分
     await supabase
