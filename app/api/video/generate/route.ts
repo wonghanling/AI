@@ -140,8 +140,8 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       task_id: request_id,
       progress: 0,
+      metadata: { mode, endpoint, endFrameImage, videoUrls },
     };
-    console.log('插入数据:', JSON.stringify(insertData));
 
     const { data: videoRecord, error: recordError } = await supabase
       .from('video_generations')
@@ -150,17 +150,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (recordError) {
-      console.error('创建视频记录失败:', JSON.stringify(recordError));
-    } else {
-      console.log('记录创建成功, id:', videoRecord?.id);
-    }
-
-    // 单独更新 metadata（避免字段类型问题）
-    if (videoRecord?.id) {
-      await supabase
-        .from('video_generations')
-        .update({ metadata: { mode, endpoint, endFrameImage, videoUrls } })
-        .eq('id', videoRecord.id);
+      // 返回详细错误给前端开发者工具可见
+      return NextResponse.json({
+        error: '数据库插入失败',
+        debug: {
+          message: recordError.message,
+          code: recordError.code,
+          details: recordError.details,
+          hint: recordError.hint,
+        }
+      }, { status: 500 });
     }
 
     return NextResponse.json({
