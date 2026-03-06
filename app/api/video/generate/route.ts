@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       task_id: request_id,
       progress: 0,
+      cost_credits: modelConfig.cost,
       metadata: { mode, endpoint, endFrameImage, videoUrls },
     };
 
