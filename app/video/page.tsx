@@ -1075,6 +1075,9 @@ export default function VideoPage() {
             <Bell size={18} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#09090B]"></span>
           </button>
+          <Link href="/chat" className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-full border border-zinc-700/50 text-sm text-zinc-300 hover:text-white transition-colors">
+            聊天
+          </Link>
           <Link href="/" className="w-8 h-8 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-600 border border-zinc-500 flex items-center justify-center text-xs font-bold text-white cursor-pointer hover:ring-2 ring-zinc-700 transition-all">
             返回
           </Link>

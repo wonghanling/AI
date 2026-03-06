@@ -335,6 +335,12 @@ function ProImageContent() {
                 <span className="hidden sm:inline">返回首页</span>
               </Link>
               <Link
+                href="/chat"
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                聊天
+              </Link>
+              <Link
                 href="/image"
                 className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
