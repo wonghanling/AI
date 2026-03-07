@@ -33,31 +33,31 @@ const IMAGE_CREDIT_PACKAGES = [
   },
 ];
 
-// 视频积分套餐配置
+// 视频余额套餐配置（直接充值人民币，1元=1元）
 const VIDEO_CREDIT_PACKAGES = [
   {
     id: 'video_credits_50',
-    credits: 500,
+    credits: 50,
     price: 50,
     label: '入门套餐',
   },
   {
     id: 'video_credits_100',
-    credits: 1000,
+    credits: 100,
     price: 100,
     label: '标准套餐',
     popular: true,
   },
   {
-    id: 'video_credits_500',
-    credits: 5000,
-    price: 500,
+    id: 'video_credits_1000',
+    credits: 1000,
+    price: 1000,
     label: '超值套餐',
   },
   {
-    id: 'video_credits_1000',
+    id: 'video_credits_10000',
     credits: 10000,
-    price: 1000,
+    price: 10000,
     label: '豪华套餐',
   },
 ];
@@ -89,7 +89,6 @@ export default function RechargeCreditsPage() {
 
   // 根据积分类型选择套餐
   const currentPackages = creditType === 'image' ? IMAGE_CREDIT_PACKAGES : VIDEO_CREDIT_PACKAGES;
-  const currentPricingInfo = creditType === 'image' ? IMAGE_PRICING_INFO : VIDEO_PRICING_INFO;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -223,8 +222,8 @@ export default function RechargeCreditsPage() {
             </div>
             <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full border-2 border-black">
               <Video size={16} className="text-gray-700" />
-              <span className="text-sm text-gray-700">视频积分：</span>
-              <span className="text-lg font-bold text-black">{videoCredits}</span>
+              <span className="text-sm text-gray-700">视频余额：</span>
+              <span className="text-lg font-bold text-black">¥{Number(videoCredits).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -283,16 +282,33 @@ export default function RechargeCreditsPage() {
 
               <div className="text-center mb-6">
                 <div className="text-sm text-gray-600 mb-2">{pkg.label}</div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">
-                  {pkg.credits}
-                  <span className="text-lg text-gray-600 ml-1">积分</span>
-                </div>
-                <div className="mt-4 text-3xl font-bold text-black">
-                  ¥{pkg.price}
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {(pkg.price / pkg.credits).toFixed(2)} 元/积分
-                </div>
+                {creditType === 'video' ? (
+                  <>
+                    <div className="text-4xl font-bold text-gray-900 mb-2">
+                      ¥{pkg.credits}
+                      <span className="text-lg text-gray-600 ml-1">余额</span>
+                    </div>
+                    <div className="mt-4 text-3xl font-bold text-black">
+                      ¥{pkg.price}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      充多少用多少，按次计费
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl font-bold text-gray-900 mb-2">
+                      {pkg.credits}
+                      <span className="text-lg text-gray-600 ml-1">积分</span>
+                    </div>
+                    <div className="mt-4 text-3xl font-bold text-black">
+                      ¥{pkg.price}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      {(pkg.price / pkg.credits).toFixed(2)} 元/积分
+                    </div>
+                  </>
+                )}
               </div>
 
               <button
@@ -324,65 +340,63 @@ export default function RechargeCreditsPage() {
             积分消耗说明
           </h2>
 
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 bg-[#F5C518] text-black px-4 py-2 rounded-lg text-sm font-bold mb-4 border-2 border-black">
-              <span>1 积分 = ¥0.1</span>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-gray-300">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">模型</th>
-                  {creditType === 'image' && (
-                    <>
+          {creditType === 'image' ? (
+            <>
+              <div className="mb-6">
+                <div className="inline-flex items-center gap-2 bg-[#F5C518] text-black px-4 py-2 rounded-lg text-sm font-bold mb-4 border-2 border-black">
+                  <span>1 积分 = ¥0.1</span>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-300">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">模型</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900">分辨率</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">消耗积分</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">约等于</th>
-                    </>
-                  )}
-                  {creditType === 'video' && (
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900">消耗积分</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {currentPricingInfo.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm text-gray-900 font-medium">{item.model}</td>
-                    {creditType === 'image' && (
-                      <>
-                        <td className="py-3 px-4 text-sm text-gray-700">
-                          {(item as any).resolution}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-right font-bold text-black">
-                          {(item as any).credits} 积分
-                        </td>
-                        <td className="py-3 px-4 text-sm text-right text-gray-700 font-medium">
-                          ¥{(item as any).price.toFixed(1)}
-                        </td>
-                      </>
-                    )}
-                    {creditType === 'video' && (
-                      <td className="py-3 px-4 text-sm text-right font-bold text-black">
-                        {(item as any).credits} 积分
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {IMAGE_PRICING_INFO.map((item, index) => (
+                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">{item.model}</td>
+                        <td className="py-3 px-4 text-sm text-gray-700">{item.resolution}</td>
+                        <td className="py-3 px-4 text-sm text-right font-bold text-black">{item.credits} 积分</td>
+                        <td className="py-3 px-4 text-sm text-right text-gray-700 font-medium">¥{item.price.toFixed(1)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-3 text-sm text-gray-700">
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <p className="font-semibold text-gray-900 mb-2">计费方式</p>
+                <p>视频余额按实际生成费用扣除，生成成功后才扣款。</p>
+                <p className="mt-1">费用 = 单价（元/秒）× 时长 + 加价</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <p className="font-semibold text-gray-900 mb-2">用户类型加价</p>
+                <p>普通用户：+¥0.60/秒</p>
+                <p>会员用户：+¥0.40/秒</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <p className="font-semibold text-gray-900 mb-2">示例（普通用户，Veo 3.1，8秒）</p>
+                <p>¥(0.50 + 0.60) × 8 = ¥8.80</p>
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 space-y-2 text-sm text-gray-700">
             <div className="flex items-start gap-2">
               <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span>积分永久有效，不会过期</span>
+              <span>{creditType === 'video' ? '视频余额永久有效，不会过期' : '积分永久有效，不会过期'}</span>
             </div>
             <div className="flex items-start gap-2">
               <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span>充值成功后积分立即到账</span>
+              <span>充值成功后立即到账</span>
             </div>
             <div className="flex items-start gap-2">
               <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />

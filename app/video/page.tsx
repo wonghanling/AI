@@ -15,41 +15,83 @@ import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
 
 // --- Mock Data & Constants ---
 
+// 定价：baseCostPerSec 为 fal.ai 成本，markupNormal/markupPremium 为加价
 const MODELS = [
   {
-    id: 'veo3.1',
-    name: 'Veo 3.1',
+    id: 'veo3.1-t2v',
+    name: 'Veo 3.1 文生视频',
     provider: 'Google',
-    tags: ['4K', '音频'],
-    cost: 15,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 4, max: 8, default: 4, fixed: [4, 6, 8] },
+    tags: ['4K', '音频', '文生视频'],
+    baseCostPerSec: 0.50,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
+    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
+    duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
     desc: 'Google 最新模型，4K 超清，支持音频生成'
   },
   {
-    id: 'veo3.1-fast',
-    name: 'Veo 3.1 Fast',
+    id: 'veo3.1-i2v',
+    name: 'Veo 3.1 图生视频',
     provider: 'Google',
-    tags: ['4K', '快速', '音频'],
-    cost: 12,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 4, max: 8, default: 4, fixed: [4, 6, 8] },
+    tags: ['4K', '音频', '图生视频'],
+    baseCostPerSec: 0.50,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
-    desc: 'Veo 3.1 快速版，生成速度更快'
+    desc: 'Veo 3.1 图生视频，支持首帧控制'
+  },
+  {
+    id: 'veo3.1-fast-t2v',
+    name: 'Veo 3.1 Fast 文生视频',
+    provider: 'Google',
+    tags: ['4K', '快速', '文生视频'],
+    baseCostPerSec: 0.40,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
+    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
+    duration: { fixed: [4, 6, 8] },
+    aspectRatios: ['16:9', '9:16'],
+    resolutions: ['720p', '1080p', '4k'],
+    supportsAudio: true,
+    desc: 'Veo 3.1 快速版文生视频，速度更快'
+  },
+  {
+    id: 'veo3.1-fast-i2v',
+    name: 'Veo 3.1 Fast 图生视频',
+    provider: 'Google',
+    tags: ['4K', '快速', '图生视频'],
+    baseCostPerSec: 0.40,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { fixed: [4, 6, 8] },
+    aspectRatios: ['16:9', '9:16'],
+    resolutions: ['720p', '1080p', '4k'],
+    supportsAudio: true,
+    desc: 'Veo 3.1 快速版图生视频'
   },
   {
     id: 'veo3.1-extend',
-    name: 'Veo 3.1 延长',
+    name: 'Veo 3.1 延长视频',
     provider: 'Google',
     tags: ['延长视频', '音频'],
-    cost: 10,
+    baseCostPerSec: 0.35,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
     features: { t2v: false, i2v: false, startFrame: false, endFrame: false, extend: true },
-    duration: { min: 7, max: 7, default: 7, fixed: [7] },
+    duration: { fixed: [7] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p'],
     supportsAudio: true,
@@ -60,54 +102,99 @@ const MODELS = [
     name: 'Veo 3.1 首尾帧',
     provider: 'Google',
     tags: ['4K', '首尾帧', '音频'],
-    cost: 15,
+    baseCostPerSec: 0.50,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
     features: { t2v: false, i2v: false, startFrame: true, endFrame: true, firstLastFrame: true },
-    duration: { min: 4, max: 8, default: 4, fixed: [4, 6, 8] },
+    duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
     desc: '支持首尾帧控制，精确控制视频起止画面'
   },
   {
-    id: 'wan2.5',
-    name: 'Wan 2.5',
+    id: 'wan2.5-t2v',
+    name: 'Wan 2.5 文生视频',
     provider: 'Wan',
-    tags: ['1080p', '快速'],
-    cost: 8,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
+    tags: ['1080p', '文生视频'],
+    baseCostPerSec: 0.20,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
+    features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
+    duration: { fixed: [5, 10] },
     aspectRatios: ['16:9', '9:16', '1:1'],
     resolutions: ['480p', '720p', '1080p'],
     supportsAudio: false,
-    desc: 'Wan 最新预览版，支持文生视频和图生视频'
+    desc: 'Wan 2.5 文生视频，性价比高'
   },
   {
-    id: 'kling2.6',
-    name: 'Kling 2.6',
+    id: 'wan2.5-i2v',
+    name: 'Wan 2.5 图生视频',
+    provider: 'Wan',
+    tags: ['1080p', '图生视频'],
+    baseCostPerSec: 0.20,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { fixed: [5, 10] },
+    aspectRatios: [],
+    resolutions: ['480p', '720p', '1080p'],
+    supportsAudio: false,
+    desc: 'Wan 2.5 图生视频，性价比高'
+  },
+  {
+    id: 'kling2.6-i2v',
+    name: 'Kling 2.6 图生视频',
     provider: 'Kling',
-    tags: ['首尾帧', '音频'],
-    cost: 10,
+    tags: ['首尾帧', '音频', '图生视频'],
+    baseCostPerSec: 0.30,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 0,
     features: { t2v: false, i2v: true, startFrame: true, endFrame: true },
-    duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
+    duration: { fixed: [5, 10] },
     aspectRatios: [],
     resolutions: [],
     supportsAudio: true,
-    desc: 'Kling 最新版，支持首尾帧控制和音频生成'
+    desc: 'Kling 2.6，支持首尾帧控制和音频生成'
   },
   {
-    id: 'ovi',
-    name: 'Ovi',
+    id: 'ovi-i2v',
+    name: 'Ovi 图生视频',
     provider: 'Ovi',
-    tags: ['音频', '创意'],
-    cost: 8,
+    tags: ['音频', '创意', '图生视频'],
+    baseCostPerSec: 0.20,
+    markupNormal: 0.60,
+    markupPremium: 0.40,
+    audioExtra: 2.0,
     features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 5, max: 5, default: 5, fixed: [] },
+    duration: { fixed: [] },
     aspectRatios: [],
     resolutions: [],
     supportsAudio: true,
     desc: '支持视频和音频同步生成，创意内容首选'
   },
 ]
+
+// 计算本次费用
+function calcCost(
+  model: typeof MODELS[0],
+  duration: number | null,
+  generateAudio: boolean,
+  isPremium: boolean
+): number {
+  const markup = isPremium ? model.markupPremium : model.markupNormal;
+  const pricePerSec = model.baseCostPerSec + markup;
+  const effectiveDuration = duration || (model.duration.fixed[0] ?? 5);
+  let cost = parseFloat((pricePerSec * effectiveDuration).toFixed(2));
+  if (generateAudio && model.supportsAudio && model.audioExtra > 0) {
+    cost = parseFloat((cost + model.audioExtra).toFixed(2));
+  }
+  return cost;
+}
 
 const ASPECT_RATIOS = [
   { label: '16:9', value: '16:9', icon: 'w-8 h-5' },
@@ -151,7 +238,8 @@ export default function VideoPage() {
   const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [videoCredits, setVideoCredits] = useState(0); // 视频积分（独立）
+  const [videoCredits, setVideoCredits] = useState(0); // 视频余额（人民币）
+  const [isPremium, setIsPremium] = useState(false); // 是否会员
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(true);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [error, setError] = useState('');
@@ -218,9 +306,11 @@ export default function VideoPage() {
             if (response.ok) {
               const data = await response.json();
               const newImageCredits = data.imageCredits || 0;
-              const newVideoCredits = data.videoCredits || 0;
+              const newVideoCredits = parseFloat(data.videoCredits || '0');
+              const userType = data.userType || 'free';
 
               setVideoCredits(newVideoCredits);
+              setIsPremium(userType === 'premium');
 
               // 更新缓存
               setCachedCredits(newImageCredits, newVideoCredits);
@@ -235,7 +325,7 @@ export default function VideoPage() {
       // 如果API获取失败，从localStorage读取
       const savedCredits = localStorage.getItem('videoCredits');
       if (savedCredits) {
-        setVideoCredits(parseInt(savedCredits, 10));
+        setVideoCredits(parseFloat(savedCredits));
       }
     };
 
@@ -293,7 +383,7 @@ export default function VideoPage() {
               console.log('❌ Realtime: 视频生成失败');
               setIsGenerating(false);
               setProgress(0);
-              setError('视频生成失败，积分已扣除（API 已消耗资源）');
+              setError('视频生成失败，费用已扣除（API 已消耗资源）');
               loadHistory();
             }
           }
@@ -338,7 +428,8 @@ export default function VideoPage() {
   // --- Handlers ---
   const handleGenerate = async () => {
     if (prompt.trim().length === 0) return;
-    if (videoCredits < selectedModel.cost) {
+    const currentCost = calcCost(selectedModel, duration, generateAudio, isPremium);
+    if (videoCredits < currentCost) {
       setShowRechargeModal(true);
       return;
     }
@@ -362,17 +453,7 @@ export default function VideoPage() {
         return;
       }
 
-      // 确定模式
-      let mode = 't2v';
-      if (selectedModel.features.extend) {
-        mode = 'extend';
-      } else if (selectedModel.features.firstLastFrame) {
-        mode = 'firstLastFrame';
-      } else if (startFrameImage) {
-        mode = 'i2v';
-      }
-
-      // 调用视频生成API
+      // 调用视频生成API（mode 由后端根据 model id 决定）
       const response = await fetch('/api/video/fal/generate', {
         method: 'POST',
         headers: {
@@ -382,7 +463,6 @@ export default function VideoPage() {
         body: JSON.stringify({
           prompt: prompt,
           model: selectedModel.id,
-          mode: mode,
           aspectRatio: aspectRatio,
           resolution: resolution,
           duration: duration,
@@ -402,8 +482,8 @@ export default function VideoPage() {
 
       console.log('✅ 视频生成请求成功:', data);
 
-      // 更新积分
-      setVideoCredits(data.remainingCredits);
+      // 更新余额
+      setVideoCredits(parseFloat(data.remainingCredits || '0'));
 
       // 清理之前的轮询（如果有）
       if (pollCleanup) {
@@ -549,7 +629,7 @@ export default function VideoPage() {
           console.error('❌ 视频生成失败:', data);
           setIsGenerating(false);
           setProgress(0);
-          setError('视频生成失败，积分已扣除（API 已消耗资源）');
+          setError('视频生成失败，费用已扣除（API 已消耗资源）');
 
           // 重新加载历史记录
           loadHistory();
@@ -879,8 +959,8 @@ export default function VideoPage() {
             className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-full border border-zinc-700/50 transition-colors group"
           >
             <CreditCard size={14} className="text-purple-400" />
-            <span className="text-sm font-medium text-white">{videoCredits}</span>
-            <span className="text-xs text-zinc-500 group-hover:text-white transition-colors">视频积分</span>
+            <span className="text-sm font-medium text-white">¥{videoCredits.toFixed(2)}</span>
+            <span className="text-xs text-zinc-500 group-hover:text-white transition-colors">视频余额</span>
           </button>
           <button className="p-2 hover:bg-zinc-800 rounded-full relative text-zinc-400 hover:text-white transition-colors">
             <Bell size={18} />
@@ -944,6 +1024,22 @@ export default function VideoPage() {
           </div>
 
           <div className="p-5 space-y-8 pb-24">
+
+            {/* 充值按钮 + 余额显示 */}
+            <div className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3">
+              <div>
+                <div className="text-[10px] text-zinc-500 mb-0.5">视频余额</div>
+                <div className="text-base font-bold text-white">¥{videoCredits.toFixed(2)}</div>
+                {isPremium && <div className="text-[10px] text-purple-400 mt-0.5">会员价</div>}
+              </div>
+              <button
+                onClick={() => router.push('/credits/recharge')}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white text-xs font-semibold rounded-lg transition-all shadow-lg shadow-purple-500/20"
+              >
+                <Zap size={13} />
+                充值
+              </button>
+            </div>
 
             {/* 错误提示 */}
             {error && (
@@ -1033,7 +1129,7 @@ export default function VideoPage() {
                               </div>
                               <div className="flex items-center gap-1 text-xs text-purple-400 font-medium ml-2">
                                 <Zap size={10} />
-                                {model.cost}
+                                ¥{calcCost(model, model.duration.fixed[0] || null, false, isPremium).toFixed(2)}起
                               </div>
                             </button>
                           ))}
@@ -1051,7 +1147,8 @@ export default function VideoPage() {
                   {selectedModel.features.extend && <Badge type="primary">延长视频</Badge>}
                   {selectedModel.supportsAudio && <Badge type="success">音频</Badge>}
                   <span className="text-xs text-zinc-600 flex items-center gap-1 ml-auto">
-                    <Zap size={12} className="text-amber-500" /> {selectedModel.cost} 积分/次
+                    <Zap size={12} className="text-amber-500" />
+                    ¥{(selectedModel.baseCostPerSec + (isPremium ? selectedModel.markupPremium : selectedModel.markupNormal)).toFixed(2)}/秒
                   </span>
                 </div>
               </div>
@@ -1306,6 +1403,13 @@ export default function VideoPage() {
 
           {/* Sticky CTA Button */}
           <div className="sticky bottom-0 left-0 w-full p-5 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10] to-transparent border-t border-white/5 z-20">
+            {/* 本次费用显示 */}
+            <div className="flex items-center justify-between mb-3 px-1">
+              <span className="text-xs text-zinc-500">本次费用</span>
+              <span className="text-sm font-bold text-purple-400">
+                ¥{calcCost(selectedModel, duration, generateAudio, isPremium).toFixed(2)}
+              </span>
+            </div>
             <button
               onClick={handleGenerate}
               disabled={isGenerating || !prompt}
@@ -1328,7 +1432,7 @@ export default function VideoPage() {
                   <Sparkles size={18} className={prompt ? "animate-pulse" : ""} />
                   <span>立即生成</span>
                   <span className="ml-1 text-[10px] font-bold opacity-80 bg-black/10 px-1.5 py-0.5 rounded">
-                    -{selectedModel.cost} 积分
+                    -¥{calcCost(selectedModel, duration, generateAudio, isPremium).toFixed(2)}
                   </span>
                 </div>
               )}
@@ -1632,7 +1736,11 @@ export default function VideoPage() {
                          </p>
                          <div className="flex items-center justify-between text-[10px] text-zinc-500">
                            <span>{record.model}</span>
-                           <span>{new Date(record.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                           <span className="flex items-center gap-1">
+                             <span>¥{Number(record.cost).toFixed(2)}</span>
+                             <span>·</span>
+                             <span>{new Date(record.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                           </span>
                          </div>
 
                          {/* Actions */}
@@ -1736,21 +1844,21 @@ export default function VideoPage() {
                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
                       <AlertCircle size={24} className="text-white" />
                    </div>
-                   <h3 className="text-lg font-semibold text-white">视频积分不足</h3>
+                   <h3 className="text-lg font-semibold text-white">视频余额不足</h3>
                    <p className="text-sm text-zinc-500 mt-2">
-                      当前视频积分: <span className="text-purple-400 font-medium">{videoCredits}</span>
+                      当前余额: <span className="text-purple-400 font-medium">¥{videoCredits.toFixed(2)}</span>
                    </p>
                    <p className="text-sm text-zinc-500 mt-1">
-                      生成此视频需要: <span className="text-red-400 font-medium">{selectedModel.cost}</span> 积分
+                      本次需要: <span className="text-red-400 font-medium">¥{calcCost(selectedModel, duration, generateAudio, isPremium).toFixed(2)}</span>
                    </p>
                 </div>
 
                 {/* Recharge Options */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { amount: 100, price: 10, bonus: 0, popular: false },
-                    { amount: 500, price: 45, bonus: 50, popular: true },
-                    { amount: 1000, price: 80, bonus: 200, popular: false }
+                    { amount: 50, popular: false },
+                    { amount: 100, popular: true },
+                    { amount: 1000, popular: false }
                   ].map((option) => (
                     <button
                       key={option.amount}
@@ -1766,29 +1874,19 @@ export default function VideoPage() {
                           推荐
                         </span>
                       )}
-                      {option.bonus > 0 && (
-                        <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold rounded-full">
-                          送{option.bonus}
-                        </span>
-                      )}
                       <div className="text-2xl font-bold text-white mb-1">
-                        {option.amount + option.bonus}
+                        ¥{option.amount}
                       </div>
                       <div className="text-xs text-zinc-500">
-                        ¥{option.price}
+                        充 ¥{option.amount} 得 ¥{option.amount}
                       </div>
-                      {option.bonus > 0 && (
-                        <div className="text-[10px] text-purple-400 mt-1">
-                          +{option.bonus} 赠送
-                        </div>
-                      )}
                     </button>
                   ))}
                 </div>
 
                 <div className="text-center">
                   <p className="text-xs text-zinc-600 mb-3">
-                    视频积分独立使用，不可用于图片生成
+                    视频余额独立使用，不可用于图片生成
                   </p>
                   <button
                     onClick={handleRecharge}
