@@ -25,8 +25,48 @@ const MODELS = [
     features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
     duration: { min: 4, max: 8, default: 4, fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
+    resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
     desc: 'Google 最新模型，4K 超清，支持音频生成'
+  },
+  {
+    id: 'veo3.1-fast',
+    name: 'Veo 3.1 Fast',
+    provider: 'Google',
+    tags: ['4K', '快速', '音频'],
+    cost: 12,
+    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
+    duration: { min: 4, max: 8, default: 4, fixed: [4, 6, 8] },
+    aspectRatios: ['16:9', '9:16'],
+    resolutions: ['720p', '1080p', '4k'],
+    supportsAudio: true,
+    desc: 'Veo 3.1 快速版，生成速度更快'
+  },
+  {
+    id: 'veo3.1-extend',
+    name: 'Veo 3.1 延长',
+    provider: 'Google',
+    tags: ['延长视频', '音频'],
+    cost: 10,
+    features: { t2v: false, i2v: false, startFrame: false, endFrame: false, extend: true },
+    duration: { min: 7, max: 7, default: 7, fixed: [7] },
+    aspectRatios: ['16:9', '9:16'],
+    resolutions: ['720p', '1080p'],
+    supportsAudio: true,
+    desc: '延长现有视频，保持连贯性'
+  },
+  {
+    id: 'veo3.1-first-last',
+    name: 'Veo 3.1 首尾帧',
+    provider: 'Google',
+    tags: ['4K', '首尾帧', '音频'],
+    cost: 15,
+    features: { t2v: false, i2v: false, startFrame: true, endFrame: true, firstLastFrame: true },
+    duration: { min: 4, max: 8, default: 4, fixed: [4, 6, 8] },
+    aspectRatios: ['16:9', '9:16'],
+    resolutions: ['720p', '1080p', '4k'],
+    supportsAudio: true,
+    desc: '支持首尾帧控制，精确控制视频起止画面'
   },
   {
     id: 'wan2.5',
@@ -37,32 +77,22 @@ const MODELS = [
     features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
     duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
     aspectRatios: ['16:9', '9:16', '1:1'],
+    resolutions: ['480p', '720p', '1080p'],
     supportsAudio: false,
     desc: 'Wan 最新预览版，支持文生视频和图生视频'
   },
   {
-    id: 'wan2.6-r2v',
-    name: 'Wan 2.6 R2V',
-    provider: 'Wan',
-    tags: ['参考视频', '一致性'],
-    cost: 10,
-    features: { t2v: false, i2v: false, startFrame: false, endFrame: false, r2v: true },
-    duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
-    aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4'],
-    supportsAudio: false,
-    desc: '输入参考视频保持人物/物体一致性，适合多镜头场景'
-  },
-  {
-    id: 'kling2.5-turbo',
-    name: 'Kling 2.5 Turbo',
+    id: 'kling2.6',
+    name: 'Kling 2.6',
     provider: 'Kling',
-    tags: ['1080p', '首尾帧'],
+    tags: ['首尾帧', '音频'],
     cost: 10,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: true },
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: true },
     duration: { min: 5, max: 10, default: 5, fixed: [5, 10] },
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    supportsAudio: false,
-    desc: 'Kling 最新 Turbo 版，支持首尾帧控制'
+    aspectRatios: [],
+    resolutions: [],
+    supportsAudio: true,
+    desc: 'Kling 最新版，支持首尾帧控制和音频生成'
   },
   {
     id: 'ovi',
@@ -70,9 +100,10 @@ const MODELS = [
     provider: 'Ovi',
     tags: ['音频', '创意'],
     cost: 8,
-    features: { t2v: true, i2v: true, startFrame: true, endFrame: false },
-    duration: { min: 5, max: 5, default: 5, fixed: [5] },
-    aspectRatios: ['16:9', '9:16', '1:1'],
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
+    duration: { min: 5, max: 5, default: 5, fixed: [] },
+    aspectRatios: [],
+    resolutions: [],
     supportsAudio: true,
     desc: '支持视频和音频同步生成，创意内容首选'
   },
@@ -114,6 +145,8 @@ export default function VideoPage() {
   const [negativePrompt, setNegativePrompt] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [duration, setDuration] = useState<number | null>(null);
+  const [resolution, setResolution] = useState<string>('720p');
+  const [generateAudio, setGenerateAudio] = useState<boolean>(false);
   const [startFrameImage, setStartFrameImage] = useState<string | null>(null);
   const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -329,8 +362,18 @@ export default function VideoPage() {
         return;
       }
 
+      // 确定模式
+      let mode = 't2v';
+      if (selectedModel.features.extend) {
+        mode = 'extend';
+      } else if (selectedModel.features.firstLastFrame) {
+        mode = 'firstLastFrame';
+      } else if (startFrameImage) {
+        mode = 'i2v';
+      }
+
       // 调用视频生成API
-      const response = await fetch('/api/video/generate', {
+      const response = await fetch('/api/video/fal/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -339,12 +382,13 @@ export default function VideoPage() {
         body: JSON.stringify({
           prompt: prompt,
           model: selectedModel.id,
+          mode: mode,
           aspectRatio: aspectRatio,
+          resolution: resolution,
           duration: duration,
-          startFrameImage: startFrameImage,
-          endFrameImage: endFrameImage,
-          negativePrompt: negativePrompt,
-          cost: selectedModel.cost
+          imageUrl: startFrameImage,
+          endImageUrl: endFrameImage,
+          generateAudio: generateAudio,
         })
       });
 
@@ -753,7 +797,7 @@ export default function VideoPage() {
   // Reset settings when model changes
   useEffect(() => {
     // Reset aspect ratio if not supported
-    if (!selectedModel.aspectRatios.includes(aspectRatio)) {
+    if (selectedModel.aspectRatios.length > 0 && !selectedModel.aspectRatios.includes(aspectRatio)) {
       setAspectRatio(selectedModel.aspectRatios[0]);
     }
     // Reset duration
@@ -762,12 +806,20 @@ export default function VideoPage() {
     } else {
       setDuration(null);
     }
+    // Reset resolution
+    if (selectedModel.resolutions && selectedModel.resolutions.length > 0) {
+      setResolution(selectedModel.resolutions[0]);
+    }
     // Clear images if not supported
-    if (!selectedModel.features.startFrame) {
+    if (!selectedModel.features.startFrame && !selectedModel.features.firstLastFrame) {
       setStartFrameImage(null);
     }
     if (!selectedModel.features.endFrame) {
       setEndFrameImage(null);
+    }
+    // Reset audio generation
+    if (selectedModel.supportsAudio) {
+      setGenerateAudio(false);
     }
   }, [selectedModel, aspectRatio]);
 
@@ -993,8 +1045,11 @@ export default function VideoPage() {
 
                 {/* Visual Model Capability Tags */}
                 <div className="flex gap-2 mt-3 flex-wrap">
-                  <Badge type={selectedModel.features.t2v ? 'default' : 'warning'}>Text-to-Video</Badge>
-                  <Badge type={selectedModel.features.i2v ? 'default' : 'warning'}>Image-to-Video</Badge>
+                  {selectedModel.features.t2v && <Badge type="default">文生视频</Badge>}
+                  {selectedModel.features.i2v && <Badge type="default">图生视频</Badge>}
+                  {(selectedModel.features.firstLastFrame || selectedModel.features.endFrame) && <Badge type="primary">首尾帧</Badge>}
+                  {selectedModel.features.extend && <Badge type="primary">延长视频</Badge>}
+                  {selectedModel.supportsAudio && <Badge type="success">音频</Badge>}
                   <span className="text-xs text-zinc-600 flex items-center gap-1 ml-auto">
                     <Zap size={12} className="text-amber-500" /> {selectedModel.cost} 积分/次
                   </span>
@@ -1050,7 +1105,7 @@ export default function VideoPage() {
             <section className="space-y-3">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                 画面引导 (Image Ref)
-                {!selectedModel.features.startFrame && !selectedModel.features.endFrame && (
+                {!selectedModel.features.startFrame && !selectedModel.features.endFrame && !selectedModel.features.firstLastFrame && (
                    <span className="text-[10px] text-amber-500/80 flex items-center gap-1">
                      <AlertCircle size={10} /> 当前模型不支持
                    </span>
@@ -1059,18 +1114,21 @@ export default function VideoPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 {/* Start Frame */}
-                <div className={`relative ${!selectedModel.features.startFrame ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
+                {(() => {
+                  const canUploadStart = selectedModel.features.startFrame || selectedModel.features.firstLastFrame;
+                  return (
+                <div className={`relative ${!canUploadStart ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleImageUpload('start', e)}
                     className="hidden"
                     id="start-frame-upload"
-                    disabled={!selectedModel.features.startFrame}
+                    disabled={!canUploadStart}
                   />
                   <label
                     htmlFor="start-frame-upload"
-                    className={`border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 transition-all group relative overflow-hidden ${!selectedModel.features.startFrame ? '' : 'cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600'}`}
+                    className={`border border-dashed border-zinc-700 bg-zinc-900/30 rounded-xl aspect-[16/9] flex flex-col items-center justify-center gap-2 transition-all group relative overflow-hidden ${!canUploadStart ? '' : 'cursor-pointer hover:bg-zinc-800/50 hover:border-zinc-600'}`}
                   >
                     {startFrameImage ? (
                       <>
@@ -1099,6 +1157,8 @@ export default function VideoPage() {
                     )}
                   </label>
                 </div>
+                  );
+                })()}
 
                 {/* End Frame */}
                 <div className={`relative ${!selectedModel.features.endFrame ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
@@ -1145,7 +1205,8 @@ export default function VideoPage() {
             <section className="space-y-4">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">生成参数 (Settings)</label>
 
-              {/* Aspect Ratio */}
+              {/* Aspect Ratio - Only for models that support it */}
+              {selectedModel.aspectRatios.length > 0 && (
               <div className="space-y-2">
                 <span className="text-xs text-zinc-500">画面比例</span>
                 <div className="grid grid-cols-4 gap-2">
@@ -1171,6 +1232,7 @@ export default function VideoPage() {
                   })}
                 </div>
               </div>
+              )}
 
               {/* Duration Selection - Only for models with multiple duration options */}
               {selectedModel.duration.fixed && selectedModel.duration.fixed.length > 1 && (
@@ -1191,6 +1253,52 @@ export default function VideoPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Resolution Selection - Only for models with resolution options */}
+              {selectedModel.resolutions && selectedModel.resolutions.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs text-zinc-500">清晰度</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {selectedModel.resolutions.map((res) => (
+                      <button
+                        key={res}
+                        onClick={() => setResolution(res)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                          resolution === res
+                            ? 'bg-purple-500/10 border-purple-500/50 text-purple-400'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                        }`}
+                      >
+                        {res.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Audio Generation Toggle - Only for models that support audio */}
+              {selectedModel.supportsAudio && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-500">生成音频</span>
+                    <button
+                      onClick={() => setGenerateAudio(!generateAudio)}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${
+                        generateAudio ? 'bg-purple-500' : 'bg-zinc-700'
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                          generateAudio ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-zinc-600">
+                    {generateAudio ? '将生成视频配音' : '仅生成无声视频'}
+                  </p>
                 </div>
               )}
             </section>
