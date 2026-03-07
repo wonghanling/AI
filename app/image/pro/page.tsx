@@ -14,6 +14,7 @@ const MODELS = {
     credits: 3,
     description: '高质量图片生成，适合各种风格',
     aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+    api: 'yunwu' as const,
   },
   'mj-imagine': {
     id: 'mj-imagine',
@@ -22,30 +23,26 @@ const MODELS = {
     credits: 6,
     description: 'Midjourney 风格，艺术感强',
     aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+    api: 'yunwu' as const,
   },
-  'flux-1.1-pro': {
-    id: 'flux-1.1-pro',
-    name: 'flux.1.1-pro',
-    displayName: 'Flux 1.1 Pro',
+  'flux-kontext-max': {
+    id: 'flux-kontext-max',
+    name: 'flux-kontext-max',
+    displayName: 'Flux Kontext Max',
     credits: 10,
-    description: '最新 Flux 模型，超高质量',
-    aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9'],
-  },
-  'flux-pro': {
-    id: 'flux-pro',
-    name: 'flux-pro',
-    displayName: 'Flux Pro',
-    credits: 6,
-    description: 'Flux 专业版，质量与速度平衡',
+    description: '最新 Flux 模型，超高质量文生图',
     aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+    api: 'fal' as const,
   },
-  'flux-schnell': {
-    id: 'flux-schnell',
-    name: 'flux-schnell',
-    displayName: 'Flux Schnell',
-    credits: 3,
-    description: '快速生成，性价比高',
-    aspectRatios: ['1:1', '16:9', '9:16'],
+  'flux-kontext': {
+    id: 'flux-kontext',
+    name: 'flux-kontext',
+    displayName: 'Flux Kontext',
+    credits: 6,
+    description: '图像编辑模型，上传图片后按描述修改',
+    aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+    api: 'fal' as const,
+    requiresImage: true,
   },
   'doubao': {
     id: 'doubao',
@@ -54,6 +51,7 @@ const MODELS = {
     credits: 3,
     description: '豆包图片生成，性价比高',
     aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+    api: 'yunwu' as const,
   },
 };
 
@@ -177,7 +175,7 @@ function ProImageContent() {
 
   // 监听模型切换，清除上传的图片（如果切换到不需要图片的模型）
   useEffect(() => {
-    if (selectedModel !== 'sdxl' && selectedModel !== 'doubao') {
+    if (selectedModel !== 'sdxl' && selectedModel !== 'doubao' && selectedModel !== 'flux-kontext') {
       setUploadedImage(null);
     }
   }, [selectedModel]);
@@ -229,8 +227,8 @@ function ProImageContent() {
       return;
     }
 
-    // 检查必须上传图片的模型是否上传了图片（只有 SDXL 必须上传）
-    if (selectedModel === 'sdxl' && !uploadedImage) {
+    // 检查必须上传图片的模型是否上传了图片（SDXL 和 flux-kontext 必须上传）
+    if ((selectedModel === 'sdxl' || selectedModel === 'flux-kontext') && !uploadedImage) {
       setError('该模型需要上传一张图片');
       return;
     }
@@ -267,7 +265,17 @@ function ProImageContent() {
         requestBody.imageBase64 = uploadedImage;
       }
 
-      const response = await fetch('/api/image/yunwu/generate', {
+      // 根据模型选择不同的 API 接口
+      const apiEndpoint = currentModel.api === 'fal'
+        ? '/api/image/fal/generate'
+        : '/api/image/yunwu/generate';
+
+      // flux-kontext 需要传图片
+      if (selectedModel === 'flux-kontext' && uploadedImage) {
+        requestBody.imageBase64 = uploadedImage;
+      }
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -292,7 +300,7 @@ function ProImageContent() {
 
       setPrompt('');
       // 生成成功后清除上传的图片
-      if (selectedModel === 'sdxl' || selectedModel === 'doubao') {
+      if (selectedModel === 'sdxl' || selectedModel === 'doubao' || selectedModel === 'flux-kontext') {
         setUploadedImage(null);
       }
     } catch (err: any) {
@@ -486,6 +494,8 @@ function ProImageContent() {
               <h2 className="text-lg font-bold mb-4">
                 {selectedModel === 'sdxl'
                   ? '图片描述（图生图）'
+                  : selectedModel === 'flux-kontext'
+                  ? '图片描述（图生图）'
                   : selectedModel === 'doubao' && uploadedImage
                   ? '图片描述（图生图）'
                   : selectedModel === 'doubao' && !uploadedImage
@@ -499,11 +509,11 @@ function ProImageContent() {
                 </div>
               )}
 
-              {/* 图片上传区域（SDXL 和豆包模型显示） */}
-              {(selectedModel === 'sdxl' || selectedModel === 'doubao') && (
+              {/* 图片上传区域（SDXL、豆包、flux-kontext 模型显示） */}
+              {(selectedModel === 'sdxl' || selectedModel === 'doubao' || selectedModel === 'flux-kontext') && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    上传基础图片 {selectedModel === 'sdxl' && <span className="text-red-500">*</span>}
+                    上传基础图片 {(selectedModel === 'sdxl' || selectedModel === 'flux-kontext') && <span className="text-red-500">*</span>}
                     {selectedModel === 'doubao' && <span className="text-gray-400 text-xs ml-1">（可选，支持文生图和图生图）</span>}
                   </label>
 
@@ -549,6 +559,8 @@ function ProImageContent() {
                   <p className="text-xs text-gray-500 mt-2">
                     💡 提示：{selectedModel === 'sdxl'
                       ? '上传一张图片，AI 会根据你的描述修改这张图片'
+                      : selectedModel === 'flux-kontext'
+                      ? '上传一张图片，AI 会根据你的描述编辑这张图片'
                       : '可选择上传图片进行图生图，或直接输入描述进行文生图'}
                   </p>
                 </div>
@@ -560,6 +572,8 @@ function ProImageContent() {
                 placeholder={
                   selectedModel === 'sdxl'
                     ? "描述你想要如何修改这张图片，例如：把猫咪变成狗狗，保持其他不变..."
+                    : selectedModel === 'flux-kontext'
+                    ? "描述你想要如何编辑这张图片，例如：把背景换成海滩，保持人物不变..."
                     : selectedModel === 'doubao' && uploadedImage
                     ? "描述你想要如何修改这张图片，例如：把猫咪变成狗狗，保持其他不变..."
                     : selectedModel === 'doubao' && !uploadedImage
