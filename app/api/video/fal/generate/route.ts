@@ -82,9 +82,9 @@ const FAL_MODELS: Record<string, ModelConfig> = {
     endpoint: 'fal-ai/veo3.1/fast',
     mode: 't2v',
     perSecPricing: {
-      '720p':  { noAudio: m(0.69),  audio: m(1.035) },
-      '1080p': { noAudio: m(0.69),  audio: m(1.035) },
-      '4k':    { noAudio: m(2.07),  audio: m(2.415) },
+      '720p':  { noAudio: m(0.69),   audio: m(1.035) },
+      '1080p': { noAudio: m(0.69),   audio: m(1.035) },
+      '4k':    { noAudio: m(2.07),   audio: m(2.415) },
     },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
@@ -97,9 +97,9 @@ const FAL_MODELS: Record<string, ModelConfig> = {
     endpoint: 'fal-ai/veo3.1/fast/image-to-video',
     mode: 'i2v',
     perSecPricing: {
-      '720p':  { noAudio: m(0.69),  audio: m(1.035) },
-      '1080p': { noAudio: m(0.69),  audio: m(1.035) },
-      '4k':    { noAudio: m(2.07),  audio: m(2.415) },
+      '720p':  { noAudio: m(0.69),   audio: m(1.035) },
+      '1080p': { noAudio: m(0.69),   audio: m(1.035) },
+      '4k':    { noAudio: m(2.07),   audio: m(2.415) },
     },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
@@ -113,9 +113,9 @@ const FAL_MODELS: Record<string, ModelConfig> = {
     endpoint: 'fal-ai/veo3.1/fast/first-last-frame-to-video',
     mode: 'firstLastFrame',
     perSecPricing: {
-      '720p':  { noAudio: m(0.69),  audio: m(1.035) },
-      '1080p': { noAudio: m(0.69),  audio: m(1.035) },
-      '4k':    { noAudio: m(2.07),  audio: m(2.415) },
+      '720p':  { noAudio: m(0.69),   audio: m(1.035) },
+      '1080p': { noAudio: m(0.69),   audio: m(1.035) },
+      '4k':    { noAudio: m(2.07),   audio: m(2.415) },
     },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
@@ -161,7 +161,7 @@ const FAL_MODELS: Record<string, ModelConfig> = {
     imageParamName: 'image_url',
     audioBuiltIn: true,
   },
-  // Kling：无音频 / 有音频两档
+  // Kling v2.6 pro：无音频 / 有音频两档
   'kling2.6-i2v': {
     name: 'Kling 2.6 图生视频',
     endpoint: 'fal-ai/kling-video/v2.6/pro/image-to-video',
@@ -171,6 +171,24 @@ const FAL_MODELS: Record<string, ModelConfig> = {
     },
     durations: [5, 10],
     aspectRatios: [],
+    resolutions: [],
+    defaultResolution: '',
+    durationFormat: 'number',
+    supportsEndFrame: true,
+    supportsAudio: true,
+    imageParamName: 'start_image_url',
+    endImageParamName: 'end_image_url',
+  },
+  // Kling v3 standard：无音频 / 有音频两档
+  'kling3-std-i2v': {
+    name: 'Kling 3 Standard 图生视频',
+    endpoint: 'fal-ai/kling-video/v3/standard/image-to-video',
+    mode: 'i2v',
+    perSecPricing: {
+      'default': { noAudio: m(1.1592), audio: m(1.7388) },
+    },
+    durations: [5, 10],
+    aspectRatios: ['16:9', '9:16', '1:1'],
     resolutions: [],
     defaultResolution: '',
     durationFormat: 'number',
@@ -305,7 +323,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 模型特定参数
-    if (model === 'kling2.6-i2v') {
+    if (model === 'kling2.6-i2v' || model === 'kling3-std-i2v') {
       input.negative_prompt = 'blur, distort, and low quality';
     } else if (model === 'ovi-i2v') {
       input.negative_prompt = 'jitter, bad hands, blur, distortion';

@@ -138,6 +138,20 @@ const MODELS = [
     desc: 'Kling 2.6，支持首尾帧控制和音频生成'
   },
   {
+    id: 'kling3-std-i2v',
+    name: 'Kling 3 Standard 图生视频',
+    provider: 'Kling',
+    tags: ['首尾帧', '音频', '图生视频'],
+    perSecPricing: { 'default': { noAudio: m(1.1592), audio: m(1.7388) } } as PerSecPricing,
+    features: { t2v: false, i2v: true, startFrame: true, endFrame: true },
+    duration: { fixed: [5, 10] },
+    aspectRatios: ['16:9', '9:16', '1:1'],
+    resolutions: [],
+    supportsAudio: true,
+    audioBuiltIn: false,
+    desc: 'Kling 3 Standard，支持首尾帧控制和音频生成'
+  },
+  {
     id: 'ovi-i2v',
     name: 'Ovi 图生视频',
     provider: 'Ovi',
