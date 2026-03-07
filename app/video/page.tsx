@@ -15,22 +15,28 @@ import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
 
 // --- Mock Data & Constants ---
 
-// 定价：baseCostPerSec 为 fal.ai 成本，markupNormal/markupPremium 为加价
+// 定价规则：会员价 = 成本 + 0.4×秒，普通价 = 成本 + 0.6×秒
+// Wan 自带音频不区分，Ovi 按次计费
+type PerSecEntry = { normal: number; premium: number };
+type PerSecPricing = Record<string, { noAudio: PerSecEntry; audio?: PerSecEntry }>;
+
+function m(cost: number): PerSecEntry {
+  return { normal: cost + 0.6, premium: cost + 0.4 };
+}
+
 const MODELS = [
   {
     id: 'veo3.1-t2v',
     name: 'Veo 3.1 文生视频',
     provider: 'Google',
     tags: ['4K', '音频', '文生视频'],
-    baseCostPerSec: 0.50,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: { '720p': { noAudio: m(1.38), audio: m(2.76) }, '1080p': { noAudio: m(1.38), audio: m(2.76) }, '4k': { noAudio: m(2.76), audio: m(4.14) } } as PerSecPricing,
     features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
     duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
+    audioBuiltIn: false,
     desc: 'Google 最新模型，4K 超清，支持音频生成'
   },
   {
@@ -38,15 +44,13 @@ const MODELS = [
     name: 'Veo 3.1 图生视频',
     provider: 'Google',
     tags: ['4K', '音频', '图生视频'],
-    baseCostPerSec: 0.50,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: { '720p': { noAudio: m(1.38), audio: m(2.76) }, '1080p': { noAudio: m(1.38), audio: m(2.76) }, '4k': { noAudio: m(2.76), audio: m(4.14) } } as PerSecPricing,
     features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
     duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
+    audioBuiltIn: false,
     desc: 'Veo 3.1 图生视频，支持首帧控制'
   },
   {
@@ -54,15 +58,13 @@ const MODELS = [
     name: 'Veo 3.1 Fast 文生视频',
     provider: 'Google',
     tags: ['4K', '快速', '文生视频'],
-    baseCostPerSec: 0.40,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: { '720p': { noAudio: m(0.69), audio: m(1.035) }, '1080p': { noAudio: m(0.69), audio: m(1.035) }, '4k': { noAudio: m(2.07), audio: m(2.415) } } as PerSecPricing,
     features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
     duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
+    audioBuiltIn: false,
     desc: 'Veo 3.1 快速版文生视频，速度更快'
   },
   {
@@ -70,130 +72,113 @@ const MODELS = [
     name: 'Veo 3.1 Fast 图生视频',
     provider: 'Google',
     tags: ['4K', '快速', '图生视频'],
-    baseCostPerSec: 0.40,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: { '720p': { noAudio: m(0.69), audio: m(1.035) }, '1080p': { noAudio: m(0.69), audio: m(1.035) }, '4k': { noAudio: m(2.07), audio: m(2.415) } } as PerSecPricing,
     features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
     duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
+    audioBuiltIn: false,
     desc: 'Veo 3.1 快速版图生视频'
-  },
-  {
-    id: 'veo3.1-extend',
-    name: 'Veo 3.1 延长视频',
-    provider: 'Google',
-    tags: ['延长视频', '音频'],
-    baseCostPerSec: 0.35,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
-    features: { t2v: false, i2v: false, startFrame: false, endFrame: false, extend: true },
-    duration: { fixed: [7] },
-    aspectRatios: ['16:9', '9:16'],
-    resolutions: ['720p', '1080p'],
-    supportsAudio: true,
-    desc: '延长现有视频，保持连贯性'
   },
   {
     id: 'veo3.1-first-last',
     name: 'Veo 3.1 首尾帧',
     provider: 'Google',
     tags: ['4K', '首尾帧', '音频'],
-    baseCostPerSec: 0.50,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: { '720p': { noAudio: m(0.69), audio: m(1.035) }, '1080p': { noAudio: m(0.69), audio: m(1.035) }, '4k': { noAudio: m(2.07), audio: m(2.415) } } as PerSecPricing,
     features: { t2v: false, i2v: false, startFrame: true, endFrame: true, firstLastFrame: true },
     duration: { fixed: [4, 6, 8] },
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     supportsAudio: true,
+    audioBuiltIn: false,
     desc: '支持首尾帧控制，精确控制视频起止画面'
   },
   {
     id: 'wan2.5-t2v',
     name: 'Wan 2.5 文生视频',
     provider: 'Wan',
-    tags: ['1080p', '文生视频'],
-    baseCostPerSec: 0.20,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    tags: ['1080p', '文生视频', '自带音频'],
+    perSecPricing: { '480p': { noAudio: m(0.345) }, '720p': { noAudio: m(0.69) }, '1080p': { noAudio: m(1.035) } } as PerSecPricing,
     features: { t2v: true, i2v: false, startFrame: false, endFrame: false },
     duration: { fixed: [5, 10] },
     aspectRatios: ['16:9', '9:16', '1:1'],
     resolutions: ['480p', '720p', '1080p'],
     supportsAudio: false,
-    desc: 'Wan 2.5 文生视频，性价比高'
+    audioBuiltIn: true,
+    desc: 'Wan 2.5 文生视频，自带音频，性价比高'
   },
   {
     id: 'wan2.5-i2v',
     name: 'Wan 2.5 图生视频',
     provider: 'Wan',
-    tags: ['1080p', '图生视频'],
-    baseCostPerSec: 0.20,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    tags: ['1080p', '图生视频', '自带音频'],
+    perSecPricing: { '480p': { noAudio: m(0.345) }, '720p': { noAudio: m(0.69) }, '1080p': { noAudio: m(1.035) } } as PerSecPricing,
     features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
     duration: { fixed: [5, 10] },
     aspectRatios: [],
     resolutions: ['480p', '720p', '1080p'],
     supportsAudio: false,
-    desc: 'Wan 2.5 图生视频，性价比高'
+    audioBuiltIn: true,
+    desc: 'Wan 2.5 图生视频，自带音频，性价比高'
   },
   {
     id: 'kling2.6-i2v',
     name: 'Kling 2.6 图生视频',
     provider: 'Kling',
     tags: ['首尾帧', '音频', '图生视频'],
-    baseCostPerSec: 0.30,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: { 'default': { noAudio: m(0.483), audio: m(0.966) } } as PerSecPricing,
     features: { t2v: false, i2v: true, startFrame: true, endFrame: true },
     duration: { fixed: [5, 10] },
     aspectRatios: [],
     resolutions: [],
     supportsAudio: true,
+    audioBuiltIn: false,
     desc: 'Kling 2.6，支持首尾帧控制和音频生成'
   },
   {
     id: 'ovi-i2v',
     name: 'Ovi 图生视频',
     provider: 'Ovi',
-    tags: ['音频', '创意', '图生视频'],
-    baseCostPerSec: 0.20,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 2.0,
+    tags: ['音频', '创意', '图生视频', '按次计费'],
+    flatPricing: { normal: 1.98, premium: 1.78 } as PerSecEntry,
     features: { t2v: false, i2v: true, startFrame: true, endFrame: false },
     duration: { fixed: [] },
     aspectRatios: [],
     resolutions: [],
-    supportsAudio: true,
-    desc: '支持视频和音频同步生成，创意内容首选'
+    supportsAudio: false,
+    audioBuiltIn: true,
+    desc: '支持视频和音频同步生成，按次计费'
   },
-]
+];
 
 // 计算本次费用
 function calcCost(
   model: typeof MODELS[0],
+  resolution: string,
   duration: number | null,
   generateAudio: boolean,
   isPremium: boolean
 ): number {
-  const markup = isPremium ? model.markupPremium : model.markupNormal;
-  const pricePerSec = model.baseCostPerSec + markup;
-  const effectiveDuration = duration || (model.duration.fixed[0] ?? 5);
-  let cost = parseFloat((pricePerSec * effectiveDuration).toFixed(2));
-  if (generateAudio && model.supportsAudio && model.audioExtra > 0) {
-    cost = parseFloat((cost + model.audioExtra).toFixed(2));
+  const userType = isPremium ? 'premium' : 'normal';
+
+  // 按次计费（Ovi）
+  if ('flatPricing' in model && model.flatPricing) {
+    return parseFloat((model.flatPricing as PerSecEntry)[userType].toFixed(2));
   }
-  return cost;
+
+  if (!('perSecPricing' in model) || !model.perSecPricing) return 0;
+
+  const table = model.perSecPricing as PerSecPricing;
+  const res = resolution || (model.resolutions[0] ?? '');
+  const entry = table[res] ?? table['default'];
+  if (!entry) return 0;
+
+  const useAudio = !model.audioBuiltIn && generateAudio && model.supportsAudio;
+  const priceEntry = (useAudio && entry.audio) ? entry.audio : entry.noAudio;
+  const dur = duration ?? (model.duration.fixed[0] as number | undefined) ?? 5;
+  return parseFloat((priceEntry[userType] * dur).toFixed(2));
 }
 
 const ASPECT_RATIOS = [
@@ -428,7 +413,7 @@ export default function VideoPage() {
   // --- Handlers ---
   const handleGenerate = async () => {
     if (prompt.trim().length === 0) return;
-    const currentCost = calcCost(selectedModel, duration, generateAudio, isPremium);
+    const currentCost = calcCost(selectedModel, resolution, duration, generateAudio, isPremium);
     if (videoCredits < currentCost) {
       setShowRechargeModal(true);
       return;
@@ -877,7 +862,7 @@ export default function VideoPage() {
   // Reset settings when model changes
   useEffect(() => {
     // Reset aspect ratio if not supported
-    if (selectedModel.aspectRatios.length > 0 && !selectedModel.aspectRatios.includes(aspectRatio)) {
+    if (selectedModel.aspectRatios.length > 0 && !(selectedModel.aspectRatios as string[]).includes(aspectRatio)) {
       setAspectRatio(selectedModel.aspectRatios[0]);
     }
     // Reset duration
@@ -1129,7 +1114,7 @@ export default function VideoPage() {
                               </div>
                               <div className="flex items-center gap-1 text-xs text-purple-400 font-medium ml-2">
                                 <Zap size={10} />
-                                ¥{calcCost(model, model.duration.fixed[0] || null, false, isPremium).toFixed(2)}起
+                                ¥{calcCost(model, model.resolutions[0] ?? '', model.duration.fixed[0] ?? null, false, isPremium).toFixed(2)}起
                               </div>
                             </button>
                           ))}
@@ -1144,11 +1129,11 @@ export default function VideoPage() {
                   {selectedModel.features.t2v && <Badge type="default">文生视频</Badge>}
                   {selectedModel.features.i2v && <Badge type="default">图生视频</Badge>}
                   {(selectedModel.features.firstLastFrame || selectedModel.features.endFrame) && <Badge type="primary">首尾帧</Badge>}
-                  {selectedModel.features.extend && <Badge type="primary">延长视频</Badge>}
                   {selectedModel.supportsAudio && <Badge type="success">音频</Badge>}
+                  {'audioBuiltIn' in selectedModel && selectedModel.audioBuiltIn && <Badge type="success">自带音频</Badge>}
                   <span className="text-xs text-zinc-600 flex items-center gap-1 ml-auto">
                     <Zap size={12} className="text-amber-500" />
-                    ¥{(selectedModel.baseCostPerSec + (isPremium ? selectedModel.markupPremium : selectedModel.markupNormal)).toFixed(2)}/秒
+                    ¥{calcCost(selectedModel, resolution, duration, generateAudio, isPremium).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -1308,7 +1293,7 @@ export default function VideoPage() {
                 <span className="text-xs text-zinc-500">画面比例</span>
                 <div className="grid grid-cols-4 gap-2">
                   {ASPECT_RATIOS.map((ratio) => {
-                    const isSupported = selectedModel.aspectRatios.includes(ratio.value);
+                    const isSupported = (selectedModel.aspectRatios as string[]).includes(ratio.value);
                     return (
                       <button
                         key={ratio.value}
@@ -1407,7 +1392,7 @@ export default function VideoPage() {
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-xs text-zinc-500">本次费用</span>
               <span className="text-sm font-bold text-purple-400">
-                ¥{calcCost(selectedModel, duration, generateAudio, isPremium).toFixed(2)}
+                ¥{calcCost(selectedModel, resolution, duration, generateAudio, isPremium).toFixed(2)}
               </span>
             </div>
             <button
@@ -1432,7 +1417,7 @@ export default function VideoPage() {
                   <Sparkles size={18} className={prompt ? "animate-pulse" : ""} />
                   <span>立即生成</span>
                   <span className="ml-1 text-[10px] font-bold opacity-80 bg-black/10 px-1.5 py-0.5 rounded">
-                    -¥{calcCost(selectedModel, duration, generateAudio, isPremium).toFixed(2)}
+                    -¥{calcCost(selectedModel, resolution, duration, generateAudio, isPremium).toFixed(2)}
                   </span>
                 </div>
               )}
@@ -1849,7 +1834,7 @@ export default function VideoPage() {
                       当前余额: <span className="text-purple-400 font-medium">¥{videoCredits.toFixed(2)}</span>
                    </p>
                    <p className="text-sm text-zinc-500 mt-1">
-                      本次需要: <span className="text-red-400 font-medium">¥{calcCost(selectedModel, duration, generateAudio, isPremium).toFixed(2)}</span>
+                      本次需要: <span className="text-red-400 font-medium">¥{calcCost(selectedModel, resolution, duration, generateAudio, isPremium).toFixed(2)}</span>
                    </p>
                 </div>
 

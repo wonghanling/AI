@@ -11,55 +11,65 @@ fal.config({
   credentials: process.env.FAL_KEY!,
 });
 
-// 定价结构：普通用户加价 0.6元/秒，会员加价 0.4元/秒
-// baseCostPerSec: fal.ai 实际成本（元/秒）
-// markupNormal: 普通用户加价（元/秒）
-// markupPremium: 会员加价（元/秒）
-// audioExtra: 开启音频时额外加价（元/次，固定）
-const FAL_MODELS: Record<string, {
+// 定价规则：会员价 = 成本 + 0.4×秒，普通价 = 成本 + 0.6×秒
+// Wan 自带音频不区分，Ovi 按次计费
+
+type UserType = 'normal' | 'premium';
+type PerSecEntry = { normal: number; premium: number };
+type PerSecPricing = Record<string, {
+  noAudio: PerSecEntry;
+  audio?: PerSecEntry;
+}>;
+
+type ModelConfig = {
   name: string;
   endpoint: string;
-  mode: 'i2v' | 't2v' | 'extend' | 'firstLastFrame';
-  baseCostPerSec: number;
-  markupNormal: number;
-  markupPremium: number;
-  audioExtra: number;
+  mode: 'i2v' | 't2v' | 'firstLastFrame';
+  perSecPricing?: PerSecPricing;
+  flatPricing?: PerSecEntry;   // Ovi 按次
   durations: number[];
   aspectRatios: string[];
   resolutions: string[];
   defaultResolution: string;
   supportsEndFrame?: boolean;
-  supportsAudio?: boolean;
+  supportsAudio?: boolean;     // 有音频开关
+  audioBuiltIn?: boolean;      // 自带音频，不需要选择（Wan、Ovi）
   supportsDuration?: boolean;
   durationFormat?: 'seconds' | 'number';
   i2vNoAspectRatio?: boolean;
   imageParamName?: string;
   endImageParamName?: string;
-}> = {
-  // 1. Veo 3.1 文生视频
+};
+
+function m(cost: number): PerSecEntry {
+  return { normal: cost + 0.6, premium: cost + 0.4 };
+}
+
+const FAL_MODELS: Record<string, ModelConfig> = {
   'veo3.1-t2v': {
     name: 'Veo 3.1 文生视频',
     endpoint: 'fal-ai/veo3.1',
     mode: 't2v',
-    baseCostPerSec: 0.50,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      '720p':  { noAudio: m(1.38),  audio: m(2.76) },
+      '1080p': { noAudio: m(1.38),  audio: m(2.76) },
+      '4k':    { noAudio: m(2.76),  audio: m(4.14) },
+    },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     defaultResolution: '720p',
     supportsAudio: true,
   },
-  // 2. Veo 3.1 图生视频
   'veo3.1-i2v': {
     name: 'Veo 3.1 图生视频',
     endpoint: 'fal-ai/veo3.1/image-to-video',
     mode: 'i2v',
-    baseCostPerSec: 0.50,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      '720p':  { noAudio: m(1.38),  audio: m(2.76) },
+      '1080p': { noAudio: m(1.38),  audio: m(2.76) },
+      '4k':    { noAudio: m(2.76),  audio: m(4.14) },
+    },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
@@ -67,30 +77,30 @@ const FAL_MODELS: Record<string, {
     supportsAudio: true,
     imageParamName: 'image_url',
   },
-  // 3. Veo 3.1 Fast 文生视频
   'veo3.1-fast-t2v': {
     name: 'Veo 3.1 Fast 文生视频',
     endpoint: 'fal-ai/veo3.1/fast',
     mode: 't2v',
-    baseCostPerSec: 0.40,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      '720p':  { noAudio: m(0.69),  audio: m(1.035) },
+      '1080p': { noAudio: m(0.69),  audio: m(1.035) },
+      '4k':    { noAudio: m(2.07),  audio: m(2.415) },
+    },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
     defaultResolution: '720p',
     supportsAudio: true,
   },
-  // 4. Veo 3.1 Fast 图生视频
   'veo3.1-fast-i2v': {
     name: 'Veo 3.1 Fast 图生视频',
     endpoint: 'fal-ai/veo3.1/fast/image-to-video',
     mode: 'i2v',
-    baseCostPerSec: 0.40,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      '720p':  { noAudio: m(0.69),  audio: m(1.035) },
+      '1080p': { noAudio: m(0.69),  audio: m(1.035) },
+      '4k':    { noAudio: m(2.07),  audio: m(2.415) },
+    },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
@@ -98,30 +108,15 @@ const FAL_MODELS: Record<string, {
     supportsAudio: true,
     imageParamName: 'image_url',
   },
-  // 5. Veo 3.1 延长视频
-  'veo3.1-extend': {
-    name: 'Veo 3.1 延长视频',
-    endpoint: 'fal-ai/veo3.1/fast/extend-video',
-    mode: 'extend',
-    baseCostPerSec: 0.35,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
-    durations: [7],
-    aspectRatios: ['16:9', '9:16'],
-    resolutions: ['720p', '1080p'],
-    defaultResolution: '720p',
-    supportsAudio: true,
-  },
-  // 6. Veo 3.1 首尾帧
   'veo3.1-first-last': {
     name: 'Veo 3.1 首尾帧',
     endpoint: 'fal-ai/veo3.1/fast/first-last-frame-to-video',
     mode: 'firstLastFrame',
-    baseCostPerSec: 0.50,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      '720p':  { noAudio: m(0.69),  audio: m(1.035) },
+      '1080p': { noAudio: m(0.69),  audio: m(1.035) },
+      '4k':    { noAudio: m(2.07),  audio: m(2.415) },
+    },
     durations: [4, 6, 8],
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p', '1080p', '4k'],
@@ -131,30 +126,32 @@ const FAL_MODELS: Record<string, {
     imageParamName: 'first_frame_url',
     endImageParamName: 'last_frame_url',
   },
-  // 7. Wan 2.5 文生视频
+  // Wan 自带音频，不区分，用 noAudio 价格
   'wan2.5-t2v': {
     name: 'Wan 2.5 文生视频',
     endpoint: 'fal-ai/wan-25-preview/text-to-video',
     mode: 't2v',
-    baseCostPerSec: 0.20,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      '480p':  { noAudio: m(0.345) },
+      '720p':  { noAudio: m(0.69) },
+      '1080p': { noAudio: m(1.035) },
+    },
     durations: [5, 10],
     aspectRatios: ['16:9', '9:16', '1:1'],
     resolutions: ['480p', '720p', '1080p'],
     defaultResolution: '1080p',
     durationFormat: 'number',
+    audioBuiltIn: true,
   },
-  // 8. Wan 2.5 图生视频
   'wan2.5-i2v': {
     name: 'Wan 2.5 图生视频',
     endpoint: 'fal-ai/wan-25-preview/image-to-video',
     mode: 'i2v',
-    baseCostPerSec: 0.20,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      '480p':  { noAudio: m(0.345) },
+      '720p':  { noAudio: m(0.69) },
+      '1080p': { noAudio: m(1.035) },
+    },
     durations: [5, 10],
     aspectRatios: [],
     resolutions: ['480p', '720p', '1080p'],
@@ -162,16 +159,16 @@ const FAL_MODELS: Record<string, {
     durationFormat: 'number',
     i2vNoAspectRatio: true,
     imageParamName: 'image_url',
+    audioBuiltIn: true,
   },
-  // 9. Kling 2.6 图生视频
+  // Kling：无音频 / 有音频两档
   'kling2.6-i2v': {
     name: 'Kling 2.6 图生视频',
     endpoint: 'fal-ai/kling-video/v2.6/pro/image-to-video',
     mode: 'i2v',
-    baseCostPerSec: 0.30,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 0,
+    perSecPricing: {
+      'default': { noAudio: m(0.483), audio: m(0.966) },
+    },
     durations: [5, 10],
     aspectRatios: [],
     resolutions: [],
@@ -182,40 +179,46 @@ const FAL_MODELS: Record<string, {
     imageParamName: 'start_image_url',
     endImageParamName: 'end_image_url',
   },
-  // 10. Ovi 图生视频
+  // Ovi：按次计费，自带音频
   'ovi-i2v': {
     name: 'Ovi 图生视频',
     endpoint: 'fal-ai/ovi/image-to-video',
     mode: 'i2v',
-    baseCostPerSec: 0.20,
-    markupNormal: 0.60,
-    markupPremium: 0.40,
-    audioExtra: 2.0, // 音频额外收费
+    flatPricing: { normal: 1.98, premium: 1.78 },
     durations: [],
     aspectRatios: [],
     resolutions: [],
     defaultResolution: '',
-    supportsAudio: true,
     supportsDuration: false,
     imageParamName: 'image_url',
+    audioBuiltIn: true,
   },
 };
 
-// 计算本次费用
 function calcCost(
-  model: typeof FAL_MODELS[string],
+  model: ModelConfig,
+  resolution: string,
   duration: number,
   generateAudio: boolean,
-  isPremium: boolean
+  userType: UserType
 ): number {
-  const markup = isPremium ? model.markupPremium : model.markupNormal;
-  const pricePerSec = model.baseCostPerSec + markup;
-  const effectiveDuration = duration || (model.durations[0] ?? 5);
-  let cost = parseFloat((pricePerSec * effectiveDuration).toFixed(2));
-  if (generateAudio && model.supportsAudio && model.audioExtra > 0) {
-    cost = parseFloat((cost + model.audioExtra).toFixed(2));
+  // 按次计费（Ovi）
+  if (model.flatPricing) {
+    return parseFloat(model.flatPricing[userType].toFixed(2));
   }
-  return cost;
+
+  if (!model.perSecPricing) return 0;
+
+  const res = resolution || model.defaultResolution;
+  const entry = model.perSecPricing[res] ?? model.perSecPricing['default'];
+  if (!entry) return 0;
+
+  // 自带音频不区分，始终用 noAudio 价格
+  const useAudio = !model.audioBuiltIn && generateAudio && model.supportsAudio;
+  const priceEntry = (useAudio && entry.audio) ? entry.audio : entry.noAudio;
+
+  const dur = duration || (model.durations[0] ?? 5);
+  return parseFloat((priceEntry[userType] * dur).toFixed(2));
 }
 
 export async function POST(req: NextRequest) {
@@ -228,17 +231,7 @@ export async function POST(req: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: '无效的认证令牌' }, { status: 401 });
 
     const body = await req.json();
-    const {
-      model,
-      prompt,
-      duration,
-      aspectRatio,
-      resolution,
-      imageUrl,
-      endImageUrl,
-      videoUrl,
-      generateAudio,
-    } = body;
+    const { model, prompt, duration, aspectRatio, resolution, imageUrl, endImageUrl, generateAudio } = body;
 
     if (!model || !prompt) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
@@ -247,7 +240,6 @@ export async function POST(req: NextRequest) {
     const modelConfig = FAL_MODELS[model];
     if (!modelConfig) return NextResponse.json({ error: '无效的模型' }, { status: 400 });
 
-    // 查询用户余额和类型
     const { data: userData } = await supabaseAdmin
       .from('users')
       .select('video_credits, user_type')
@@ -256,10 +248,11 @@ export async function POST(req: NextRequest) {
 
     const videoCredits = parseFloat(userData?.video_credits || '0');
     const isPremium = userData?.user_type === 'premium';
+    const userType: UserType = isPremium ? 'premium' : 'normal';
 
-    // 计算本次费用
+    const effectiveResolution = resolution || modelConfig.defaultResolution;
     const effectiveDuration = duration || (modelConfig.durations[0] ?? 5);
-    const cost = calcCost(modelConfig, effectiveDuration, !!generateAudio, isPremium);
+    const cost = calcCost(modelConfig, effectiveResolution, effectiveDuration, !!generateAudio, userType);
 
     if (videoCredits < cost) {
       return NextResponse.json({
@@ -267,7 +260,6 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    // 构建 fal.ai 请求参数
     const endpoint = modelConfig.endpoint;
     const mode = modelConfig.mode;
     let input: Record<string, any> = { prompt };
@@ -292,7 +284,7 @@ export async function POST(req: NextRequest) {
 
     // resolution
     if (modelConfig.resolutions.length > 0) {
-      input.resolution = resolution || modelConfig.defaultResolution;
+      input.resolution = effectiveResolution;
     }
 
     // 图片参数
@@ -302,23 +294,14 @@ export async function POST(req: NextRequest) {
       }
       const imageParam = modelConfig.imageParamName || 'image_url';
       input[imageParam] = imageUrl;
-
       if (endImageUrl && modelConfig.supportsEndFrame && modelConfig.endImageParamName) {
         input[modelConfig.endImageParamName] = endImageUrl;
       }
     }
 
-    // 视频参数（extend）
-    if (mode === 'extend') {
-      if (!videoUrl) {
-        return NextResponse.json({ error: '缺少视频 URL' }, { status: 400 });
-      }
-      input.video_url = videoUrl;
-    }
-
-    // 音频参数
-    if (modelConfig.supportsAudio && generateAudio !== undefined) {
-      input.generate_audio = generateAudio;
+    // 音频参数（自带音频的模型不传 generate_audio）
+    if (modelConfig.supportsAudio && !modelConfig.audioBuiltIn) {
+      input.generate_audio = !!generateAudio;
     }
 
     // 模型特定参数
@@ -335,17 +318,14 @@ export async function POST(req: NextRequest) {
       input.safety_tolerance = '4';
     }
 
-    // 提交任务到 fal.ai（异步）
     const { request_id } = await fal.queue.submit(endpoint, { input });
 
-    // 生成成功后扣除费用
     const newBalance = parseFloat((videoCredits - cost).toFixed(2));
     await supabaseAdmin
       .from('users')
       .update({ video_credits: newBalance })
       .eq('id', user.id);
 
-    // 保存记录
     const { data: videoRecord } = await supabaseAdmin
       .from('video_generations')
       .insert({
@@ -358,7 +338,7 @@ export async function POST(req: NextRequest) {
         cost_credits: cost,
         task_id: request_id,
         progress: 0,
-        metadata: { mode, endpoint, imageUrl, endImageUrl, videoUrl, resolution, isPremium, cost },
+        metadata: { mode, endpoint, imageUrl, endImageUrl, resolution: effectiveResolution, isPremium, cost },
       })
       .select()
       .single();
