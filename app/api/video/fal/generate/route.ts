@@ -340,7 +340,19 @@ export async function POST(req: NextRequest) {
     console.log('endpoint:', endpoint);
     console.log('input:', JSON.stringify(input, null, 2));
 
-    const { request_id } = await fal.queue.submit(endpoint, { input });
+    let request_id: string;
+    try {
+      const submitResult = await fal.queue.submit(endpoint, { input });
+      request_id = submitResult.request_id;
+    } catch (falError: any) {
+      console.error('fal.queue.submit 错误:', JSON.stringify(falError));
+      return NextResponse.json({
+        error: falError?.message || 'fal 提交失败',
+        detail: falError?.body || falError?.cause || String(falError),
+        endpoint,
+        input,
+      }, { status: 500 });
+    }
 
     const newBalance = parseFloat((videoCredits - cost).toFixed(2));
     await supabaseAdmin
