@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { fal } from '@fal-ai/client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-fal.config({
-  credentials: process.env.FAL_KEY!,
-});
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +23,6 @@ export async function GET(request: NextRequest) {
 
     let endpoint = '';
 
-    // 如果有 recordId，从数据库获取 endpoint
     if (recordId && recordId !== 'undefined') {
       const { data: record } = await supabase
         .from('video_generations')
@@ -39,7 +33,6 @@ export async function GET(request: NextRequest) {
       endpoint = record?.metadata?.endpoint || '';
     }
 
-    // 如果没有 endpoint，尝试用 taskId 查
     if (!endpoint) {
       const { data: record } = await supabase
         .from('video_generations')
@@ -54,43 +47,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
     }
 
-    // fal SDK 的 queue.status 只需要 owner/alias，不需要完整路径
-    // 例如 fal-ai/wan-25-preview/image-to-video → fal-ai/wan-25-preview
-    const endpointParts = endpoint.split('/');
-    const falAppId = endpointParts.slice(0, 2).join('/'); // 只取前两段
+    // 直接用 fal REST API，避免 SDK 路径解析问题
+    const statusRes = await fetch(
+      `https://queue.fal.run/${endpoint}/requests/${taskId}/status`,
+      { headers: { 'Authorization': `Key ${process.env.FAL_KEY}` } }
+    );
 
-    console.log('查询 fal.ai 状态:', { endpoint, falAppId, taskId });
-
-    // 查询 fal.ai 任务状态
-    let statusResult;
-    try {
-      statusResult = await fal.queue.status(falAppId, {
-        requestId: taskId,
-        logs: false,
-      });
-    } catch (falError: any) {
-      console.error('fal.queue.status 错误:', JSON.stringify(falError));
-      const detail = falError?.body || falError?.cause || falError?.status || falError?.message || String(falError);
-      return NextResponse.json({ error: 'fal 查询失败', detail, endpoint, falAppId, taskId }, { status: 500 });
+    if (!statusRes.ok) {
+      const errText = await statusRes.text();
+      console.error('fal status 错误:', statusRes.status, errText);
+      return NextResponse.json({ error: `fal 查询失败: ${statusRes.status}`, detail: errText }, { status: 500 });
     }
 
-    console.log('fal.ai 状态:', statusResult.status);
+    const statusData = await statusRes.json();
+    console.log('fal 状态:', statusData.status);
 
     let status = 'processing';
     let progress = 30;
     let videoUrl: string | null = null;
 
-    if (statusResult.status === 'COMPLETED') {
-      const result = await fal.queue.result(falAppId, { requestId: taskId });
-      const data = result.data as any;
-      videoUrl = data?.video?.url || data?.video_url || data?.url || null;
+    if (statusData.status === 'COMPLETED') {
+      const resultRes = await fetch(
+        `https://queue.fal.run/${endpoint}/requests/${taskId}`,
+        { headers: { 'Authorization': `Key ${process.env.FAL_KEY}` } }
+      );
+      if (resultRes.ok) {
+        const data = await resultRes.json();
+        videoUrl = data?.video?.url || data?.video_url || data?.url || null;
+        console.log('视频URL:', videoUrl);
+      }
       status = videoUrl ? 'completed' : 'failed';
       progress = videoUrl ? 100 : 0;
-      console.log('视频URL:', videoUrl);
-    } else if (statusResult.status === 'IN_QUEUE') {
+    } else if (statusData.status === 'IN_QUEUE') {
       status = 'pending';
       progress = 10;
-    } else if (statusResult.status === 'IN_PROGRESS') {
+    } else if (statusData.status === 'IN_PROGRESS') {
       status = 'processing';
       progress = 50;
     } else {
@@ -98,7 +89,6 @@ export async function GET(request: NextRequest) {
       progress = 0;
     }
 
-    // 更新数据库
     const updateData: any = { status, progress };
     if (videoUrl) {
       updateData.video_url = videoUrl;
@@ -114,13 +104,7 @@ export async function GET(request: NextRequest) {
       .eq('id', recordId)
       .eq('user_id', user.id);
 
-    return NextResponse.json({
-      success: true,
-      taskId,
-      status,
-      progress,
-      videoUrl,
-    });
+    return NextResponse.json({ success: true, taskId, status, progress, videoUrl });
 
   } catch (error: any) {
     console.error('查询视频状态错误:', error);
