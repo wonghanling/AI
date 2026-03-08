@@ -54,11 +54,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
     }
 
+    console.log('查询 fal.ai 状态:', { endpoint, taskId });
+
     // 查询 fal.ai 任务状态
-    const statusResult = await fal.queue.status(endpoint, {
-      requestId: taskId,
-      logs: false,
-    });
+    let statusResult;
+    try {
+      statusResult = await fal.queue.status(endpoint, {
+        requestId: taskId,
+        logs: false,
+      });
+    } catch (falError: any) {
+      console.error('fal.queue.status 错误:', falError?.message, falError?.body);
+      return NextResponse.json({ error: falError?.message || 'fal 查询失败' }, { status: 500 });
+    }
 
     console.log('fal.ai 状态:', statusResult.status);
 
