@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { fal } from '@fal-ai/client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+fal.config({ credentials: process.env.FAL_KEY! });
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,9 +50,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
     }
 
-    // 直接用 fal REST API，避免 SDK 路径解析问题
+    // fal REST API：appId 只取前两段（owner/alias），子路径不放在 URL 里
+    const appId = endpoint.split('/').slice(0, 2).join('/');
+
     const statusRes = await fetch(
-      `https://queue.fal.run/${endpoint}/requests/${taskId}/status`,
+      `https://queue.fal.run/${appId}/requests/${taskId}/status`,
       { headers: { 'Authorization': `Key ${process.env.FAL_KEY}` } }
     );
 
@@ -68,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     if (statusData.status === 'COMPLETED') {
       const resultRes = await fetch(
-        `https://queue.fal.run/${endpoint}/requests/${taskId}`,
+        `https://queue.fal.run/${appId}/requests/${taskId}`,
         { headers: { 'Authorization': `Key ${process.env.FAL_KEY}` } }
       );
       if (resultRes.ok) {
