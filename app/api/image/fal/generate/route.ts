@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fal } from '@fal-ai/client';
+import { uploadToStorage } from '@/lib/storage-upload';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -80,6 +81,14 @@ export async function POST(req: NextRequest) {
     }
     const imageUrl = images[0].url;
 
+    // 上传到 Supabase Storage 获取永久 URL
+    let permanentUrl = imageUrl;
+    try {
+      permanentUrl = await uploadToStorage(user.id, imageUrl, 'image');
+    } catch (uploadErr) {
+      console.warn('上传 Storage 失败，使用原始 URL:', uploadErr);
+    }
+
     // 检查历史记录数量，达到 50 张则清空
     const { count: historyCount } = await supabaseAdmin
       .from('image_generations')
@@ -97,7 +106,7 @@ export async function POST(req: NextRequest) {
         user_id: user.id,
         model,
         prompt,
-        image_url: imageUrl,
+        image_url: permanentUrl,
         size: aspectRatio,
         cost_credits: modelConfig.cost,
         status: 'completed',
@@ -113,7 +122,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      images: [{ url: imageUrl, id: imageRecord?.id, prompt }],
+      images: [{ url: permanentUrl, id: imageRecord?.id, prompt }],
       remainingBalance: newCredits,
       cost: modelConfig.cost,
     });

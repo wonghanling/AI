@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fal } from '@fal-ai/client';
+import { uploadToStorage } from '@/lib/storage-upload';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,6 +50,12 @@ export async function GET(req: NextRequest) {
       videoUrl = data?.video?.url || data?.video_url || data?.url || null;
 
       if (videoUrl) {
+        // 上传到 Supabase Storage 获取永久 URL
+        try {
+          videoUrl = await uploadToStorage(user.id, videoUrl, 'video');
+        } catch (uploadErr) {
+          console.warn('视频上传 Storage 失败，使用原始 URL:', uploadErr);
+        }
         status = 'completed';
         progress = 100;
       } else {

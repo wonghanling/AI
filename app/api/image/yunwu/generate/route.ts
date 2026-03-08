@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { uploadToStorage } from '@/lib/storage-upload';
 
 // 初始化 Supabase 客户端（使用 service role key）
 const supabaseAdmin = createClient(
@@ -449,17 +450,25 @@ export async function POST(req: NextRequest) {
     // 8. 保存生成记录（每张图片一条记录）
     const imageRecords: any[] = [];
     for (const imageUrl of generatedImages) {
+      // 上传到 Supabase Storage 获取永久 URL
+      let permanentUrl = imageUrl;
+      try {
+        permanentUrl = await uploadToStorage(user.id, imageUrl, 'image');
+      } catch (uploadErr) {
+        console.warn('上传 Storage 失败，使用原始 URL:', uploadErr);
+      }
+
       const { data: imageRecord, error: insertError } = await supabaseAdmin
         .from('image_generations')
         .insert({
           user_id: user.id,
           model: model,
           prompt: prompt,
-          image_url: imageUrl,
+          image_url: permanentUrl,
           size: aspectRatio,
           cost_credits: creditsPerImage,
           status: 'completed',
-          api_source: 'pro', // 标记来源为专业版
+          api_source: 'pro',
           created_at: new Date().toISOString(),
         })
         .select()
@@ -468,7 +477,7 @@ export async function POST(req: NextRequest) {
       if (insertError) {
         console.error('Failed to save image record:', insertError);
       } else {
-        imageRecords.push(imageRecord);
+        imageRecords.push({ ...imageRecord, permanentUrl });
       }
     }
 
@@ -481,9 +490,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      images: generatedImages.map((url, i) => ({
-        url,
-        id: imageRecords[i]?.id,
+      images: imageRecords.map((r, i) => ({
+        url: r.permanentUrl || generatedImages[i],
+        id: r?.id,
         prompt: prompt,
       })),
       model: model,
