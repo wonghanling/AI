@@ -54,19 +54,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
     }
 
-    console.log('查询 fal.ai 状态:', { endpoint, taskId });
+    // fal SDK 的 queue.status 只需要 owner/alias，不需要完整路径
+    // 例如 fal-ai/wan-25-preview/image-to-video → fal-ai/wan-25-preview
+    const endpointParts = endpoint.split('/');
+    const falAppId = endpointParts.slice(0, 2).join('/'); // 只取前两段
+
+    console.log('查询 fal.ai 状态:', { endpoint, falAppId, taskId });
 
     // 查询 fal.ai 任务状态
     let statusResult;
     try {
-      statusResult = await fal.queue.status(endpoint, {
+      statusResult = await fal.queue.status(falAppId, {
         requestId: taskId,
         logs: false,
       });
     } catch (falError: any) {
       console.error('fal.queue.status 错误:', JSON.stringify(falError));
       const detail = falError?.body || falError?.cause || falError?.status || falError?.message || String(falError);
-      return NextResponse.json({ error: 'fal 查询失败', detail, endpoint, taskId }, { status: 500 });
+      return NextResponse.json({ error: 'fal 查询失败', detail, endpoint, falAppId, taskId }, { status: 500 });
     }
 
     console.log('fal.ai 状态:', statusResult.status);
@@ -76,7 +81,7 @@ export async function GET(request: NextRequest) {
     let videoUrl: string | null = null;
 
     if (statusResult.status === 'COMPLETED') {
-      const result = await fal.queue.result(endpoint, { requestId: taskId });
+      const result = await fal.queue.result(falAppId, { requestId: taskId });
       const data = result.data as any;
       videoUrl = data?.video?.url || data?.video_url || data?.url || null;
       status = videoUrl ? 'completed' : 'failed';
