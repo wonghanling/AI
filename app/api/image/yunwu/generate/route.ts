@@ -16,40 +16,25 @@ const IMAGE_MODELS: Record<string, {
   yunwuModel: string;
   cost: number;
   apiType: 'chat' | 'midjourney' | 'replicate' | 'image-generation';
-  requiresImage?: boolean; // 是否必须上传图片
-  supportsImage?: boolean; // 是否支持上传图片（可选）
+  requiresImage?: boolean;
+  supportsImage?: boolean;
 }> = {
   'stability-ai/sdxl': {
     yunwuModel: 'stability-ai/stable-diffusion-img2img',
     cost: 3,
     apiType: 'replicate',
-    requiresImage: true, // 必须上传图片（图生图）
+    requiresImage: true,
   },
   'mj_imagine': {
     yunwuModel: 'midjourney',
     cost: 6,
     apiType: 'midjourney',
   },
-  'flux.1.1-pro': {
-    yunwuModel: 'flux.1.1-pro',
-    cost: 10,
-    apiType: 'image-generation',
-  },
-  'flux-pro': {
-    yunwuModel: 'flux-pro',
-    cost: 6,
-    apiType: 'image-generation',
-  },
-  'flux-schnell': {
-    yunwuModel: 'flux-schnell',
-    cost: 3,
-    apiType: 'image-generation',
-  },
   'doubao-seedream-4-5-251128': {
     yunwuModel: 'doubao-seedream-4-5-251128',
     cost: 3,
     apiType: 'image-generation',
-    supportsImage: true, // 支持图片（可选），既可以文生图也可以图生图
+    supportsImage: true,
   },
 };
 
