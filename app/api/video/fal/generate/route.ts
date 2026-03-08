@@ -336,6 +336,10 @@ export async function POST(req: NextRequest) {
       input.safety_tolerance = '4';
     }
 
+    console.log('=== fal.ai 提交参数 ===');
+    console.log('endpoint:', endpoint);
+    console.log('input:', JSON.stringify(input, null, 2));
+
     const { request_id } = await fal.queue.submit(endpoint, { input });
 
     const newBalance = parseFloat((videoCredits - cost).toFixed(2));
