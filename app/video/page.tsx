@@ -503,7 +503,7 @@ export default function VideoPage() {
   };
 
   // 轮询视频生成状态（使用指数退避策略减少请求）
-  const pollVideoStatus = async (taskId: string, recordId: string) => {
+  const pollVideoStatus = (taskId: string, recordId: string) => {
     const maxAttempts = 100; // 最多轮询100次（约15-20分钟）
     const maxRetries = 3; // 每次请求最多重试3次
     let attempts = 0;
