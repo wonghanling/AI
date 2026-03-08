@@ -64,8 +64,9 @@ export async function GET(request: NextRequest) {
         logs: false,
       });
     } catch (falError: any) {
-      console.error('fal.queue.status 错误:', falError?.message, falError?.body);
-      return NextResponse.json({ error: falError?.message || 'fal 查询失败' }, { status: 500 });
+      console.error('fal.queue.status 错误:', JSON.stringify(falError));
+      const detail = falError?.body || falError?.cause || falError?.status || falError?.message || String(falError);
+      return NextResponse.json({ error: 'fal 查询失败', detail, endpoint, taskId }, { status: 500 });
     }
 
     console.log('fal.ai 状态:', statusResult.status);
