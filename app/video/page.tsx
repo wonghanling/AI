@@ -480,6 +480,10 @@ export default function VideoPage() {
       }
 
       console.log('✅ 视频生成请求成功:', data);
+      console.log('taskId:', data.taskId, 'recordId:', data.recordId);
+      if (!data.recordId) {
+        console.error('❌ recordId 为空，数据库插入可能失败');
+      }
 
       // 更新余额
       setVideoCredits(parseFloat(data.remainingCredits || '0'));

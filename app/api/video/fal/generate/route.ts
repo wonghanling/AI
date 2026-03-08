@@ -360,7 +360,7 @@ export async function POST(req: NextRequest) {
       .update({ video_credits: newBalance })
       .eq('id', user.id);
 
-    const { data: videoRecord } = await supabaseAdmin
+    const { data: videoRecord, error: insertError } = await supabaseAdmin
       .from('video_generations')
       .insert({
         user_id: user.id,
@@ -377,6 +377,11 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single();
+
+    if (insertError) {
+      console.error('数据库插入失败:', insertError);
+      return NextResponse.json({ error: '数据库插入失败', detail: insertError.message }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
