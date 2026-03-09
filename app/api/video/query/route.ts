@@ -96,6 +96,26 @@ export async function GET(request: NextRequest) {
 
     const updateData: any = { status, progress };
     if (videoUrl) {
+      // 下载视频并上传到 Supabase Storage
+      try {
+        const videoRes = await fetch(videoUrl);
+        if (videoRes.ok) {
+          const videoBlob = await videoRes.blob();
+          const filename = `videos/${user.id}/${Date.now()}.mp4`;
+          const { error: uploadError } = await supabase.storage
+            .from('assets')
+            .upload(filename, videoBlob, { contentType: 'video/mp4', upsert: false });
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage.from('assets').getPublicUrl(filename);
+            videoUrl = publicUrlData.publicUrl;
+            console.log('视频已上传到 Storage:', videoUrl);
+          }
+        }
+      } catch (err) {
+        console.error('上传视频到 Storage 失败:', err);
+      }
+
       updateData.video_url = videoUrl;
       updateData.completed_at = new Date().toISOString();
     }
