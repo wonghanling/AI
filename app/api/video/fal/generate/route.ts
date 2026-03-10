@@ -508,6 +508,21 @@ export async function POST(req: NextRequest) {
     let request_id: string;
     let taskEndpoint: string;
 
+    // 将 base64 data URL 上传到 Storage，返回公开 HTTP URL
+    const toPublicUrl = async (url: string): Promise<string> => {
+      if (!url || !url.startsWith('data:')) return url;
+      const match = url.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (!match) return url;
+      const mimeType = match[1];
+      const ext = mimeType.split('/')[1] || 'jpg';
+      const buffer = Buffer.from(match[2], 'base64');
+      const filename = `frames/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabaseAdmin.storage.from('assets').upload(filename, buffer, { contentType: mimeType, upsert: false });
+      if (error) throw new Error(`上传帧图片失败: ${error.message}`);
+      const { data } = supabaseAdmin.storage.from('assets').getPublicUrl(filename);
+      return data.publicUrl;
+    };
+
     if (modelConfig.provider === 'jimeng') {
       // 即梦 火山引擎
       const jmBody: Record<string, unknown> = {
@@ -517,10 +532,10 @@ export async function POST(req: NextRequest) {
       };
       if (effectiveDuration) jmBody.frames = Number(effectiveDuration) === 10 ? 241 : 121;
       if (modelConfig.mode === 't2v' && aspectRatio) jmBody.aspect_ratio = aspectRatio;
-      if (modelConfig.mode === 'i2v' && imageUrl) jmBody.image_urls = [imageUrl];
+      if (modelConfig.mode === 'i2v' && imageUrl) jmBody.image_urls = [await toPublicUrl(imageUrl)];
       if (modelConfig.mode === 'firstLastFrame') {
         if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
-        jmBody.image_urls = [imageUrl, endImageUrl];
+        jmBody.image_urls = [await toPublicUrl(imageUrl), await toPublicUrl(endImageUrl)];
       }
       if (modelConfig.supportsCamera) {
         jmBody.template_id = 'dynamic_orbit';
