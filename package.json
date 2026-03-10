@@ -13,6 +13,7 @@
     "@fal-ai/client": "^1.9.4",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.90.1",
+    "@volcengine/openapi": "^1.36.0",
     "alipay-sdk": "^4.14.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.562.0",

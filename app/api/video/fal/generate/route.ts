@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fal } from '@fal-ai/client';
+import { Service } from '@volcengine/openapi';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +11,15 @@ const supabaseAdmin = createClient(
 fal.config({
   credentials: process.env.FAL_KEY!,
 });
+
+const volcService = new Service({
+  host: 'visual.volcengineapi.com',
+  region: 'cn-north-1',
+  serviceName: 'cv',
+  accessKeyId: process.env.VOLC_ACCESS_KEY_ID!,
+  secretKey: process.env.VOLC_SECRET_ACCESS_KEY!,
+});
+const jimengSubmit = volcService.createJSONAPI('CVSync2AsyncSubmitTask', { Version: '2022-08-31' });
 
 // 定价规则：会员价 = 成本 + 0.4×秒，普通价 = 成本 + 0.6×秒
 // Wan 自带音频不区分，Ovi 按次计费
@@ -25,15 +35,19 @@ type ModelConfig = {
   name: string;
   endpoint: string;
   mode: 'i2v' | 't2v' | 'firstLastFrame';
+  provider?: 'fal' | 'dashscope' | 'jimeng';
+  dashscopeModel?: string;
+  jimengReqKey?: string;
+  supportsCamera?: boolean;
   perSecPricing?: PerSecPricing;
-  flatPricing?: PerSecEntry;   // Ovi 按次
+  flatPricing?: PerSecEntry;
   durations: number[];
   aspectRatios: string[];
   resolutions: string[];
   defaultResolution: string;
   supportsEndFrame?: boolean;
-  supportsAudio?: boolean;     // 有音频开关
-  audioBuiltIn?: boolean;      // 自带音频，不需要选择（Wan、Ovi）
+  supportsAudio?: boolean;
+  audioBuiltIn?: boolean;
   supportsDuration?: boolean;
   durationFormat?: 'seconds' | 'number';
   i2vNoAspectRatio?: boolean;
@@ -126,76 +140,233 @@ const FAL_MODELS: Record<string, ModelConfig> = {
     imageParamName: 'first_frame_url',
     endImageParamName: 'last_frame_url',
   },
-  // Wan 自带音频，不区分，用 noAudio 价格
-  'wan2.5-t2v': {
-    name: 'Wan 2.5 文生视频',
-    endpoint: 'fal-ai/wan-25-preview/text-to-video',
+  // Wan DashScope 系列
+  'wan2.6-t2v': {
+    name: 'Wan 2.6 文生视频',
+    endpoint: 'dashscope',
+    provider: 'dashscope',
+    dashscopeModel: 'wan2.6-t2v',
     mode: 't2v',
-    perSecPricing: {
-      '480p':  { noAudio: m(0.345) },
-      '720p':  { noAudio: m(0.69) },
-      '1080p': { noAudio: m(1.035) },
-    },
+    perSecPricing: { '720P': { noAudio: m(0) }, '1080P': { noAudio: m(0) } },
     durations: [5, 10],
     aspectRatios: ['16:9', '9:16', '1:1'],
-    resolutions: ['480p', '720p', '1080p'],
-    defaultResolution: '1080p',
+    resolutions: ['720P', '1080P'],
+    defaultResolution: '720P',
     durationFormat: 'number',
-    audioBuiltIn: true,
+    supportsAudio: true,
+    audioBuiltIn: false,
   },
-  'wan2.5-i2v': {
-    name: 'Wan 2.5 图生视频',
-    endpoint: 'fal-ai/wan-25-preview/image-to-video',
+  'wan2.5-t2v-preview': {
+    name: 'Wan 2.5 文生视频',
+    endpoint: 'dashscope',
+    provider: 'dashscope',
+    dashscopeModel: 'wan2.5-t2v-preview',
+    mode: 't2v',
+    perSecPricing: { '480P': { noAudio: m(0) }, '720P': { noAudio: m(0) }, '1080P': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: ['16:9', '9:16', '1:1'],
+    resolutions: ['480P', '720P', '1080P'],
+    defaultResolution: '720P',
+    durationFormat: 'number',
+    supportsAudio: true,
+    audioBuiltIn: false,
+  },
+  'wan2.6-i2v': {
+    name: 'Wan 2.6 图生视频',
+    endpoint: 'dashscope',
+    provider: 'dashscope',
+    dashscopeModel: 'wan2.6-i2v',
     mode: 'i2v',
-    perSecPricing: {
-      '480p':  { noAudio: m(0.345) },
-      '720p':  { noAudio: m(0.69) },
-      '1080p': { noAudio: m(1.035) },
-    },
+    perSecPricing: { '720P': { noAudio: m(0) }, '1080P': { noAudio: m(0) } },
+    durations: [5, 10, 15],
+    aspectRatios: [],
+    resolutions: ['720P', '1080P'],
+    defaultResolution: '720P',
+    durationFormat: 'number',
+    i2vNoAspectRatio: true,
+    imageParamName: 'img_url',
+    supportsAudio: true,
+    audioBuiltIn: false,
+  },
+  'wan2.6-i2v-flash': {
+    name: 'Wan 2.6 图生视频 Flash',
+    endpoint: 'dashscope',
+    provider: 'dashscope',
+    dashscopeModel: 'wan2.6-i2v-flash',
+    mode: 'i2v',
+    perSecPricing: { '720P': { noAudio: m(0) }, '1080P': { noAudio: m(0) } },
+    durations: [5, 10, 15],
+    aspectRatios: [],
+    resolutions: ['720P', '1080P'],
+    defaultResolution: '720P',
+    durationFormat: 'number',
+    i2vNoAspectRatio: true,
+    imageParamName: 'img_url',
+    supportsAudio: true,
+    audioBuiltIn: false,
+  },
+  'wan2.5-i2v-preview': {
+    name: 'Wan 2.5 图生视频',
+    endpoint: 'dashscope',
+    provider: 'dashscope',
+    dashscopeModel: 'wan2.5-i2v-preview',
+    mode: 'i2v',
+    perSecPricing: { '480P': { noAudio: m(0) }, '720P': { noAudio: m(0) }, '1080P': { noAudio: m(0) } },
     durations: [5, 10],
     aspectRatios: [],
-    resolutions: ['480p', '720p', '1080p'],
+    resolutions: ['480P', '720P', '1080P'],
+    defaultResolution: '720P',
+    durationFormat: 'number',
+    i2vNoAspectRatio: true,
+    imageParamName: 'img_url',
+    supportsAudio: true,
+    audioBuiltIn: false,
+  },
+  'wan2.2-kf2v-flash': {
+    name: 'Wan 2.2 首尾帧视频',
+    endpoint: 'dashscope',
+    provider: 'dashscope',
+    dashscopeModel: 'wan2.2-kf2v-flash',
+    mode: 'firstLastFrame',
+    perSecPricing: { '480P': { noAudio: m(0) }, '720P': { noAudio: m(0) }, '1080P': { noAudio: m(0) } },
+    durations: [5],
+    aspectRatios: [],
+    resolutions: ['480P', '720P', '1080P'],
+    defaultResolution: '720P',
+    durationFormat: 'number',
+    i2vNoAspectRatio: true,
+    supportsEndFrame: true,
+    imageParamName: 'img_url',
+    endImageParamName: 'img_url_last',
+  },
+  // 即梦 3.0 Pro（1080P）
+  'jimeng-pro-t2v': {
+    name: '即梦 3.0 Pro 文生视频',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_ti2v_v30_pro',
+    mode: 't2v',
+    perSecPricing: { '1080p': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+    resolutions: ['1080p'],
+    defaultResolution: '1080p',
+    durationFormat: 'number',
+  },
+  'jimeng-pro-i2v': {
+    name: '即梦 3.0 Pro 图生视频',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_ti2v_v30_pro',
+    mode: 'i2v',
+    perSecPricing: { '1080p': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: [],
+    resolutions: ['1080p'],
     defaultResolution: '1080p',
     durationFormat: 'number',
     i2vNoAspectRatio: true,
-    imageParamName: 'image_url',
-    audioBuiltIn: true,
   },
-  // Kling v2.6 pro：无音频 / 有音频两档
-  'kling2.6-i2v': {
-    name: 'Kling 2.6 图生视频',
-    endpoint: 'fal-ai/kling-video/v2.6/pro/image-to-video',
+  // 即梦 3.0 720P
+  'jimeng-t2v': {
+    name: '即梦 3.0 文生视频 720P',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_t2v_v30',
+    mode: 't2v',
+    perSecPricing: { '720p': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+    resolutions: ['720p'],
+    defaultResolution: '720p',
+    durationFormat: 'number',
+  },
+  'jimeng-i2v': {
+    name: '即梦 3.0 图生视频首帧 720P',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_i2v_first_v30',
     mode: 'i2v',
-    perSecPricing: {
-      'default': { noAudio: m(0.483), audio: m(0.966) },
-    },
+    perSecPricing: { '720p': { noAudio: m(0) } },
     durations: [5, 10],
     aspectRatios: [],
-    resolutions: [],
-    defaultResolution: '',
+    resolutions: ['720p'],
+    defaultResolution: '720p',
     durationFormat: 'number',
-    supportsEndFrame: true,
-    supportsAudio: true,
-    imageParamName: 'start_image_url',
-    endImageParamName: 'end_image_url',
+    i2vNoAspectRatio: true,
   },
-  // Kling v3 standard：无音频 / 有音频两档
-  'kling3-std-i2v': {
-    name: 'Kling 3 Standard 图生视频',
-    endpoint: 'fal-ai/kling-video/v3/standard/image-to-video',
-    mode: 'i2v',
-    perSecPricing: {
-      'default': { noAudio: m(1.1592), audio: m(1.7388) },
-    },
+  'jimeng-first-last': {
+    name: '即梦 3.0 首尾帧 720P',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_i2v_first_tail_v30',
+    mode: 'firstLastFrame',
+    perSecPricing: { '720p': { noAudio: m(0) } },
     durations: [5, 10],
-    aspectRatios: ['16:9', '9:16', '1:1'],
-    resolutions: [],
-    defaultResolution: '',
+    aspectRatios: [],
+    resolutions: ['720p'],
+    defaultResolution: '720p',
     durationFormat: 'number',
+    i2vNoAspectRatio: true,
     supportsEndFrame: true,
-    supportsAudio: true,
-    imageParamName: 'start_image_url',
-    endImageParamName: 'end_image_url',
+  },
+  'jimeng-camera': {
+    name: '即梦 3.0 运镜 720P',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_i2v_recamera_v30',
+    mode: 'i2v',
+    perSecPricing: { '720p': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: [],
+    resolutions: ['720p'],
+    defaultResolution: '720p',
+    durationFormat: 'number',
+    i2vNoAspectRatio: true,
+    supportsCamera: true,
+  },
+  // 即梦 3.0 1080P
+  'jimeng-1080-t2v': {
+    name: '即梦 3.0 文生视频 1080P',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_t2v_v30_1080p',
+    mode: 't2v',
+    perSecPricing: { '1080p': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+    resolutions: ['1080p'],
+    defaultResolution: '1080p',
+    durationFormat: 'number',
+  },
+  'jimeng-1080-i2v': {
+    name: '即梦 3.0 图生视频首帧 1080P',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_i2v_first_v30_1080',
+    mode: 'i2v',
+    perSecPricing: { '1080p': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: [],
+    resolutions: ['1080p'],
+    defaultResolution: '1080p',
+    durationFormat: 'number',
+    i2vNoAspectRatio: true,
+  },
+  'jimeng-1080-first-last': {
+    name: '即梦 3.0 首尾帧 1080P',
+    endpoint: 'jimeng',
+    provider: 'jimeng',
+    jimengReqKey: 'jimeng_i2v_first_tail_v30_1080',
+    mode: 'firstLastFrame',
+    perSecPricing: { '1080p': { noAudio: m(0) } },
+    durations: [5, 10],
+    aspectRatios: [],
+    resolutions: ['1080p'],
+    defaultResolution: '1080p',
+    durationFormat: 'number',
+    i2vNoAspectRatio: true,
+    supportsEndFrame: true,
   },
   // Ovi：按次计费，自带音频
   'ovi-i2v': {
@@ -323,35 +494,96 @@ export async function POST(req: NextRequest) {
     }
 
     // 模型特定参数
-    if (model === 'kling2.6-i2v' || model === 'kling3-std-i2v') {
-      input.negative_prompt = 'blur, distort, and low quality';
-    } else if (model === 'ovi-i2v') {
+    if (model === 'ovi-i2v') {
       input.negative_prompt = 'jitter, bad hands, blur, distortion';
       input.audio_negative_prompt = 'robotic, muffled, echo, distorted';
       input.num_inference_steps = 30;
-    } else if (model.startsWith('wan2.5')) {
+    } else if (model.startsWith('wan2.5') && modelConfig.provider !== 'dashscope') {
       input.enable_prompt_expansion = true;
       input.enable_safety_checker = true;
     } else if (model.startsWith('veo3.1')) {
       input.safety_tolerance = '4';
     }
 
-    console.log('=== fal.ai 提交参数 ===');
-    console.log('endpoint:', endpoint);
-    console.log('input:', JSON.stringify(input, null, 2));
-
     let request_id: string;
-    try {
-      const submitResult = await fal.queue.submit(endpoint, { input });
-      request_id = submitResult.request_id;
-    } catch (falError: any) {
-      console.error('fal.queue.submit 错误:', JSON.stringify(falError));
-      return NextResponse.json({
-        error: falError?.message || 'fal 提交失败',
-        detail: falError?.body || falError?.cause || String(falError),
-        endpoint,
-        input,
-      }, { status: 500 });
+    let taskEndpoint: string;
+
+    if (modelConfig.provider === 'jimeng') {
+      // 即梦 火山引擎
+      const jmBody: Record<string, unknown> = {
+        req_key: modelConfig.jimengReqKey,
+        prompt,
+        seed: -1,
+      };
+      if (effectiveDuration) jmBody.frames = Number(effectiveDuration) === 10 ? 241 : 121;
+      if (modelConfig.mode === 't2v' && aspectRatio) jmBody.aspect_ratio = aspectRatio;
+      if (modelConfig.mode === 'i2v' && imageUrl) jmBody.image_urls = [imageUrl];
+      if (modelConfig.mode === 'firstLastFrame') {
+        if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
+        jmBody.image_urls = [imageUrl, endImageUrl];
+      }
+      if (modelConfig.supportsCamera) {
+        jmBody.template_id = 'dynamic_orbit';
+        jmBody.camera_strength = 'medium';
+      }
+
+      const jmRes = await jimengSubmit(jmBody) as any;
+      if (jmRes?.code !== 10000) throw new Error(`即梦提交失败: ${jmRes?.message || JSON.stringify(jmRes)}`);
+      request_id = jmRes?.data?.task_id;
+      if (!request_id) throw new Error(`即梦未返回 task_id: ${JSON.stringify(jmRes)}`);
+      taskEndpoint = `jimeng:${modelConfig.jimengReqKey}`;
+
+    } else if (modelConfig.provider === 'dashscope') {
+      // DashScope Wan 系列
+      const DASHSCOPE_KEY = process.env.DASHSCOPE_API_KEY!;
+      const dsInput: Record<string, unknown> = { prompt };
+      const dsParams: Record<string, unknown> = { prompt_extend: true };
+
+      if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
+        dsInput[modelConfig.imageParamName] = imageUrl;
+      }
+      if (modelConfig.mode === 'firstLastFrame') {
+        if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
+        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = imageUrl;
+        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = endImageUrl;
+      }
+      if (effectiveDuration) dsParams.duration = Number(effectiveDuration);
+      if (effectiveResolution) dsParams.resolution = effectiveResolution;
+      if (modelConfig.dashscopeModel?.startsWith('wan2.6')) {
+        dsParams.audio = !!generateAudio;
+      }
+
+      const dsRes = await fetch(
+        'https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${DASHSCOPE_KEY}`,
+            'Content-Type': 'application/json',
+            'X-DashScope-Async': 'enable',
+          },
+          body: JSON.stringify({ model: modelConfig.dashscopeModel, input: dsInput, parameters: dsParams }),
+        }
+      );
+      if (!dsRes.ok) throw new Error(`DashScope 提交失败: ${await dsRes.text()}`);
+      const dsData = await dsRes.json();
+      request_id = dsData.output?.task_id;
+      if (!request_id) throw new Error(`DashScope 未返回 task_id: ${JSON.stringify(dsData)}`);
+      taskEndpoint = `dashscope:${modelConfig.dashscopeModel}`;
+
+    } else {
+      // fal.ai
+      try {
+        const submitResult = await fal.queue.submit(endpoint, { input });
+        request_id = submitResult.request_id;
+      } catch (falError: any) {
+        console.error('fal.queue.submit 错误:', JSON.stringify(falError));
+        return NextResponse.json({
+          error: falError?.message || 'fal 提交失败',
+          detail: falError?.body || falError?.cause || String(falError),
+        }, { status: 500 });
+      }
+      taskEndpoint = endpoint;
     }
 
     const newBalance = parseFloat((videoCredits - cost).toFixed(2));
@@ -373,7 +605,7 @@ export async function POST(req: NextRequest) {
         cost_credits: Math.ceil(cost),
         task_id: request_id,
         progress: 0,
-        metadata: { mode, endpoint, imageUrl, endImageUrl, resolution: effectiveResolution, isPremium, cost },
+        metadata: { mode: modelConfig.mode, endpoint: taskEndpoint, imageUrl, endImageUrl, resolution: effectiveResolution, isPremium, cost },
       })
       .select()
       .single();
