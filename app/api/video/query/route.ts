@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fal } from '@fal-ai/client';
+import { uploadToStorage } from '@/lib/storage-upload';
+import { Service } from '@volcengine/openapi';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +10,15 @@ const supabase = createClient(
 );
 
 fal.config({ credentials: process.env.FAL_KEY! });
+
+const volcService = new Service({
+  host: 'visual.volcengineapi.com',
+  region: 'cn-north-1',
+  serviceName: 'cv',
+  accessKeyId: process.env.VOLC_ACCESS_KEY_ID!,
+  secretKey: process.env.VOLC_SECRET_ACCESS_KEY!,
+});
+const jimengQuery = volcService.createJSONAPI('CVSync2AsyncGetResult', { Version: '2022-08-31' });
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,8 +35,8 @@ export async function GET(request: NextRequest) {
 
     if (!taskId) return NextResponse.json({ error: '缺少任务ID' }, { status: 400 });
 
+    // 从数据库获取 endpoint
     let endpoint = '';
-
     if (recordId && recordId !== 'undefined') {
       const { data: record } = await supabase
         .from('video_generations')
@@ -35,7 +46,6 @@ export async function GET(request: NextRequest) {
         .single();
       endpoint = record?.metadata?.endpoint || '';
     }
-
     if (!endpoint) {
       const { data: record } = await supabase
         .from('video_generations')
@@ -45,77 +55,88 @@ export async function GET(request: NextRequest) {
         .single();
       endpoint = record?.metadata?.endpoint || '';
     }
-
     if (!endpoint) {
       return NextResponse.json({ error: '找不到任务信息' }, { status: 404 });
     }
-
-    // fal REST API：appId 只取前两段（owner/alias），子路径不放在 URL 里
-    const appId = endpoint.split('/').slice(0, 2).join('/');
-
-    const statusRes = await fetch(
-      `https://queue.fal.run/${appId}/requests/${taskId}/status`,
-      { headers: { 'Authorization': `Key ${process.env.FAL_KEY}` } }
-    );
-
-    if (!statusRes.ok) {
-      const errText = await statusRes.text();
-      console.error('fal status 错误:', statusRes.status, errText);
-      return NextResponse.json({ error: `fal 查询失败: ${statusRes.status}`, detail: errText }, { status: 500 });
-    }
-
-    const statusData = await statusRes.json();
-    console.log('fal 状态:', statusData.status);
 
     let status = 'processing';
     let progress = 30;
     let videoUrl: string | null = null;
 
-    if (statusData.status === 'COMPLETED') {
-      const resultRes = await fetch(
-        `https://queue.fal.run/${appId}/requests/${taskId}`,
-        { headers: { 'Authorization': `Key ${process.env.FAL_KEY}` } }
-      );
-      if (resultRes.ok) {
-        const data = await resultRes.json();
-        videoUrl = data?.video?.url || data?.video_url || data?.url || null;
-        console.log('视频URL:', videoUrl);
+    if (endpoint.startsWith('jimeng:')) {
+      // 即梦查询
+      const reqKey = endpoint.replace('jimeng:', '');
+      const jmRes = await jimengQuery({ req_key: reqKey, task_id: taskId }) as any;
+      if (jmRes?.code !== 10000) {
+        status = 'failed'; progress = 0;
+      } else {
+        const jmStatus = jmRes?.data?.status;
+        if (jmStatus === 'done') {
+          videoUrl = jmRes?.data?.video_url || null;
+          status = videoUrl ? 'completed' : 'failed';
+          progress = videoUrl ? 100 : 0;
+        } else if (jmStatus === 'in_queue') {
+          status = 'pending'; progress = 10;
+        } else if (jmStatus === 'generating') {
+          status = 'processing'; progress = 50;
+        } else {
+          status = 'failed'; progress = 0;
+        }
       }
-      status = videoUrl ? 'completed' : 'failed';
-      progress = videoUrl ? 100 : 0;
-    } else if (statusData.status === 'IN_QUEUE') {
-      status = 'pending';
-      progress = 10;
-    } else if (statusData.status === 'IN_PROGRESS') {
-      status = 'processing';
-      progress = 50;
+
+    } else if (endpoint.startsWith('dashscope:')) {
+      // DashScope 查询
+      const res = await fetch(
+        `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`,
+        { headers: { 'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}` } }
+      );
+      if (!res.ok) {
+        status = 'failed'; progress = 0;
+      } else {
+        const data = await res.json();
+        const taskStatus = data?.output?.task_status;
+        if (taskStatus === 'SUCCEEDED') {
+          videoUrl = data?.output?.video_url || null;
+          status = videoUrl ? 'completed' : 'failed';
+          progress = videoUrl ? 100 : 0;
+        } else if (taskStatus === 'PENDING') {
+          status = 'pending'; progress = 10;
+        } else if (taskStatus === 'RUNNING') {
+          status = 'processing'; progress = 50;
+        } else {
+          status = 'failed'; progress = 0;
+        }
+      }
+
     } else {
-      status = 'failed';
-      progress = 0;
+      // fal.ai 查询
+      const statusResult = await fal.queue.status(endpoint, { requestId: taskId, logs: false });
+      if (statusResult.status === 'COMPLETED') {
+        const result = await fal.queue.result(endpoint, { requestId: taskId });
+        const data = result.data as any;
+        videoUrl = data?.video?.url || data?.video_url || data?.url || null;
+        status = videoUrl ? 'completed' : 'failed';
+        progress = videoUrl ? 100 : 0;
+      } else if (statusResult.status === 'IN_QUEUE') {
+        status = 'pending'; progress = 10;
+      } else if (statusResult.status === 'IN_PROGRESS') {
+        status = 'processing'; progress = 50;
+      } else {
+        status = 'failed'; progress = 0;
+      }
+    }
+
+    // 上传视频到 Storage（videos bucket）
+    if (videoUrl) {
+      try {
+        videoUrl = await uploadToStorage(user.id, videoUrl, 'video');
+      } catch (err) {
+        console.warn('上传视频到 Storage 失败，使用原始 URL:', err);
+      }
     }
 
     const updateData: any = { status, progress };
     if (videoUrl) {
-      // 下载视频并上传到 Supabase Storage
-      try {
-        const videoRes = await fetch(videoUrl);
-        if (videoRes.ok) {
-          const videoBlob = await videoRes.blob();
-          const filename = `videos/${user.id}/${Date.now()}.mp4`;
-          const { error: uploadError } = await supabase.storage
-            .from('assets')
-            .upload(filename, videoBlob, { contentType: 'video/mp4', upsert: false });
-
-          if (!uploadError) {
-            const { data: publicUrlData } = supabase.storage.from('assets').getPublicUrl(filename);
-            videoUrl = publicUrlData.publicUrl;
-            console.log('视频已上传到 Storage:', videoUrl);
-          }
-        }
-      } catch (err) {
-        console.error('上传视频到 Storage 失败:', err);
-      }
-
       updateData.video_url = videoUrl;
       updateData.completed_at = new Date().toISOString();
     }
