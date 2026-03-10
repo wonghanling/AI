@@ -2,5 +2,10 @@
   "crons": [{
     "path": "/api/cron/reset-keys",
     "schedule": "0 0 * * *"
-  }]
+  }],
+  "functions": {
+    "app/api/video/**": {
+      "maxDuration": 60
+    }
+  }
 }
