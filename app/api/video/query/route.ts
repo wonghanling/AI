@@ -68,20 +68,20 @@ export async function GET(request: NextRequest) {
       const reqKey = endpoint.replace('jimeng:', '');
       const jmRes = await jimengQuery({ req_key: reqKey, task_id: taskId }) as any;
       if (jmRes?.code !== 10000) {
-        status = 'failed'; progress = 0;
+        return NextResponse.json({ error: '即梦查询失败', detail: jmRes }, { status: 500 });
+      }
+      const jmStatus = jmRes?.data?.status;
+      if (jmStatus === 'done') {
+        videoUrl = jmRes?.data?.video_url || jmRes?.data?.videos?.[0]?.url || null;
+        status = videoUrl ? 'completed' : 'failed';
+        progress = videoUrl ? 100 : 0;
+        if (!videoUrl) return NextResponse.json({ error: '即梦完成但无视频URL', detail: jmRes?.data }, { status: 500 });
+      } else if (jmStatus === 'in_queue') {
+        status = 'pending'; progress = 10;
+      } else if (jmStatus === 'generating') {
+        status = 'processing'; progress = 50;
       } else {
-        const jmStatus = jmRes?.data?.status;
-        if (jmStatus === 'done') {
-          videoUrl = jmRes?.data?.video_url || null;
-          status = videoUrl ? 'completed' : 'failed';
-          progress = videoUrl ? 100 : 0;
-        } else if (jmStatus === 'in_queue') {
-          status = 'pending'; progress = 10;
-        } else if (jmStatus === 'generating') {
-          status = 'processing'; progress = 50;
-        } else {
-          status = 'failed'; progress = 0;
-        }
+        return NextResponse.json({ error: '即梦未知状态', detail: jmRes?.data }, { status: 500 });
       }
 
     } else if (endpoint.startsWith('dashscope:')) {
