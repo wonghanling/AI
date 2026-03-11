@@ -236,8 +236,8 @@ const FAL_MODELS: Record<string, ModelConfig> = {
     durationFormat: 'number',
     i2vNoAspectRatio: true,
     supportsEndFrame: true,
-    imageParamName: 'img_url',
-    endImageParamName: 'img_url_last',
+    imageParamName: 'first_frame_url',
+    endImageParamName: 'last_frame_url',
   },
   // 即梦 3.0 Pro（1080P）
   'jimeng-pro-t2v': {
