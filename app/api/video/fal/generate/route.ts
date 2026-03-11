@@ -555,12 +555,12 @@ export async function POST(req: NextRequest) {
       const dsParams: Record<string, unknown> = { prompt_extend: true };
 
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
-        dsInput[modelConfig.imageParamName] = imageUrl;
+        dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
       }
       if (modelConfig.mode === 'firstLastFrame') {
         if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
-        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = imageUrl;
-        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = endImageUrl;
+        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
+        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toPublicUrl(endImageUrl);
       }
       if (effectiveDuration) dsParams.duration = Number(effectiveDuration);
       if (effectiveResolution) dsParams.resolution = effectiveResolution;
