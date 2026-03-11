@@ -554,46 +554,13 @@ export async function POST(req: NextRequest) {
       const dsInput: Record<string, unknown> = { prompt };
       const dsParams: Record<string, unknown> = { prompt_extend: true };
 
-      // 上传图片到阿里云百炼临时存储，获取 oss:// 临时 URL
-      const toDashscopeOssUrl = async (url: string): Promise<string> => {
-        const publicUrl = await toPublicUrl(url);
-        const imgRes = await fetch(publicUrl);
-        if (!imgRes.ok) throw new Error(`下载图片失败: ${publicUrl}`);
-        const buffer = Buffer.from(await imgRes.arrayBuffer());
-        const rawMime = imgRes.headers.get('content-type') || 'image/jpeg';
-        const mimeType = rawMime.split(';')[0].trim();
-        const ext = mimeType.split('/')[1] || 'jpg';
-        const fileName = `frame_${Date.now()}.${ext}`;
-
-        // 第一步：multipart/form-data POST /files 获取上传凭证
-        const fileForm = new FormData();
-        fileForm.append('file', new Blob([buffer], { type: mimeType }), fileName);
-        fileForm.append('purpose', 'vision');
-        const policyRes = await fetch(
-          'https://dashscope.aliyuncs.com/api/v1/files',
-          {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${DASHSCOPE_KEY}` },
-            body: fileForm,
-          }
-        );
-        const policyText = await policyRes.text();
-        console.log('百炼 /files 响应:', policyText);
-        if (!policyRes.ok) throw new Error(`获取上传凭证失败: ${policyText}`);
-        const policyData = JSON.parse(policyText);
-        const fileId = policyData.data?.uploaded_files?.[0]?.file_id;
-        console.log('file_id:', fileId, '完整响应:', policyText);
-        if (!fileId) throw new Error(`未获取到 file_id: ${policyText}`);
-        return `fileid://${fileId}`;
-      };
-
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
-        dsInput[modelConfig.imageParamName] = await toDashscopeOssUrl(imageUrl);
+        dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
       }
       if (modelConfig.mode === 'firstLastFrame') {
         if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
-        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toDashscopeOssUrl(imageUrl);
-        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toDashscopeOssUrl(endImageUrl);
+        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
+        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toPublicUrl(endImageUrl);
       }
       if (effectiveDuration) dsParams.duration = Number(effectiveDuration);
       if (effectiveResolution) dsParams.resolution = effectiveResolution;
@@ -601,8 +568,9 @@ export async function POST(req: NextRequest) {
         dsParams.audio = !!generateAudio;
       }
 
+      const dsTask = modelConfig.dashscopeModel?.includes('kf2v') ? 'image2video' : 'video-generation';
       const dsRes = await fetch(
-        'https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis',
+        `https://dashscope.aliyuncs.com/api/v1/services/aigc/${dsTask}/video-synthesis`,
         {
           method: 'POST',
           headers: {
