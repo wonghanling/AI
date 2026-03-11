@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fal } from '@fal-ai/client';
 import { uploadToStorage } from '@/lib/storage-upload';
-import crypto from 'crypto';
+import { Service } from '@volcengine/openapi';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,67 +11,14 @@ const supabase = createClient(
 
 fal.config({ credentials: process.env.FAL_KEY! });
 
-// 火山引擎 HMAC-SHA256 签名查询即梦任务状态（不用 SDK，避免 Vercel 挂起）
-async function queryJimeng(reqKey: string, taskId: string) {
-  const accessKeyId = process.env.VOLC_ACCESS_KEY_ID!;
-  const secretKey = process.env.VOLC_SECRET_ACCESS_KEY!;
-  const host = 'visual.volcengineapi.com';
-  const service = 'cv';
-  const region = 'cn-north-1';
-  const action = 'CVSync2AsyncGetResult';
-  const version = '2022-08-31';
-
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const timeStr = now.toISOString().slice(0, 19).replace(/[-:T]/g, '') + 'Z';
-  const datetime = now.toISOString().slice(0, 19).replace(/[:-]/g, '') + 'Z';
-
-  const body = JSON.stringify({ req_key: reqKey, task_id: taskId });
-  const bodyHash = crypto.createHash('sha256').update(body).digest('hex');
-
-  const canonicalHeaders = `content-type:application/json\nhost:${host}\nx-content-sha256:${bodyHash}\nx-date:${datetime}\n`;
-  const signedHeaders = 'content-type;host;x-content-sha256;x-date';
-  const canonicalRequest = [
-    'POST',
-    '/',
-    `Action=${action}&Version=${version}`,
-    canonicalHeaders,
-    signedHeaders,
-    bodyHash,
-  ].join('\n');
-
-  const credentialScope = `${dateStr}/${region}/${service}/request`;
-  const stringToSign = [
-    'HMAC-SHA256',
-    datetime,
-    credentialScope,
-    crypto.createHash('sha256').update(canonicalRequest).digest('hex'),
-  ].join('\n');
-
-  const hmac = (key: Buffer | string, data: string) =>
-    crypto.createHmac('sha256', key).update(data).digest();
-
-  const signingKey = hmac(hmac(hmac(hmac(`VOLC${secretKey}`, dateStr), region), service), 'request');
-  const signature = hmac(signingKey, stringToSign).toString('hex');
-
-  const authorization = `HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-  const res = await fetch(`https://${host}/?Action=${action}&Version=${version}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Host': host,
-      'X-Date': datetime,
-      'X-Content-Sha256': bodyHash,
-      'Authorization': authorization,
-    },
-    body,
-    signal: AbortSignal.timeout(15000),
-  });
-
-  if (!res.ok) throw new Error(`即梦查询 HTTP 错误: ${res.status}`);
-  return res.json();
-}
+const volcService = new Service({
+  host: 'visual.volcengineapi.com',
+  region: 'cn-north-1',
+  serviceName: 'cv',
+  accessKeyId: process.env.VOLC_ACCESS_KEY_ID!,
+  secretKey: process.env.VOLC_SECRET_ACCESS_KEY!,
+});
+const jimengQuery = volcService.createJSONAPI('CVSync2AsyncGetResult', { Version: '2022-08-31' });
 
 export async function GET(request: NextRequest) {
   try {
@@ -117,8 +64,9 @@ export async function GET(request: NextRequest) {
     let videoUrl: string | null = null;
 
     if (endpoint.startsWith('jimeng:')) {
+      // 即梦查询
       const reqKey = endpoint.replace('jimeng:', '');
-      const jmRes = await queryJimeng(reqKey, taskId);
+      const jmRes = await jimengQuery({ req_key: reqKey, task_id: taskId }) as any;
       if (jmRes?.code !== 10000) {
         return NextResponse.json({ error: '即梦查询失败', detail: jmRes }, { status: 500 });
       }
@@ -137,6 +85,7 @@ export async function GET(request: NextRequest) {
       }
 
     } else if (endpoint.startsWith('dashscope:')) {
+      // DashScope 查询
       const res = await fetch(
         `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`,
         { headers: { 'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}` } }
@@ -160,6 +109,7 @@ export async function GET(request: NextRequest) {
       }
 
     } else {
+      // fal.ai 查询
       const statusResult = await fal.queue.status(endpoint, { requestId: taskId, logs: false });
       if (statusResult.status === 'COMPLETED') {
         const result = await fal.queue.result(endpoint, { requestId: taskId });
