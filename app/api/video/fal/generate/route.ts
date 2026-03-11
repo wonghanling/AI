@@ -577,9 +577,12 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({ file_name: fileName, purpose: 'vision' }),
           }
         );
-        if (!policyRes.ok) throw new Error(`获取上传凭证失败: ${await policyRes.text()}`);
-        const policyData = await policyRes.json();
+        const policyText = await policyRes.text();
+        console.log('百炼 /files 响应:', policyText);
+        if (!policyRes.ok) throw new Error(`获取上传凭证失败: ${policyText}`);
+        const policyData = JSON.parse(policyText);
         const { upload_url, upload_fields, file_id } = policyData;
+        console.log('upload_url:', upload_url, 'file_id:', file_id, 'upload_fields:', JSON.stringify(upload_fields));
 
         // 第二步：multipart/form-data 上传到 OSS
         const form = new FormData();
@@ -590,9 +593,12 @@ export async function POST(req: NextRequest) {
         }
         form.append('file', new Blob([buffer], { type: mimeType }), fileName);
         const uploadRes = await fetch(upload_url, { method: 'POST', body: form });
-        if (!uploadRes.ok) throw new Error(`上传到OSS失败: ${uploadRes.status} ${await uploadRes.text()}`);
+        const uploadText = await uploadRes.text();
+        console.log('OSS上传响应:', uploadRes.status, uploadText);
+        if (!uploadRes.ok) throw new Error(`上传到OSS失败: ${uploadRes.status} ${uploadText}`);
 
-        // 第三步：返回 oss:// 临时 URL（file_id 即为 oss 路径）
+        // 第三步：返回 file_id 作为临时 URL
+        console.log('最终传给DashScope的file_id:', file_id);
         return file_id;
       };
 
@@ -668,8 +674,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('数据库插入失败:', insertError);
-      return NextResponse.json({ error: '数据库插入失败', detail: insertError.message }, { status: 500 });
+      console.error('数据库插入失败:', JSON.stringify(insertError));
+      return NextResponse.json({ error: '数据库插入失败', detail: JSON.stringify(insertError) }, { status: 500 });
     }
 
     return NextResponse.json({
