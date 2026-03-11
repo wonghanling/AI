@@ -616,7 +616,7 @@ export async function POST(req: NextRequest) {
         model,
         duration: effectiveDuration || 5,
         aspect_ratio: aspectRatio || '16:9',
-        resolution: effectiveResolution || '720p',
+        resolution: (effectiveResolution || '720p').toLowerCase(),
         status: 'pending',
         cost_credits: Math.ceil(cost),
         task_id: request_id,
