@@ -565,41 +565,26 @@ export async function POST(req: NextRequest) {
         const ext = mimeType.split('/')[1] || 'jpg';
         const fileName = `frame_${Date.now()}.${ext}`;
 
-        // 第一步：POST /files 获取上传凭证
+        // 第一步：multipart/form-data POST /files 获取上传凭证
+        const fileForm = new FormData();
+        fileForm.append('file', new Blob([buffer], { type: mimeType }), fileName);
+        fileForm.append('purpose', 'vision');
         const policyRes = await fetch(
           'https://dashscope.aliyuncs.com/api/v1/files',
           {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${DASHSCOPE_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ file_name: fileName, purpose: 'vision' }),
+            headers: { 'Authorization': `Bearer ${DASHSCOPE_KEY}` },
+            body: fileForm,
           }
         );
         const policyText = await policyRes.text();
         console.log('百炼 /files 响应:', policyText);
         if (!policyRes.ok) throw new Error(`获取上传凭证失败: ${policyText}`);
         const policyData = JSON.parse(policyText);
-        const { upload_url, upload_fields, file_id } = policyData;
-        console.log('upload_url:', upload_url, 'file_id:', file_id, 'upload_fields:', JSON.stringify(upload_fields));
-
-        // 第二步：multipart/form-data 上传到 OSS
-        const form = new FormData();
-        if (upload_fields) {
-          for (const [k, v] of Object.entries(upload_fields)) {
-            form.append(k, v as string);
-          }
-        }
-        form.append('file', new Blob([buffer], { type: mimeType }), fileName);
-        const uploadRes = await fetch(upload_url, { method: 'POST', body: form });
-        const uploadText = await uploadRes.text();
-        console.log('OSS上传响应:', uploadRes.status, uploadText);
-        if (!uploadRes.ok) throw new Error(`上传到OSS失败: ${uploadRes.status} ${uploadText}`);
-
-        // 第三步：返回 file_id 作为临时 URL
-        console.log('最终传给DashScope的file_id:', file_id);
-        return file_id;
+        const fileId = policyData.id || policyData.file_id || policyData.output?.file_id;
+        console.log('file_id:', fileId, '完整响应:', policyText);
+        if (!fileId) throw new Error(`未获取到 file_id: ${policyText}`);
+        return fileId;
       };
 
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
