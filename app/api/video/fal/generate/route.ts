@@ -582,7 +582,7 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({ model: modelConfig.dashscopeModel, input: dsInput, parameters: dsParams }),
         }
       );
-      if (!dsRes.ok) throw new Error(`DashScope 提交失败: ${await dsRes.text()}`);
+      if (!dsRes.ok) throw new Error(`DashScope 提交失败: ${await dsRes.text()} | img_url: ${JSON.stringify(dsInput)}`);
       const dsData = await dsRes.json();
       request_id = dsData.output?.task_id;
       if (!request_id) throw new Error(`DashScope 未返回 task_id: ${JSON.stringify(dsData)}`);
