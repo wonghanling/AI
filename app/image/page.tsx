@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
@@ -32,6 +32,8 @@ const MODELS = {
   }
 };
 
+const WANX_MODEL_ID = 'wan2.5-i2i';
+
 // 生成数量选项
 const IMAGE_COUNTS = [
   { value: 1, label: '1x', cooldown: 10 },
@@ -39,13 +41,26 @@ const IMAGE_COUNTS = [
   { value: 4, label: '4x', cooldown: 30 },
 ];
 
+type NormalModelId = 'nano-banana' | 'nano-banana-pro';
+type ActiveView = NormalModelId | 'wan2.5-i2i';
+
 function ImageGenerationContent() {
   const router = useRouter();
-  const [selectedModel, setSelectedModel] = useState<'nano-banana' | 'nano-banana-pro'>('nano-banana-pro');
+  const [activeView, setActiveView] = useState<ActiveView>('nano-banana-pro');
+  const [selectedModel, setSelectedModel] = useState<NormalModelId>('nano-banana-pro');
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
-  const [resolution, setResolution] = useState('1K'); // Nano Banana 默认 1K（固定）
+  const [resolution, setResolution] = useState('1K');
   const [imageCount, setImageCount] = useState(1);
+
+  // Wanx 图片融合专用状态
+  const [wanxPrompt, setWanxPrompt] = useState('');
+  const [wanxImages, setWanxImages] = useState<string[]>([]); // base64, 最多3张
+  const [wanxLoading, setWanxLoading] = useState(false);
+  const [wanxError, setWanxError] = useState('');
+  const [wanxPollingTask, setWanxPollingTask] = useState<{ taskId: string; recordId: string } | null>(null);
+  const [wanxResult, setWanxResult] = useState<{ id: string; url: string; prompt: string } | null>(null);
+  const wanxPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 检查登录状态
   useEffect(() => {
@@ -68,18 +83,68 @@ function ImageGenerationContent() {
 
   // 当切换模型时，重置分辨率为该模型的第一个可用分辨率
   useEffect(() => {
-    const availableResolutions = Object.keys(MODELS[selectedModel].resolutions);
-    if (!availableResolutions.includes(resolution)) {
-      setResolution(availableResolutions[0]);
+    if (activeView !== WANX_MODEL_ID) {
+      const availableResolutions = Object.keys(MODELS[selectedModel].resolutions);
+      if (!availableResolutions.includes(resolution)) {
+        setResolution(availableResolutions[0]);
+      }
     }
-  }, [selectedModel, resolution]);
+  }, [selectedModel, activeView, resolution]);
+
+  // 切换视图时同步 selectedModel
+  const handleSetActiveView = useCallback((view: ActiveView) => {
+    setActiveView(view);
+    if (view !== WANX_MODEL_ID) {
+      setSelectedModel(view as NormalModelId);
+    }
+  }, []);
+
+  // Wanx 轮询任务状态
+  useEffect(() => {
+    if (!wanxPollingTask) return;
+
+    const poll = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      try {
+        const res = await fetch(
+          `/api/image/wanx/query?taskId=${wanxPollingTask.taskId}&recordId=${wanxPollingTask.recordId}`,
+          { headers: { 'Authorization': `Bearer ${session.access_token}` } }
+        );
+        const data = await res.json();
+
+        if (data.status === 'completed' && data.imageUrl) {
+          setWanxResult({ id: wanxPollingTask.recordId, url: data.imageUrl, prompt: wanxPrompt });
+          setWanxPollingTask(null);
+          setWanxLoading(false);
+          if (wanxPollingRef.current) clearInterval(wanxPollingRef.current);
+        } else if (data.status === 'failed') {
+          setWanxError('生成失败，请重试');
+          setWanxPollingTask(null);
+          setWanxLoading(false);
+          if (wanxPollingRef.current) clearInterval(wanxPollingRef.current);
+        }
+      } catch {
+        // 继续轮询
+      }
+    };
+
+    wanxPollingRef.current = setInterval(poll, 5000);
+    return () => {
+      if (wanxPollingRef.current) clearInterval(wanxPollingRef.current);
+    };
+  }, [wanxPollingTask, wanxPrompt]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [credits, setCredits] = useState(0);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
-  const [showSidebar, setShowSidebar] = useState(false); // 移动端侧边栏控制
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null); // 上传的图片 base64
-  const [loadingHistory, setLoadingHistory] = useState(true); // 历史记录加载状态
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [generatedImages, setGeneratedImages] = useState<Array<{
     id: string;
     url: string;
@@ -122,6 +187,101 @@ function ImageGenerationContent() {
   const clearUploadedImage = useCallback(() => {
     setUploadedImage(null);
   }, []);
+
+  // Wanx 图片上传处理
+  const handleWanxImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newImages: string[] = [];
+    let processed = 0;
+
+    Array.from(files).slice(0, 3 - wanxImages.length).forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        setWanxError('图片大小不能超过 10MB');
+        return;
+      }
+      if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+        setWanxError('只支持 PNG、JPG、JPEG、WebP 格式');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        newImages.push(event.target?.result as string);
+        processed++;
+        if (processed === Math.min(files.length, 3 - wanxImages.length)) {
+          setWanxImages(prev => [...prev, ...newImages]);
+          setWanxError('');
+        }
+      };
+      reader.onerror = () => setWanxError('图片读取失败');
+      reader.readAsDataURL(file);
+    });
+  }, [wanxImages.length]);
+
+  // Wanx 删除图片
+  const removeWanxImage = useCallback((index: number) => {
+    setWanxImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Wanx 生成图片
+  const handleWanxGenerate = useCallback(async () => {
+    if (!wanxPrompt.trim()) {
+      setWanxError('请输入图片描述');
+      return;
+    }
+    if (wanxImages.length === 0) {
+      setWanxError('请至少上传 1 张图片');
+      return;
+    }
+    if (credits < 10) {
+      setWanxError('积分不足，需要 10 积分');
+      return;
+    }
+
+    setWanxLoading(true);
+    setWanxError('');
+    setWanxResult(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setWanxError('请先登录');
+        setWanxLoading(false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setWanxError('请先登录');
+        setWanxLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/image/wanx/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          prompt: wanxPrompt,
+          images: wanxImages,
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '生成失败');
+
+      setCredits(data.remainingBalance);
+      setWanxPollingTask({ taskId: data.taskId, recordId: data.recordId });
+
+    } catch (err: any) {
+      setWanxError(err.message || '生成失败，请重试');
+      setWanxLoading(false);
+    }
+  }, [wanxPrompt, wanxImages, credits]);
 
   // 获取用户积分
   useEffect(() => {
@@ -411,9 +571,9 @@ function ImageGenerationContent() {
             </Link>
 
             <button
-              onClick={() => setSelectedModel('nano-banana')}
+              onClick={() => handleSetActiveView('nano-banana')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                selectedModel === 'nano-banana'
+                activeView === 'nano-banana'
                   ? 'bg-[#F5C518] text-black font-semibold'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
@@ -425,9 +585,9 @@ function ImageGenerationContent() {
             </button>
 
             <button
-              onClick={() => setSelectedModel('nano-banana-pro')}
+              onClick={() => handleSetActiveView('nano-banana-pro')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                selectedModel === 'nano-banana-pro'
+                activeView === 'nano-banana-pro'
                   ? 'bg-[#F5C518] text-black font-semibold'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
@@ -436,6 +596,24 @@ function ImageGenerationContent() {
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
               Nano Banana Pro
+            </button>
+
+            {/* 分隔线 */}
+            <div className="my-2 border-t border-gray-200" />
+            <p className="px-3 text-xs text-gray-400 font-medium mb-1">图片融合</p>
+
+            <button
+              onClick={() => handleSetActiveView(WANX_MODEL_ID)}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                activeView === WANX_MODEL_ID
+                  ? 'bg-purple-100 text-purple-800 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Wan 2.5 融合
             </button>
           </div>
         </nav>
@@ -464,10 +642,129 @@ function ImageGenerationContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-lg font-bold">{currentModel.displayName}</h1>
+            <h1 className="text-lg font-bold">
+              {activeView === WANX_MODEL_ID ? 'Wan 2.5 图片融合' : currentModel.displayName}
+            </h1>
             <div className="text-sm font-medium text-gray-900">{credits} 积分</div>
           </div>
 
+          {/* ===== Wan 2.5 图片融合视图 ===== */}
+          {activeView === WANX_MODEL_ID ? (
+            <>
+              <div className="bg-white rounded-xl border-2 border-purple-200 p-4 md:p-8 mb-6">
+                <h1 className="hidden md:block text-2xl font-bold mb-1">Wan 2.5 图片融合</h1>
+                <p className="hidden md:block text-sm text-purple-600 mb-6">上传 1-3 张图片，AI 将它们融合成一张新图片 · 10 积分/次</p>
+
+                {wanxError && (
+                  <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                    {wanxError}
+                  </div>
+                )}
+
+                {/* 多图上传区域 */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    上传图片（1-3 张，必填）
+                  </label>
+                  <div className="flex flex-wrap gap-3 mb-3">
+                    {wanxImages.map((img, idx) => (
+                      <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-300">
+                        <img src={img} alt={`图片${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeWanxImage(idx)}
+                          className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                    {wanxImages.length < 3 && (
+                      <label className="w-24 h-24 border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
+                          multiple
+                          onChange={handleWanxImageUpload}
+                          className="hidden"
+                          disabled={wanxLoading}
+                        />
+                        <svg className="w-6 h-6 text-purple-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-xs text-purple-400">添加图片</span>
+                      </label>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">PNG、JPG、WebP，每张最大 10MB，最多 3 张</p>
+                </div>
+
+                {/* Prompt */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prompt</label>
+                  <textarea
+                    value={wanxPrompt}
+                    onChange={(e) => setWanxPrompt(e.target.value)}
+                    disabled={wanxLoading}
+                    placeholder="描述融合后的图片效果，例如：将这些图片融合成一幅水彩风格的风景画..."
+                    className="w-full h-24 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none text-sm"
+                  />
+                </div>
+
+                {/* 提示 */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 text-sm text-purple-800">
+                  <div className="font-semibold mb-1">使用说明</div>
+                  <ul className="space-y-1 text-xs">
+                    <li>• 上传 1-3 张图片，AI 将根据 Prompt 融合生成新图片</li>
+                    <li>• 每次生成消耗 10 积分，生成时间约 30-60 秒</li>
+                    <li>• 积分一经消耗不可退还</li>
+                  </ul>
+                </div>
+
+                {/* 生成按钮 */}
+                <button
+                  onClick={handleWanxGenerate}
+                  disabled={wanxLoading || wanxImages.length === 0 || !wanxPrompt.trim() || credits < 10}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {wanxLoading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>{wanxPollingTask ? '生成中，请稍候...' : '提交中...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>开始融合 · 10 积分</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* 融合结果 */}
+              {wanxResult && (
+                <div className="bg-white rounded-xl border-2 border-purple-200 p-4 md:p-8">
+                  <h2 className="text-xl font-semibold mb-4">融合结果</h2>
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <img src={wanxResult.url} alt={wanxResult.prompt} className="w-full object-contain max-h-[600px]" />
+                    <div className="p-3 flex items-center justify-between">
+                      <p className="text-xs text-gray-500 line-clamp-1">{wanxResult.prompt}</p>
+                      <a href={wanxResult.url} download className="text-xs text-purple-700 hover:text-purple-900 font-medium ml-4 shrink-0">
+                        下载
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+          <>
           <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-8 mb-6">
             <h1 className="hidden md:block text-2xl font-bold mb-2">{currentModel.displayName}</h1>
             <p className="hidden md:block text-sm text-gray-500 mb-6">已上传图片</p>
@@ -775,6 +1072,8 @@ function ImageGenerationContent() {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       </main>
     </div>
