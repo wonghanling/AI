@@ -5,7 +5,7 @@
   }],
   "functions": {
     "app/api/video/**": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   }
 }
