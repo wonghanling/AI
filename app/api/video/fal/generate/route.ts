@@ -556,11 +556,13 @@ export async function POST(req: NextRequest) {
 
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
         dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
+        console.log('DashScope i2v 图片URL:', dsInput[modelConfig.imageParamName]);
       }
       if (modelConfig.mode === 'firstLastFrame') {
         if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
         if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
         if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toPublicUrl(endImageUrl);
+        console.log('DashScope firstLastFrame 图片URL:', dsInput);
       }
       if (effectiveDuration) dsParams.duration = Number(effectiveDuration);
       if (effectiveResolution) dsParams.resolution = effectiveResolution;
