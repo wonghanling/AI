@@ -563,32 +563,37 @@ export async function POST(req: NextRequest) {
         const rawMime = imgRes.headers.get('content-type') || 'image/jpeg';
         const mimeType = rawMime.split(';')[0].trim();
         const ext = mimeType.split('/')[1] || 'jpg';
+        const fileName = `frame_${Date.now()}.${ext}`;
 
-        // 第一步：获取上传凭证
+        // 第一步：POST /files 获取上传凭证
         const policyRes = await fetch(
-          'https://dashscope.aliyuncs.com/api/v1/uploads',
+          'https://dashscope.aliyuncs.com/api/v1/files',
           {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${DASHSCOPE_KEY}` },
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${DASHSCOPE_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ file_name: fileName, purpose: 'vision' }),
           }
         );
         if (!policyRes.ok) throw new Error(`获取上传凭证失败: ${await policyRes.text()}`);
         const policyData = await policyRes.json();
-        const { upload_url, upload_headers, oss_object_key } = policyData.output;
+        const { upload_url, upload_fields, file_id } = policyData;
 
-        // 第二步：上传文件到 OSS
-        const uploadHeaders: Record<string, string> = { 'Content-Type': mimeType };
-        if (upload_headers) {
-          Object.assign(uploadHeaders, upload_headers);
+        // 第二步：multipart/form-data 上传到 OSS
+        const form = new FormData();
+        if (upload_fields) {
+          for (const [k, v] of Object.entries(upload_fields)) {
+            form.append(k, v as string);
+          }
         }
-        const uploadRes = await fetch(upload_url, {
-          method: 'PUT',
-          headers: uploadHeaders,
-          body: buffer,
-        });
-        if (!uploadRes.ok) throw new Error(`上传到OSS失败: ${uploadRes.status}`);
+        form.append('file', new Blob([buffer], { type: mimeType }), fileName);
+        const uploadRes = await fetch(upload_url, { method: 'POST', body: form });
+        if (!uploadRes.ok) throw new Error(`上传到OSS失败: ${uploadRes.status} ${await uploadRes.text()}`);
 
-        return `oss://${oss_object_key}`;
+        // 第三步：返回 oss:// 临时 URL（file_id 即为 oss 路径）
+        return file_id;
       };
 
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
