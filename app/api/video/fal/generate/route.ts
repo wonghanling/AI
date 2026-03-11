@@ -581,7 +581,7 @@ export async function POST(req: NextRequest) {
         console.log('百炼 /files 响应:', policyText);
         if (!policyRes.ok) throw new Error(`获取上传凭证失败: ${policyText}`);
         const policyData = JSON.parse(policyText);
-        const fileId = policyData.id || policyData.file_id || policyData.output?.file_id;
+        const fileId = policyData.data?.uploaded_files?.[0]?.file_id;
         console.log('file_id:', fileId, '完整响应:', policyText);
         if (!fileId) throw new Error(`未获取到 file_id: ${policyText}`);
         return fileId;
