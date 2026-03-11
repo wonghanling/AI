@@ -682,7 +682,7 @@ export default function VideoPage() {
         try {
           const response = await fetch(url, {
             ...options,
-            signal: AbortSignal.timeout(10000) // 10秒超时
+            signal: AbortSignal.timeout(60000) // 60秒超时
           });
           return response;
         } catch (err: any) {
