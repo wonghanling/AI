@@ -554,15 +554,23 @@ export async function POST(req: NextRequest) {
       const dsInput: Record<string, unknown> = { prompt };
       const dsParams: Record<string, unknown> = { prompt_extend: true };
 
+      // DashScope 不接受第三方域名 URL，需转为 base64
+      const toBase64Url = async (url: string): Promise<string> => {
+        const publicUrl = await toPublicUrl(url);
+        const res = await fetch(publicUrl);
+        if (!res.ok) throw new Error(`下载图片失败: ${publicUrl}`);
+        const buffer = Buffer.from(await res.arrayBuffer());
+        const mimeType = res.headers.get('content-type') || 'image/jpeg';
+        return `data:${mimeType};base64,${buffer.toString('base64')}`;
+      };
+
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
-        dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
-        console.log('DashScope i2v 图片URL:', dsInput[modelConfig.imageParamName]);
+        dsInput[modelConfig.imageParamName] = await toBase64Url(imageUrl);
       }
       if (modelConfig.mode === 'firstLastFrame') {
         if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
-        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toPublicUrl(imageUrl);
-        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toPublicUrl(endImageUrl);
-        console.log('DashScope firstLastFrame 图片URL:', dsInput);
+        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toBase64Url(imageUrl);
+        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toBase64Url(endImageUrl);
       }
       if (effectiveDuration) dsParams.duration = Number(effectiveDuration);
       if (effectiveResolution) dsParams.resolution = effectiveResolution;
@@ -571,7 +579,7 @@ export async function POST(req: NextRequest) {
       }
 
       const dsRes = await fetch(
-        'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis',
+        'https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis',
         {
           method: 'POST',
           headers: {
