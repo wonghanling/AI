@@ -584,7 +584,7 @@ export async function POST(req: NextRequest) {
         const fileId = policyData.data?.uploaded_files?.[0]?.file_id;
         console.log('file_id:', fileId, '完整响应:', policyText);
         if (!fileId) throw new Error(`未获取到 file_id: ${policyText}`);
-        return fileId;
+        return `fileid://${fileId}`;
       };
 
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
