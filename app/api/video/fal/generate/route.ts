@@ -554,25 +554,50 @@ export async function POST(req: NextRequest) {
       const dsInput: Record<string, unknown> = { prompt };
       const dsParams: Record<string, unknown> = { prompt_extend: true };
 
-      // DashScope 不接受第三方域名 URL，需转为 base64
-      const toBase64Url = async (url: string): Promise<string> => {
+      // 上传图片到阿里云百炼临时存储，获取 oss:// 临时 URL
+      const toDashscopeOssUrl = async (url: string): Promise<string> => {
         const publicUrl = await toPublicUrl(url);
-        const res = await fetch(publicUrl);
-        if (!res.ok) throw new Error(`下载图片失败: ${publicUrl}`);
-        const buffer = Buffer.from(await res.arrayBuffer());
-        // 只取 content-type 分号前的部分，去掉 charset 等额外参数
-        const rawMime = res.headers.get('content-type') || 'image/jpeg';
+        const imgRes = await fetch(publicUrl);
+        if (!imgRes.ok) throw new Error(`下载图片失败: ${publicUrl}`);
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        const rawMime = imgRes.headers.get('content-type') || 'image/jpeg';
         const mimeType = rawMime.split(';')[0].trim();
-        return `data:${mimeType};base64,${buffer.toString('base64')}`;
+        const ext = mimeType.split('/')[1] || 'jpg';
+
+        // 第一步：获取上传凭证
+        const policyRes = await fetch(
+          'https://dashscope.aliyuncs.com/api/v1/uploads',
+          {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${DASHSCOPE_KEY}` },
+          }
+        );
+        if (!policyRes.ok) throw new Error(`获取上传凭证失败: ${await policyRes.text()}`);
+        const policyData = await policyRes.json();
+        const { upload_url, upload_headers, oss_object_key } = policyData.output;
+
+        // 第二步：上传文件到 OSS
+        const uploadHeaders: Record<string, string> = { 'Content-Type': mimeType };
+        if (upload_headers) {
+          Object.assign(uploadHeaders, upload_headers);
+        }
+        const uploadRes = await fetch(upload_url, {
+          method: 'PUT',
+          headers: uploadHeaders,
+          body: buffer,
+        });
+        if (!uploadRes.ok) throw new Error(`上传到OSS失败: ${uploadRes.status}`);
+
+        return `oss://${oss_object_key}`;
       };
 
       if (modelConfig.mode === 'i2v' && modelConfig.imageParamName && imageUrl) {
-        dsInput[modelConfig.imageParamName] = await toBase64Url(imageUrl);
+        dsInput[modelConfig.imageParamName] = await toDashscopeOssUrl(imageUrl);
       }
       if (modelConfig.mode === 'firstLastFrame') {
         if (!imageUrl || !endImageUrl) return NextResponse.json({ error: '首尾帧模式需要同时上传两张图片' }, { status: 400 });
-        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toBase64Url(imageUrl);
-        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toBase64Url(endImageUrl);
+        if (modelConfig.imageParamName) dsInput[modelConfig.imageParamName] = await toDashscopeOssUrl(imageUrl);
+        if (modelConfig.endImageParamName) dsInput[modelConfig.endImageParamName] = await toDashscopeOssUrl(endImageUrl);
       }
       if (effectiveDuration) dsParams.duration = Number(effectiveDuration);
       if (effectiveResolution) dsParams.resolution = effectiveResolution;
