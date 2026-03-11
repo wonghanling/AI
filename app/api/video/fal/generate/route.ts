@@ -560,7 +560,9 @@ export async function POST(req: NextRequest) {
         const res = await fetch(publicUrl);
         if (!res.ok) throw new Error(`下载图片失败: ${publicUrl}`);
         const buffer = Buffer.from(await res.arrayBuffer());
-        const mimeType = res.headers.get('content-type') || 'image/jpeg';
+        // 只取 content-type 分号前的部分，去掉 charset 等额外参数
+        const rawMime = res.headers.get('content-type') || 'image/jpeg';
+        const mimeType = rawMime.split(';')[0].trim();
         return `data:${mimeType};base64,${buffer.toString('base64')}`;
       };
 
