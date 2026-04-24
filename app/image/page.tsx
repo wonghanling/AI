@@ -194,7 +194,7 @@ function ImageGenerationContent() {
         });
         if (res.ok) {
           const data = await res.json();
-          setWanxHistory(data.images.filter((img: any) => img.image_url).map((img: any) => ({
+          setWanxHistory(data.images.filter((img: any) => img.status === 'completed' && img.image_url).map((img: any) => ({
             id: img.id, url: img.image_url, prompt: img.prompt,
           })));
         }
@@ -468,7 +468,7 @@ function ImageGenerationContent() {
         });
         if (res.ok) {
           const data = await res.json();
-          setGptHistory(data.images.filter((img: any) => img.image_url).map((img: any) => ({
+          setGptHistory(data.images.filter((img: any) => img.status === 'completed' && img.image_url).map((img: any) => ({
             id: img.id, url: img.image_url, prompt: img.prompt, size: img.size,
           })));
         }
@@ -544,7 +544,7 @@ function ImageGenerationContent() {
       }
 
       try {
-        const response = await fetch('/api/image/history?limit=50&source=nano-banana', {
+        const response = await fetch('/api/image/history?limit=50', {
           headers: {
             'Authorization': `Bearer ${session.access_token}`
           }

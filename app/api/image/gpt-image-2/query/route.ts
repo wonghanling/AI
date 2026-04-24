@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ status: 'failed', error: '未能获取图片' });
       }
 
-      // 上传到 Storage
+      // 上传到 Storage，失败则用原始 URL
       let permanentUrl = img.url;
       try {
         permanentUrl = await uploadToStorage(user.id, img.url, 'image');
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         console.warn('上传 Storage 失败，使用原始 URL');
       }
 
-      // 更新数据库记录
+      // 无论 Storage 成功与否，都写入数据库
       await supabaseAdmin
         .from('image_generations')
         .update({ image_url: permanentUrl, status: 'completed' })
