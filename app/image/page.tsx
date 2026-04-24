@@ -71,6 +71,21 @@ function ImageGenerationContent() {
   const [gptLoading, setGptLoading] = useState(false);
   const [gptError, setGptError] = useState('');
   const [gptResult, setGptResult] = useState<{ id: string; url: string; prompt: string } | null>(null);
+  const [gptQuality, setGptQuality] = useState<'high' | 'medium'>('high');
+  const [gptSizeKey, setGptSizeKey] = useState('landscape_16_9_2k');
+
+  // 定价表（前端同步后端）
+  const GPT_PRICING: Record<string, Record<string, number>> = {
+    high:   { 'landscape_16_9_2k': 7, 'landscape_16_9_4k': 20, 'portrait_9_16_4k': 20, 'square_2k': 10 },
+    medium: { 'landscape_16_9_2k': 7, 'landscape_16_9_4k': 15, 'portrait_9_16_4k': 15, 'square_2k': 7  },
+  };
+  const GPT_SIZE_OPTIONS = [
+    { key: 'landscape_16_9_2k', label: '16:9  2K', desc: '2048×1152' },
+    { key: 'landscape_16_9_4k', label: '16:9  4K', desc: '3840×2160' },
+    { key: 'portrait_9_16_4k',  label: '9:16  4K', desc: '2160×3840' },
+    { key: 'square_2k',         label: '1:1  2K',  desc: '2048×2048' },
+  ];
+  const gptCost = GPT_PRICING[gptQuality]?.[gptSizeKey] ?? 10;
 
   // 检查登录状态
   useEffect(() => {
@@ -338,7 +353,7 @@ function ImageGenerationContent() {
   const handleGptGenerate = useCallback(async () => {
     if (!gptPrompt.trim()) { setGptError('请输入图片描述'); return; }
 
-    const cost = gptImages.length === 0 ? 7 : gptImages.length === 1 ? 7 : 10;
+    const cost = GPT_PRICING[gptQuality]?.[gptSizeKey] ?? 10;
     if (credits < cost) { setGptError(`积分不足，需要 ${cost} 积分`); return; }
 
     setGptLoading(true);
@@ -354,7 +369,7 @@ function ImageGenerationContent() {
       const res = await fetch('/api/image/gpt-image-2/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ prompt: gptPrompt, images: gptImages }),
+        body: JSON.stringify({ prompt: gptPrompt, images: gptImages, quality: gptQuality, sizeKey: gptSizeKey }),
       });
 
       const data = await res.json();
@@ -367,7 +382,7 @@ function ImageGenerationContent() {
     } finally {
       setGptLoading(false);
     }
-  }, [gptPrompt, gptImages, credits]);
+  }, [gptPrompt, gptImages, gptQuality, gptSizeKey, credits]);
 
   // 获取用户积分
   useEffect(() => {
@@ -754,7 +769,7 @@ function ImageGenerationContent() {
               <div className="bg-white rounded-xl border-2 border-green-200 p-4 md:p-8 mb-6">
                 <h1 className="hidden md:block text-2xl font-bold mb-1">ChatGPT Image 2</h1>
                 <p className="hidden md:block text-sm text-green-600 mb-6">
-                  文生图 7 积分 · 单图编辑 7 积分 · 多图融合 10 积分
+                  {gptImages.length === 0 ? '文生图' : gptImages.length === 1 ? '单图编辑' : '多图融合'} · 当前 {gptCost} 积分
                 </p>
 
                 {gptError && (
@@ -763,14 +778,31 @@ function ImageGenerationContent() {
                   </div>
                 )}
 
-                {/* 多图上传区域 */}
+                {/* 模式说明 */}
+                <div className="mb-6 grid grid-cols-3 gap-2 text-center text-xs">
+                  {[
+                    { label: '文生图', desc: '不上传图片' },
+                    { label: '单图编辑', desc: '上传 1 张' },
+                    { label: '多图融合', desc: '上传多张' },
+                  ].map((m, i) => {
+                    const active = i === 0 ? gptImages.length === 0 : i === 1 ? gptImages.length === 1 : gptImages.length > 1;
+                    return (
+                      <div key={i} className={`rounded-lg py-2 px-1 border ${active ? 'border-green-400 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400'}`}>
+                        <div className="font-semibold">{m.label}</div>
+                        <div className="text-[10px] mt-0.5">{m.desc}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 图片上传区域 */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    上传图片（可选，0-10 张）
+                    上传图片 <span className="text-gray-400 font-normal">（可选，最多 10 张）</span>
                   </label>
-                  <div className="flex flex-wrap gap-3 mb-3">
+                  <div className="flex flex-wrap gap-3 mb-2">
                     {gptImages.map((img, idx) => (
-                      <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-300">
+                      <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300">
                         <img src={img} alt={`图片${idx + 1}`} className="w-full h-full object-cover" />
                         <button
                           onClick={() => removeGptImage(idx)}
@@ -783,25 +815,15 @@ function ImageGenerationContent() {
                       </div>
                     ))}
                     {gptImages.length < 10 && (
-                      <label className="w-24 h-24 border-2 border-dashed border-green-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-green-500 transition-colors">
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/jpg,image/webp"
-                          multiple
-                          onChange={handleGptImageUpload}
-                          className="hidden"
-                          disabled={gptLoading}
-                        />
-                        <svg className="w-6 h-6 text-green-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <label className="w-20 h-20 border-2 border-dashed border-green-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-green-500 transition-colors">
+                        <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleGptImageUpload} className="hidden" disabled={gptLoading} />
+                        <svg className="w-5 h-5 text-green-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        <span className="text-xs text-green-400">添加图片</span>
+                        <span className="text-[10px] text-green-400">添加</span>
                       </label>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">
-                    不上传 = 文生图 (7积分) · 1张 = 单图编辑 (7积分) · 多张 = 多图融合 (10积分)
-                  </p>
                 </div>
 
                 {/* Prompt */}
@@ -812,31 +834,69 @@ function ImageGenerationContent() {
                     onChange={(e) => setGptPrompt(e.target.value)}
                     disabled={gptLoading}
                     placeholder={
-                      gptImages.length === 0
-                        ? "描述你想生成的图片，例如：一只可爱的猫咪坐在窗台上..."
-                        : gptImages.length === 1
-                        ? "描述如何编辑这张图片，例如：把背景换成海滩..."
-                        : "描述如何融合这些图片，例如：将这些元素融合成一幅抽象画..."
+                      gptImages.length === 0 ? "描述你想生成的图片，例如：一只可爱的猫咪坐在窗台上..."
+                      : gptImages.length === 1 ? "描述如何编辑这张图片，例如：把背景换成海滩..."
+                      : "描述如何融合这些图片，例如：将这些元素融合成一幅抽象画..."
                     }
                     className="w-full h-24 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none text-sm"
                   />
                 </div>
 
-                {/* 使用说明 */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm text-green-800">
-                  <div className="font-semibold mb-1">使用说明</div>
-                  <ul className="space-y-1 text-xs">
-                    <li>• 文生图：不上传图片，直接输入描述生成</li>
-                    <li>• 单图编辑：上传 1 张图片，描述如何修改</li>
-                    <li>• 多图融合：上传多张图片，描述如何融合</li>
-                    <li>• 积分一经消耗不可退还</li>
-                  </ul>
+                {/* 质量选择 */}
+                <div className="mb-5">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">画质</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { value: 'high',   label: 'High',   desc: '最高画质，细节丰富' },
+                      { value: 'medium', label: 'Medium', desc: '标准画质，速度更快' },
+                    ] as const).map((q) => (
+                      <button
+                        key={q.value}
+                        onClick={() => setGptQuality(q.value)}
+                        disabled={gptLoading}
+                        className={`p-3 rounded-xl border-2 text-left transition-all ${
+                          gptQuality === q.value
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className={`font-semibold text-sm ${gptQuality === q.value ? 'text-green-700' : 'text-gray-700'}`}>{q.label}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{q.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 尺寸选择 */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">尺寸 / 比例</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {GPT_SIZE_OPTIONS.map((s) => {
+                      const cost = GPT_PRICING[gptQuality]?.[s.key] ?? 0;
+                      return (
+                        <button
+                          key={s.key}
+                          onClick={() => setGptSizeKey(s.key)}
+                          disabled={gptLoading}
+                          className={`p-3 rounded-xl border-2 text-left transition-all ${
+                            gptSizeKey === s.key
+                              ? 'border-green-500 bg-green-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className={`font-semibold text-sm ${gptSizeKey === s.key ? 'text-green-700' : 'text-gray-700'}`}>{s.label}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{s.desc}</div>
+                          <div className={`text-xs font-bold mt-1 ${gptSizeKey === s.key ? 'text-green-600' : 'text-gray-500'}`}>{cost} 积分</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* 生成按钮 */}
                 <button
                   onClick={handleGptGenerate}
-                  disabled={gptLoading || !gptPrompt.trim() || credits < (gptImages.length === 0 ? 7 : gptImages.length === 1 ? 7 : 10)}
+                  disabled={gptLoading || !gptPrompt.trim() || credits < gptCost}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {gptLoading ? (
@@ -852,10 +912,12 @@ function ImageGenerationContent() {
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <span>生成图片 · {gptImages.length === 0 ? 7 : gptImages.length === 1 ? 7 : 10} 积分</span>
+                      <span>生成图片 · {gptCost} 积分</span>
                     </>
                   )}
                 </button>
+
+                <p className="text-xs text-gray-400 text-center mt-3">积分一经消耗不可退还</p>
               </div>
 
               {/* 生成结果 */}
@@ -866,9 +928,7 @@ function ImageGenerationContent() {
                     <img src={gptResult.url} alt={gptResult.prompt} className="w-full object-contain max-h-[600px]" />
                     <div className="p-3 flex items-center justify-between">
                       <p className="text-xs text-gray-500 line-clamp-1">{gptResult.prompt}</p>
-                      <a href={gptResult.url} download className="text-xs text-green-700 hover:text-green-900 font-medium ml-4 shrink-0">
-                        下载
-                      </a>
+                      <a href={gptResult.url} download className="text-xs text-green-700 hover:text-green-900 font-medium ml-4 shrink-0">下载</a>
                     </div>
                   </div>
                 </div>
