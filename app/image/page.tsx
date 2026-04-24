@@ -488,14 +488,9 @@ function ImageGenerationContent() {
         });
         if (res.ok) {
           const data = await res.json();
-          console.log('[GPT History] 原始数据:', data.images);
-          const filtered = data.images.filter((img: any) => img.image_url);
-          console.log('[GPT History] 过滤后:', filtered.length, '条');
-          setGptHistory(filtered.map((img: any) => ({
+          setGptHistory(data.images.filter((img: any) => img.image_url).map((img: any) => ({
             id: img.id, url: img.image_url, prompt: img.prompt, size: img.size,
           })));
-        } else {
-          console.error('[GPT History] API 返回错误:', res.status);
         }
       } catch { /* ignore */ } finally {
         setGptLoadingHistory(false);

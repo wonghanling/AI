@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fal } from '@fal-ai/client';
-import { uploadToStorage } from '@/lib/storage-upload';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,22 +38,14 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ status: 'failed', error: '未能获取图片' });
       }
 
-      // 上传到 Storage，失败则用原始 URL
-      let permanentUrl = img.url;
-      try {
-        permanentUrl = await uploadToStorage(user.id, img.url, 'image');
-      } catch {
-        console.warn('上传 Storage 失败，使用原始 URL');
-      }
-
-      // 无论 Storage 成功与否，都写入数据库
+      // 直接用 fal 原始 URL 写入数据库，不做 Storage 上传（避免超时）
       await supabaseAdmin
         .from('image_generations')
-        .update({ image_url: permanentUrl, status: 'completed' })
+        .update({ image_url: img.url, status: 'completed' })
         .eq('id', recordId)
         .eq('user_id', user.id);
 
-      return NextResponse.json({ status: 'completed', imageUrl: permanentUrl });
+      return NextResponse.json({ status: 'completed', imageUrl: img.url });
     }
 
     if (statusStr === 'FAILED') {
