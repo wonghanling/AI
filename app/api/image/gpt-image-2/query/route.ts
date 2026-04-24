@@ -22,8 +22,12 @@ export async function GET(req: NextRequest) {
     const requestId = searchParams.get('requestId');
     const recordId = searchParams.get('recordId');
     const endpoint = searchParams.get('endpoint') || 'openai/gpt-image-2';
+    const prompt = searchParams.get('prompt') || '';
+    const quality = searchParams.get('quality') || 'high';
+    const sizeKey = searchParams.get('sizeKey') || 'square_2k';
+    const cost = parseInt(searchParams.get('cost') || '10');
 
-    if (!requestId || !recordId) {
+    if (!requestId) {
       return NextResponse.json({ error: '缺少参数' }, { status: 400 });
     }
 
@@ -38,23 +42,40 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ status: 'failed', error: '未能获取图片' });
       }
 
-      // 直接用 fal 原始 URL 写入数据库，不做 Storage 上传（避免超时）
-      await supabaseAdmin
-        .from('image_generations')
-        .update({ image_url: img.url, status: 'completed' })
-        .eq('id', recordId)
-        .eq('user_id', user.id);
+      // 如果有 recordId 就 update，否则直接 insert 新记录
+      if (recordId) {
+        await supabaseAdmin
+          .from('image_generations')
+          .update({ image_url: img.url, status: 'completed' })
+          .eq('id', recordId)
+          .eq('user_id', user.id);
+      } else {
+        await supabaseAdmin
+          .from('image_generations')
+          .insert({
+            user_id: user.id,
+            model: 'gpt-image-2',
+            prompt,
+            image_url: img.url,
+            size: `${quality}-${sizeKey}`,
+            cost_credits: cost,
+            status: 'completed',
+            api_source: 'gpt-image-2',
+            created_at: new Date().toISOString(),
+          });
+      }
 
       return NextResponse.json({ status: 'completed', imageUrl: img.url });
     }
 
     if (statusStr === 'FAILED') {
-      await supabaseAdmin
-        .from('image_generations')
-        .update({ status: 'failed' })
-        .eq('id', recordId)
-        .eq('user_id', user.id);
-
+      if (recordId) {
+        await supabaseAdmin
+          .from('image_generations')
+          .update({ status: 'failed' })
+          .eq('id', recordId)
+          .eq('user_id', user.id);
+      }
       return NextResponse.json({ status: 'failed', error: '生成失败' });
     }
 

@@ -419,8 +419,17 @@ function ImageGenerationContent() {
       if (!session) return;
 
       try {
+        const params = new URLSearchParams({
+          requestId: gptPollingTask.requestId,
+          recordId: gptPollingTask.recordId || '',
+          endpoint: gptPollingTask.endpoint,
+          prompt: gptPrompt,
+          quality: gptQuality,
+          sizeKey: gptSizeKey,
+          cost: String(gptCost),
+        });
         const res = await fetch(
-          `/api/image/gpt-image-2/query?requestId=${gptPollingTask.requestId}&recordId=${gptPollingTask.recordId}&endpoint=${encodeURIComponent(gptPollingTask.endpoint)}`,
+          `/api/image/gpt-image-2/query?${params}`,
           { headers: { 'Authorization': `Bearer ${session.access_token}` } }
         );
         const data = await res.json();

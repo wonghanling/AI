@@ -82,21 +82,25 @@ export async function POST(req: NextRequest) {
     }
 
     // 先插入 pending 记录，等轮询完成后更新 image_url
-    const { data: imageRecord } = await supabaseAdmin
+    const { data: imageRecord, error: insertError } = await supabaseAdmin
       .from('image_generations')
       .insert({
         user_id: user.id,
         model: 'gpt-image-2',
         prompt,
-        image_url: '',
+        image_url: null,
         size: `${quality}-${sizeKey}-${mode}`,
         cost_credits: cost,
-        status: 'pending',
+        status: 'generating',
         api_source: 'gpt-image-2',
         created_at: new Date().toISOString(),
       })
       .select()
       .single();
+
+    if (insertError) {
+      console.error('插入记录失败:', insertError);
+    }
 
     return NextResponse.json({
       success: true,
