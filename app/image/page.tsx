@@ -360,22 +360,42 @@ function ImageGenerationContent() {
     let processed = 0;
     const newImages: string[] = [];
 
+    const compressImage = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+          reject(new Error('只支持 PNG、JPG、JPEG、WebP 格式')); return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX = 2048;
+            const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+            const w = Math.round(img.width * scale);
+            const h = Math.round(img.height * scale);
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.92));
+          };
+          img.onerror = () => reject(new Error('图片读取失败'));
+          img.src = ev.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('图片读取失败'));
+        reader.readAsDataURL(file);
+      });
+    };
+
     toProcess.forEach(file => {
-      if (file.size > 10 * 1024 * 1024) { setGptError('图片大小不能超过 10MB'); return; }
-      if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
-        setGptError('只支持 PNG、JPG、JPEG、WebP 格式'); return;
-      }
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        newImages.push(ev.target?.result as string);
+      if (file.size > 20 * 1024 * 1024) { setGptError('图片大小不能超过 20MB'); return; }
+      compressImage(file).then(data => {
+        newImages.push(data);
         processed++;
         if (processed === toProcess.length) {
           setGptImages(prev => [...prev, ...newImages]);
           setGptError('');
         }
-      };
-      reader.onerror = () => setGptError('图片读取失败');
-      reader.readAsDataURL(file);
+      }).catch(err => setGptError(err.message));
     });
   }, [gptImages.length]);
 
@@ -468,9 +488,14 @@ function ImageGenerationContent() {
         });
         if (res.ok) {
           const data = await res.json();
-          setGptHistory(data.images.filter((img: any) => img.image_url).map((img: any) => ({
+          console.log('[GPT History] 原始数据:', data.images);
+          const filtered = data.images.filter((img: any) => img.image_url);
+          console.log('[GPT History] 过滤后:', filtered.length, '条');
+          setGptHistory(filtered.map((img: any) => ({
             id: img.id, url: img.image_url, prompt: img.prompt, size: img.size,
           })));
+        } else {
+          console.error('[GPT History] API 返回错误:', res.status);
         }
       } catch { /* ignore */ } finally {
         setGptLoadingHistory(false);
