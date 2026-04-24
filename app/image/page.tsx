@@ -221,34 +221,44 @@ function ImageGenerationContent() {
 
   const currentModel = useMemo(() => MODELS[selectedModel], [selectedModel]);
 
-  // 处理图片上传
+  // 公共图片压缩函数：最大 2048px，质量 0.92
+  const compressImage = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+        reject(new Error('只支持 PNG、JPG、JPEG、WebP 格式')); return;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        reject(new Error('图片大小不能超过 20MB')); return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 2048;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
+        };
+        img.onerror = () => reject(new Error('图片读取失败'));
+        img.src = ev.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('图片读取失败'));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  // 处理图片上传（Nano Banana）
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // 检查文件大小（最大 10MB）
-    if (file.size > 10 * 1024 * 1024) {
-      setError('图片大小不能超过 10MB');
-      return;
-    }
-
-    // 检查文件类型
-    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
-      setError('只支持 PNG、JPG、JPEG、WebP 格式');
-      return;
-    }
-
-    // 读取文件并转换为 base64
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setUploadedImage(event.target?.result as string);
-      setError('');
-    };
-    reader.onerror = () => {
-      setError('图片读取失败');
-    };
-    reader.readAsDataURL(file);
-  }, []);
+    compressImage(file)
+      .then(data => { setUploadedImage(data); setError(''); })
+      .catch(err => setError(err.message));
+  }, [compressImage]);
 
   // 清除上传的图片
   const clearUploadedImage = useCallback(() => {
@@ -260,32 +270,23 @@ function ImageGenerationContent() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newImages: string[] = [];
+    const toProcess = Array.from(files).slice(0, 3 - wanxImages.length);
     let processed = 0;
+    const newImages: string[] = [];
 
-    Array.from(files).slice(0, 3 - wanxImages.length).forEach(file => {
-      if (file.size > 10 * 1024 * 1024) {
-        setWanxError('图片大小不能超过 10MB');
-        return;
-      }
-      if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
-        setWanxError('只支持 PNG、JPG、JPEG、WebP 格式');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        newImages.push(event.target?.result as string);
-        processed++;
-        if (processed === Math.min(files.length, 3 - wanxImages.length)) {
-          setWanxImages(prev => [...prev, ...newImages]);
-          setWanxError('');
-        }
-      };
-      reader.onerror = () => setWanxError('图片读取失败');
-      reader.readAsDataURL(file);
+    toProcess.forEach(file => {
+      compressImage(file)
+        .then(data => {
+          newImages.push(data);
+          processed++;
+          if (processed === toProcess.length) {
+            setWanxImages(prev => [...prev, ...newImages]);
+            setWanxError('');
+          }
+        })
+        .catch(err => setWanxError(err.message));
     });
-  }, [wanxImages.length]);
+  }, [wanxImages.length, compressImage]);
 
   // Wanx 删除图片
   const removeWanxImage = useCallback((index: number) => {
@@ -355,39 +356,11 @@ function ImageGenerationContent() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const remaining = 10 - gptImages.length;
-    const toProcess = Array.from(files).slice(0, remaining);
+    const toProcess = Array.from(files).slice(0, 10 - gptImages.length);
     let processed = 0;
     const newImages: string[] = [];
 
-    const compressImage = (file: File): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
-          reject(new Error('只支持 PNG、JPG、JPEG、WebP 格式')); return;
-        }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const img = new Image();
-          img.onload = () => {
-            const MAX = 2048;
-            const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-            const w = Math.round(img.width * scale);
-            const h = Math.round(img.height * scale);
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.92));
-          };
-          img.onerror = () => reject(new Error('图片读取失败'));
-          img.src = ev.target?.result as string;
-        };
-        reader.onerror = () => reject(new Error('图片读取失败'));
-        reader.readAsDataURL(file);
-      });
-    };
-
     toProcess.forEach(file => {
-      if (file.size > 20 * 1024 * 1024) { setGptError('图片大小不能超过 20MB'); return; }
       compressImage(file).then(data => {
         newImages.push(data);
         processed++;
@@ -397,7 +370,7 @@ function ImageGenerationContent() {
         }
       }).catch(err => setGptError(err.message));
     });
-  }, [gptImages.length]);
+  }, [gptImages.length, compressImage]);
 
   const removeGptImage = useCallback((index: number) => {
     setGptImages(prev => prev.filter((_, i) => i !== index));
