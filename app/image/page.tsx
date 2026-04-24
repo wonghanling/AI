@@ -64,6 +64,8 @@ function ImageGenerationContent() {
   const [wanxPollingTask, setWanxPollingTask] = useState<{ taskId: string; recordId: string } | null>(null);
   const [wanxResult, setWanxResult] = useState<{ id: string; url: string; prompt: string } | null>(null);
   const wanxPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [wanxHistory, setWanxHistory] = useState<Array<{ id: string; url: string; prompt: string }>>([]);
+  const [wanxLoadingHistory, setWanxLoadingHistory] = useState(false);
 
   // GPT Image 2 专用状态
   const [gptPrompt, setGptPrompt] = useState('');
@@ -154,7 +156,9 @@ function ImageGenerationContent() {
         const data = await res.json();
 
         if (data.status === 'completed' && data.imageUrl) {
-          setWanxResult({ id: wanxPollingTask.recordId, url: data.imageUrl, prompt: wanxPrompt });
+          const newImg = { id: wanxPollingTask.recordId, url: data.imageUrl, prompt: wanxPrompt };
+          setWanxResult(newImg);
+          setWanxHistory(prev => [newImg, ...prev]);
           setWanxPollingTask(null);
           setWanxLoading(false);
           if (wanxPollingRef.current) clearInterval(wanxPollingRef.current);
@@ -174,6 +178,32 @@ function ImageGenerationContent() {
       if (wanxPollingRef.current) clearInterval(wanxPollingRef.current);
     };
   }, [wanxPollingTask, wanxPrompt]);
+
+  // Wanx 历史记录加载
+  useEffect(() => {
+    if (activeView !== WANX_MODEL_ID) return;
+    const fetchWanxHistory = async () => {
+      setWanxLoadingHistory(true);
+      const supabase = getSupabaseClient();
+      if (!supabase) { setWanxLoadingHistory(false); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setWanxLoadingHistory(false); return; }
+      try {
+        const res = await fetch('/api/image/history?limit=50&source=wanx', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setWanxHistory(data.images.filter((img: any) => img.image_url).map((img: any) => ({
+            id: img.id, url: img.image_url, prompt: img.prompt,
+          })));
+        }
+      } catch { /* ignore */ } finally {
+        setWanxLoadingHistory(false);
+      }
+    };
+    fetchWanxHistory();
+  }, [activeView]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1145,21 +1175,67 @@ function ImageGenerationContent() {
                 </button>
               </div>
 
-              {/* 融合结果 */}
-              {wanxResult && (
-                <div className="bg-white rounded-xl border-2 border-purple-200 p-4 md:p-8">
-                  <h2 className="text-xl font-semibold mb-4">融合结果</h2>
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <img src={wanxResult.url} alt={wanxResult.prompt} className="w-full object-contain max-h-[600px]" />
-                    <div className="p-3 flex items-center justify-between">
-                      <p className="text-xs text-gray-500 line-clamp-1">{wanxResult.prompt}</p>
-                      <a href={wanxResult.url} download className="text-xs text-purple-700 hover:text-purple-900 font-medium ml-4 shrink-0">
-                        下载
-                      </a>
-                    </div>
-                  </div>
+              {/* 历史记录 */}
+              <div className="bg-white rounded-xl border-2 border-purple-200 p-4 md:p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">融合历史</h2>
+                  {wanxHistory.length > 0 && <span className="text-sm text-gray-400">{wanxHistory.length} / 50</span>}
                 </div>
-              )}
+
+                {wanxLoading && (
+                  <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4 flex items-center gap-3">
+                    <svg className="animate-spin h-5 w-5 text-purple-600 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-sm text-purple-700">{wanxPollingTask ? '融合中，请稍候（约 30-60 秒）...' : '提交中...'}</span>
+                  </div>
+                )}
+
+                {wanxLoadingHistory ? (
+                  <div className="flex items-center justify-center py-12">
+                    <svg className="animate-spin h-6 w-6 text-purple-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="ml-2 text-sm text-gray-500">加载历史记录...</span>
+                  </div>
+                ) : wanxHistory.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <svg className="w-12 h-12 text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm text-gray-400">还没有融合记录</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {wanxHistory.map((img) => (
+                      <div key={img.id} className="group relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50 aspect-square">
+                        <img src={img.url} alt={img.prompt} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                          <p className="text-white text-xs text-center line-clamp-2">{img.prompt}</p>
+                          <div className="flex gap-2 mt-1">
+                            <button
+                              onClick={() => setLightboxUrl(img.url)}
+                              className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                              title="查看"
+                            >
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                              </svg>
+                            </button>
+                            <a href={img.url} download className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="下载">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
           ) : (
           <>
@@ -1449,6 +1525,16 @@ function ImageGenerationContent() {
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      {/* 查看按钮 */}
+                      <button
+                        onClick={() => setLightboxUrl(image.url)}
+                        className="absolute top-2 left-2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        title="查看大图"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                         </svg>
                       </button>
                     </div>
