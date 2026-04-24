@@ -190,28 +190,27 @@ function ProImageContent() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 检查文件类型
-    if (!file.type.startsWith('image/')) {
-      setError('请上传图片文件');
-      return;
-    }
+    if (!file.type.startsWith('image/')) { setError('请上传图片文件'); return; }
+    if (file.size > 20 * 1024 * 1024) { setError('图片大小不能超过 20MB'); return; }
 
-    // 检查文件大小（最大 5MB）
-    if (file.size > 5 * 1024 * 1024) {
-      setError('图片大小不能超过 5MB');
-      return;
-    }
-
-    // 转换为 base64
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      setUploadedImage(base64);
-      setError('');
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 2048;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+        setUploadedImage(canvas.toDataURL('image/jpeg', 0.92));
+        setError('');
+      };
+      img.onerror = () => setError('图片读取失败');
+      img.src = ev.target?.result as string;
     };
-    reader.onerror = () => {
-      setError('图片读取失败');
-    };
+    reader.onerror = () => setError('图片读取失败');
     reader.readAsDataURL(file);
   };
 
