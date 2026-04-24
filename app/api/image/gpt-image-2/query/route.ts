@@ -30,8 +30,9 @@ export async function GET(req: NextRequest) {
 
     // 查询 fal 队列状态
     const status = await fal.queue.status(endpoint, { requestId, logs: false });
+    const statusStr = status.status as string;
 
-    if (status.status === 'COMPLETED') {
+    if (statusStr === 'COMPLETED') {
       const result = await fal.queue.result(endpoint, { requestId });
       const img = (result.data as any)?.images?.[0];
       if (!img?.url) {
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ status: 'completed', imageUrl: permanentUrl });
     }
 
-    if (status.status === 'FAILED') {
+    if (statusStr === 'FAILED') {
       await supabaseAdmin
         .from('image_generations')
         .update({ status: 'failed' })
