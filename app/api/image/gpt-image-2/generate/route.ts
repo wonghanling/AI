@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fal } from '@fal-ai/client';
-import { uploadToStorage } from '@/lib/storage-upload';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,28 +9,18 @@ const supabaseAdmin = createClient(
 
 fal.config({ credentials: process.env.FAL_KEY! });
 
-// 尺寸配置：sizeKey -> fal image_size 参数
-const SIZE_MAP: Record<string, { width: number; height: number } | string> = {
-  'landscape_16_9_2k': { width: 2048, height: 1152 },  // 16:9 2K
-  'landscape_16_9_4k': { width: 3840, height: 2160 },  // 16:9 4K
-  'portrait_9_16_4k':  { width: 2160, height: 3840 },  // 9:16 4K
-  'square_2k':         { width: 2048, height: 2048 },  // 1:1 2K
+// 尺寸配置
+const SIZE_MAP: Record<string, { width: number; height: number }> = {
+  'landscape_16_9_2k': { width: 2048, height: 1152 },
+  'landscape_16_9_4k': { width: 3840, height: 2160 },
+  'portrait_9_16_4k':  { width: 2160, height: 3840 },
+  'square_2k':         { width: 2048, height: 2048 },
 };
 
-// 定价表：[quality][sizeKey] = 积分
+// 定价表
 const PRICING: Record<string, Record<string, number>> = {
-  high: {
-    'landscape_16_9_2k': 7,
-    'landscape_16_9_4k': 20,
-    'portrait_9_16_4k':  20,
-    'square_2k':         10,
-  },
-  medium: {
-    'landscape_16_9_2k': 7,
-    'landscape_16_9_4k': 15,
-    'portrait_9_16_4k':  15,
-    'square_2k':         7,
-  },
+  high:   { 'landscape_16_9_2k': 7, 'landscape_16_9_4k': 20, 'portrait_9_16_4k': 20, 'square_2k': 10 },
+  medium: { 'landscape_16_9_2k': 7, 'landscape_16_9_4k': 15, 'portrait_9_16_4k': 15, 'square_2k': 7  },
 };
 
 export async function POST(req: NextRequest) {
@@ -44,20 +33,14 @@ export async function POST(req: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: '无效的认证令牌' }, { status: 401 });
 
     const body = await req.json();
-    const {
-      prompt,
-      images = [],       // base64 数组，0=文生图，1=单图编辑，多=多图融合
-      quality = 'high',  // 'high' | 'medium'
-      sizeKey = 'square_2k',
-    } = body;
+    const { prompt, images = [], quality = 'high', sizeKey = 'square_2k' } = body;
 
     if (!prompt) return NextResponse.json({ error: '请输入图片描述' }, { status: 400 });
 
     const imageSize = SIZE_MAP[sizeKey];
     if (!imageSize) return NextResponse.json({ error: '无效的尺寸选项' }, { status: 400 });
 
-    const qualityPricing = PRICING[quality] ?? PRICING['high'];
-    const cost = qualityPricing[sizeKey] ?? 10;
+    const cost = PRICING[quality]?.[sizeKey] ?? 10;
 
     const { data: userData } = await supabaseAdmin
       .from('users')
@@ -74,44 +57,19 @@ export async function POST(req: NextRequest) {
     }
 
     const imageCount = images.length;
-    let imageUrl: string;
+    const endpoint = imageCount === 0 ? 'openai/gpt-image-2' : 'openai/gpt-image-2/edit';
+    const mode = imageCount === 0 ? 'text-to-image' : imageCount === 1 ? 'single-edit' : 'multi-edit';
 
-    if (imageCount === 0) {
-      // 文生图
-      const result = await fal.subscribe('openai/gpt-image-2', {
-        input: {
-          prompt,
-          image_size: imageSize,
-          quality,
-          output_format: 'jpeg',
-        },
-      });
-      const img = (result.data as any)?.images?.[0];
-      if (!img?.url) throw new Error('未能生成图片');
-      imageUrl = img.url;
-    } else {
-      // 图生图（单图编辑 或 多图融合）
-      const result = await fal.subscribe('openai/gpt-image-2/edit', {
-        input: {
-          prompt,
-          image_urls: images,
-          image_size: imageSize,
-          quality,
-          output_format: 'jpeg',
-        },
-      });
-      const img = (result.data as any)?.images?.[0];
-      if (!img?.url) throw new Error('未能生成图片');
-      imageUrl = img.url;
-    }
+    const input = imageCount === 0
+      ? { prompt, image_size: imageSize, quality, output_format: 'jpeg' }
+      : { prompt, image_urls: images, image_size: imageSize, quality, output_format: 'jpeg' };
 
-    // 上传到 Supabase Storage
-    let permanentUrl = imageUrl;
-    try {
-      permanentUrl = await uploadToStorage(user.id, imageUrl, 'image');
-    } catch {
-      console.warn('上传 Storage 失败，使用原始 URL');
-    }
+    // 异步提交队列，不等待结果（避免 Vercel 60s 超时）
+    const { request_id } = await fal.queue.submit(endpoint, { input });
+
+    // 先扣积分
+    const newCredits = Math.max(0, imageCredits - cost);
+    await supabaseAdmin.from('users').update({ image_credits: newCredits }).eq('id', user.id);
 
     // 历史记录超 50 张则清空
     const { count: historyCount } = await supabaseAdmin
@@ -123,36 +81,34 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('image_generations').delete().eq('user_id', user.id);
     }
 
-    const mode = imageCount === 0 ? 'text-to-image' : imageCount === 1 ? 'single-edit' : 'multi-edit';
-
+    // 先插入 pending 记录，等轮询完成后更新 image_url
     const { data: imageRecord } = await supabaseAdmin
       .from('image_generations')
       .insert({
         user_id: user.id,
         model: 'gpt-image-2',
         prompt,
-        image_url: permanentUrl,
+        image_url: '',
         size: `${quality}-${sizeKey}-${mode}`,
         cost_credits: cost,
-        status: 'completed',
+        status: 'pending',
         api_source: 'gpt-image-2',
         created_at: new Date().toISOString(),
       })
       .select()
       .single();
 
-    const newCredits = Math.max(0, imageCredits - cost);
-    await supabaseAdmin.from('users').update({ image_credits: newCredits }).eq('id', user.id);
-
     return NextResponse.json({
       success: true,
-      images: [{ url: permanentUrl, id: imageRecord?.id, prompt }],
+      requestId: request_id,
+      recordId: imageRecord?.id,
+      endpoint,
       remainingBalance: newCredits,
       cost,
     });
 
   } catch (error: any) {
-    console.error('GPT Image 2 生成错误:', error);
+    console.error('GPT Image 2 提交错误:', error);
     return NextResponse.json({ error: error.message || '服务器错误' }, { status: 500 });
   }
 }
