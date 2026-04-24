@@ -275,6 +275,23 @@ export default function LandingPage() {
             </div>
 
             <div
+              onClick={() => router.push('/image?model=gpt-image-2')}
+              className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
+              style={{ transform: 'translateZ(0)' }}>
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:brightness-110 transition-all overflow-hidden">
+                <Image
+                  src="/openai.svg"
+                  alt="ChatGPT Image 2"
+                  width={28}
+                  height={28}
+                  className="object-contain"
+                />
+              </div>
+              <h3 className="font-bold text-lg mb-2">ChatGPT Image 2</h3>
+              <p className="text-gray-600 text-xs leading-relaxed">文生图 / 图生图 / 多图融合.</p>
+            </div>
+
+            <div
               onClick={() => router.push('/image/pro')}
               className="bg-white p-6 rounded-2xl border-t-2 border-r-2 border-black border-l-[6px] border-b-[6px] border-l-black border-b-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] transition-shadow duration-200 group cursor-pointer active:scale-[0.98] will-change-transform"
               style={{ transform: 'translateZ(0)' }}>
@@ -374,8 +391,8 @@ export default function LandingPage() {
                 <span className="text-2xl font-bold text-black">∞</span>
               </div>
               <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                BoLou1971 无限画布
-                <span className="text-xs font-normal text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">开发中</span>
+                BoLoulab 无限拖动画布
+                <span className="text-xs font-normal text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">开发中内测</span>
               </h3>
               <p className="text-gray-600 text-xs leading-relaxed">创意无限, 自由绘制你的想象.</p>
             </div>

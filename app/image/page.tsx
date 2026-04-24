@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { getCachedCredits, setCachedCredits } from '@/lib/credits-cache';
 
@@ -42,11 +42,14 @@ const IMAGE_COUNTS = [
 ];
 
 type NormalModelId = 'nano-banana' | 'nano-banana-pro';
-type ActiveView = NormalModelId | 'wan2.5-i2i';
+type ActiveView = NormalModelId | 'wan2.5-i2i' | 'gpt-image-2';
 
 function ImageGenerationContent() {
   const router = useRouter();
-  const [activeView, setActiveView] = useState<ActiveView>('nano-banana-pro');
+  const searchParams = useSearchParams();
+  const [activeView, setActiveView] = useState<ActiveView>(() => {
+    return 'nano-banana-pro';
+  });
   const [selectedModel, setSelectedModel] = useState<NormalModelId>('nano-banana-pro');
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -61,6 +64,13 @@ function ImageGenerationContent() {
   const [wanxPollingTask, setWanxPollingTask] = useState<{ taskId: string; recordId: string } | null>(null);
   const [wanxResult, setWanxResult] = useState<{ id: string; url: string; prompt: string } | null>(null);
   const wanxPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // GPT Image 2 专用状态
+  const [gptPrompt, setGptPrompt] = useState('');
+  const [gptImages, setGptImages] = useState<string[]>([]); // base64，0=文生图，1=单图编辑，多=多图融合
+  const [gptLoading, setGptLoading] = useState(false);
+  const [gptError, setGptError] = useState('');
+  const [gptResult, setGptResult] = useState<{ id: string; url: string; prompt: string } | null>(null);
 
   // 检查登录状态
   useEffect(() => {
@@ -81,9 +91,17 @@ function ImageGenerationContent() {
     checkAuth();
   }, [router]);
 
+  // 读取 URL 参数，自动切换视图
+  useEffect(() => {
+    const model = searchParams.get('model');
+    if (model === 'gpt-image-2') {
+      setActiveView('gpt-image-2');
+    }
+  }, [searchParams]);
+
   // 当切换模型时，重置分辨率为该模型的第一个可用分辨率
   useEffect(() => {
-    if (activeView !== WANX_MODEL_ID) {
+    if (activeView !== WANX_MODEL_ID && activeView !== 'gpt-image-2') {
       const availableResolutions = Object.keys(MODELS[selectedModel].resolutions);
       if (!availableResolutions.includes(resolution)) {
         setResolution(availableResolutions[0]);
@@ -94,7 +112,7 @@ function ImageGenerationContent() {
   // 切换视图时同步 selectedModel
   const handleSetActiveView = useCallback((view: ActiveView) => {
     setActiveView(view);
-    if (view !== WANX_MODEL_ID) {
+    if (view !== WANX_MODEL_ID && view !== 'gpt-image-2') {
       setSelectedModel(view as NormalModelId);
     }
   }, []);
@@ -282,6 +300,74 @@ function ImageGenerationContent() {
       setWanxLoading(false);
     }
   }, [wanxPrompt, wanxImages, credits]);
+
+  // GPT Image 2 图片上传
+  const handleGptImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remaining = 10 - gptImages.length;
+    const toProcess = Array.from(files).slice(0, remaining);
+    let processed = 0;
+    const newImages: string[] = [];
+
+    toProcess.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) { setGptError('图片大小不能超过 10MB'); return; }
+      if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+        setGptError('只支持 PNG、JPG、JPEG、WebP 格式'); return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        newImages.push(ev.target?.result as string);
+        processed++;
+        if (processed === toProcess.length) {
+          setGptImages(prev => [...prev, ...newImages]);
+          setGptError('');
+        }
+      };
+      reader.onerror = () => setGptError('图片读取失败');
+      reader.readAsDataURL(file);
+    });
+  }, [gptImages.length]);
+
+  const removeGptImage = useCallback((index: number) => {
+    setGptImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // GPT Image 2 生成
+  const handleGptGenerate = useCallback(async () => {
+    if (!gptPrompt.trim()) { setGptError('请输入图片描述'); return; }
+
+    const cost = gptImages.length === 0 ? 7 : gptImages.length === 1 ? 7 : 10;
+    if (credits < cost) { setGptError(`积分不足，需要 ${cost} 积分`); return; }
+
+    setGptLoading(true);
+    setGptError('');
+    setGptResult(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) { setGptError('请先登录'); setGptLoading(false); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setGptError('请先登录'); setGptLoading(false); return; }
+
+      const res = await fetch('/api/image/gpt-image-2/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ prompt: gptPrompt, images: gptImages }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '生成失败');
+
+      setCredits(data.remainingBalance);
+      setGptResult({ id: data.images[0].id, url: data.images[0].url, prompt: gptPrompt });
+    } catch (err: any) {
+      setGptError(err.message || '生成失败，请重试');
+    } finally {
+      setGptLoading(false);
+    }
+  }, [gptPrompt, gptImages, credits]);
 
   // 获取用户积分
   useEffect(() => {
@@ -598,6 +684,20 @@ function ImageGenerationContent() {
               Nano Banana Pro
             </button>
 
+            <button
+              onClick={() => handleSetActiveView('gpt-image-2')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                activeView === 'gpt-image-2'
+                  ? 'bg-green-100 text-green-800 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
+              </svg>
+              ChatGPT Image 2
+            </button>
+
             {/* 分隔线 */}
             <div className="my-2 border-t border-gray-200" />
             <p className="px-3 text-xs text-gray-400 font-medium mb-1">图片融合</p>
@@ -643,13 +743,138 @@ function ImageGenerationContent() {
               </svg>
             </button>
             <h1 className="text-lg font-bold">
-              {activeView === WANX_MODEL_ID ? 'Wan 2.5 图片融合' : currentModel.displayName}
+              {activeView === WANX_MODEL_ID ? 'Wan 2.5 图片融合' : activeView === 'gpt-image-2' ? 'ChatGPT Image 2' : currentModel.displayName}
             </h1>
             <div className="text-sm font-medium text-gray-900">{credits} 积分</div>
           </div>
 
-          {/* ===== Wan 2.5 图片融合视图 ===== */}
-          {activeView === WANX_MODEL_ID ? (
+          {/* ===== ChatGPT Image 2 视图 ===== */}
+          {activeView === 'gpt-image-2' ? (
+            <>
+              <div className="bg-white rounded-xl border-2 border-green-200 p-4 md:p-8 mb-6">
+                <h1 className="hidden md:block text-2xl font-bold mb-1">ChatGPT Image 2</h1>
+                <p className="hidden md:block text-sm text-green-600 mb-6">
+                  文生图 7 积分 · 单图编辑 7 积分 · 多图融合 10 积分
+                </p>
+
+                {gptError && (
+                  <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                    {gptError}
+                  </div>
+                )}
+
+                {/* 多图上传区域 */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    上传图片（可选，0-10 张）
+                  </label>
+                  <div className="flex flex-wrap gap-3 mb-3">
+                    {gptImages.map((img, idx) => (
+                      <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-300">
+                        <img src={img} alt={`图片${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeGptImage(idx)}
+                          className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                    {gptImages.length < 10 && (
+                      <label className="w-24 h-24 border-2 border-dashed border-green-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-green-500 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
+                          multiple
+                          onChange={handleGptImageUpload}
+                          className="hidden"
+                          disabled={gptLoading}
+                        />
+                        <svg className="w-6 h-6 text-green-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-xs text-green-400">添加图片</span>
+                      </label>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    不上传 = 文生图 (7积分) · 1张 = 单图编辑 (7积分) · 多张 = 多图融合 (10积分)
+                  </p>
+                </div>
+
+                {/* Prompt */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prompt</label>
+                  <textarea
+                    value={gptPrompt}
+                    onChange={(e) => setGptPrompt(e.target.value)}
+                    disabled={gptLoading}
+                    placeholder={
+                      gptImages.length === 0
+                        ? "描述你想生成的图片，例如：一只可爱的猫咪坐在窗台上..."
+                        : gptImages.length === 1
+                        ? "描述如何编辑这张图片，例如：把背景换成海滩..."
+                        : "描述如何融合这些图片，例如：将这些元素融合成一幅抽象画..."
+                    }
+                    className="w-full h-24 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none text-sm"
+                  />
+                </div>
+
+                {/* 使用说明 */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-sm text-green-800">
+                  <div className="font-semibold mb-1">使用说明</div>
+                  <ul className="space-y-1 text-xs">
+                    <li>• 文生图：不上传图片，直接输入描述生成</li>
+                    <li>• 单图编辑：上传 1 张图片，描述如何修改</li>
+                    <li>• 多图融合：上传多张图片，描述如何融合</li>
+                    <li>• 积分一经消耗不可退还</li>
+                  </ul>
+                </div>
+
+                {/* 生成按钮 */}
+                <button
+                  onClick={handleGptGenerate}
+                  disabled={gptLoading || !gptPrompt.trim() || credits < (gptImages.length === 0 ? 7 : gptImages.length === 1 ? 7 : 10)}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {gptLoading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>生成中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span>生成图片 · {gptImages.length === 0 ? 7 : gptImages.length === 1 ? 7 : 10} 积分</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* 生成结果 */}
+              {gptResult && (
+                <div className="bg-white rounded-xl border-2 border-green-200 p-4 md:p-8">
+                  <h2 className="text-xl font-semibold mb-4">生成结果</h2>
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <img src={gptResult.url} alt={gptResult.prompt} className="w-full object-contain max-h-[600px]" />
+                    <div className="p-3 flex items-center justify-between">
+                      <p className="text-xs text-gray-500 line-clamp-1">{gptResult.prompt}</p>
+                      <a href={gptResult.url} download className="text-xs text-green-700 hover:text-green-900 font-medium ml-4 shrink-0">
+                        下载
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : activeView === WANX_MODEL_ID ? (
             <>
               <div className="bg-white rounded-xl border-2 border-purple-200 p-4 md:p-8 mb-6">
                 <h1 className="hidden md:block text-2xl font-bold mb-1">Wan 2.5 图片融合</h1>
@@ -1081,5 +1306,9 @@ function ImageGenerationContent() {
 }
 
 export default function ImageGenerationPage() {
-  return <ImageGenerationContent />;
+  return (
+    <React.Suspense fallback={null}>
+      <ImageGenerationContent />
+    </React.Suspense>
+  );
 }
