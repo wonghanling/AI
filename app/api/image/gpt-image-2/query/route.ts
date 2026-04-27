@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error('GPT Image 2 查询错误:', error);
-    return NextResponse.json({ error: error.message || '查询失败' }, { status: 500 });
+    const msg = error?.message || error?.body?.detail || JSON.stringify(error) || '查询失败';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
